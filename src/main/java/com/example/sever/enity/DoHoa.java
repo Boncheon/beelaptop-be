@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,6 +11,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,24 +25,24 @@ public class DoHoa {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @ColumnDefault("newid()")
-    @Column(name = "ID_DoHoa")
-    private UUID idDohoa;
+    @Size(max = 20)
+    @Column(name = "id_dohoa", length = 20)
+    private String idDohoa;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "hangCard")
-    private String hangCard;
+    @Column(name = "hangcard_oboard")
+    private String hangcardOboard;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "modelCard")
-    private String modelCard;
+    @Column(name = "modelcard_oboard")
+    private String modelcardOboard;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "ten_day_duCard")
-    private String tenDayDucard;
+    @Column(name = "ten_day_du")
+    private String tenDayDu;
 
     @Size(max = 100)
     @Nationalized
@@ -56,7 +59,11 @@ public class DoHoa {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
+    @ColumnDefault("0")
     @Column(name = "trang_thai")
-    private Boolean trangThai;
+    private Integer trangThai;
+
+    @OneToMany(mappedBy = "idDohoa")
+    private Set<PhienBan> phienBans = new LinkedHashSet<>();
 
 }

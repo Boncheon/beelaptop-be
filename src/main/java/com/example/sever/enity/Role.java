@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,6 +11,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,18 +25,16 @@ public class Role {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @ColumnDefault("newid()")
-    @Column(name = "ID_Role")
-    private UUID idRole;
+    @Size(max = 20)
+    @Column(name = "id_role", length = 20)
+    private String idRole;
 
-    @Size(max = 50)
+    @Size(max = 100)
     @Nationalized
-    @Column(name = "Ten", length = 50)
-    private String ten;
+    @Column(name = "ten_chuc_vu", length = 100)
+    private String tenChucVu;
 
-    @Size(max = 50)
-    @Nationalized
-    @Column(name = "Chuc_vu", length = 50)
-    private String chucVu;
+    @OneToMany(mappedBy = "idRole")
+    private Set<TaiKhoan> taiKhoans = new LinkedHashSet<>();
 
 }

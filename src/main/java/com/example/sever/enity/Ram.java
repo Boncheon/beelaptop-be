@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,6 +11,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,9 +25,9 @@ public class Ram {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @ColumnDefault("newid()")
-    @Column(name = "ID_RAM")
-    private UUID idRam;
+    @Size(max = 20)
+    @Column(name = "id_loai_ram", length = 20)
+    private String idLoaiRam;
 
     @Size(max = 50)
     @Nationalized
@@ -39,7 +42,11 @@ public class Ram {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
+    @ColumnDefault("0")
     @Column(name = "trang_thai")
-    private Boolean trangThai;
+    private Integer trangThai;
+
+    @OneToMany(mappedBy = "idRam")
+    private Set<PhienBan> phienBans = new LinkedHashSet<>();
 
 }

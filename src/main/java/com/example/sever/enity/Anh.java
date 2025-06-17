@@ -2,7 +2,10 @@ package com.example.sever.enity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -22,9 +25,17 @@ public class Anh {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Size(max = 1000)
+    @Size(max = 20)
+    @Column(name = "id_anh", length = 20)
+    private String idAnh;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_laptop_chi_tiet")
+    private LaptopChiTiet idLaptopChiTiet;
+
+    @Size(max = 500)
     @Nationalized
-    @Column(name = "imgURL", length = 1000)
+    @Column(name = "ImgURL", length = 500)
     private String imgURL;
 
 }

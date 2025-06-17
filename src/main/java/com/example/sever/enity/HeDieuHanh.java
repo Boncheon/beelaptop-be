@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,30 +11,35 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
-import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "LichSuHoaDon", schema = "dbo")
-public class LichSuHoaDon {
+@Table(name = "HeDieuHanh", schema = "dbo")
+public class HeDieuHanh {
     @Id
     @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Column(name = "thoi_gian")
-    private Instant thoiGian;
+    @Size(max = 20)
+    @Column(name = "ma", length = 20)
+    private String ma;
 
-    @Size(max = 50)
+    @Size(max = 100)
     @Nationalized
-    @Column(name = "trang_thai", length = 50)
-    private String trangThai;
+    @Column(name = "ten", length = 100)
+    private String ten;
 
-    @Size(max = 500)
+    @Size(max = 100)
     @Nationalized
-    @Column(name = "ghi_chu", length = 500)
-    private String ghiChu;
+    @Column(name = "phien_ban", length = 100)
+    private String phienBan;
+
+    @OneToMany(mappedBy = "idHeDieuHanh")
+    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
 
 }

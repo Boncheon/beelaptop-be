@@ -13,48 +13,40 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "PhienBan_LapTopCT", schema = "dbo")
-public class PhienbanLaptopct {
+@Table(name = "BaoHanh", schema = "dbo")
+public class BaoHanh {
     @Id
     @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "id_phien_ban_laptopct", length = 20)
-    private String idPhienBanLaptopct;
+    @Column(name = "id_bao_hanh", length = 20)
+    private String idBaoHanh;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_phien_ban")
-    private PhienBan idPhienBan;
+    @JoinColumn(name = "id_seri")
+    private Seri idSeri;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_laptop_chi_tiet")
-    private LaptopChiTiet idLaptopChiTiet;
+    @JoinColumn(name = "id_order_ct")
+    private OrderCT idOrderCt;
 
-    @Column(name = "trang_thai")
-    private Integer trangThai;
+    @Column(name = "ngay_het_bh")
+    private LocalDate ngayHetBh;
 
     @Size(max = 500)
     @Nationalized
-    @Column(name = "ghi_chu", length = 500)
-    private String ghiChu;
+    @Column(name = "mo_ta_loi", length = 500)
+    private String moTaLoi;
 
-    @Column(name = "ngay_tao")
-    private Instant ngayTao;
-
-    @Column(name = "ngay_cap_nhat")
-    private Instant ngayCapNhat;
-
-    @Size(max = 100)
-    @Nationalized
-    @Column(name = "nguoi_tao", length = 100)
-    private String nguoiTao;
+    @Column(name = "trang_thai")
+    private Integer trangThai;
 
 }

@@ -1,13 +1,12 @@
 package com.example.sever.repository;
 
-import com.example.sever.enity.Laptop;
+import com.example.sever.enity.PhienbanLaptopct;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
+
 @Repository
-public interface LapTopRepository extends JpaRepository<Laptop, UUID> {
+public interface PhienbanLaptopctRepository extends JpaRepository<PhienbanLaptopct, UUID> {
 
 }
-
-

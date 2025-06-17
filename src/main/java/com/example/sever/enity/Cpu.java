@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,6 +11,9 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,9 +26,9 @@ public class Cpu {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @ColumnDefault("newid()")
-    @Column(name = "ID_CPU")
-    private UUID idCpu;
+    @Size(max = 20)
+    @Column(name = "id_cpu", length = 20)
+    private String idCpu;
 
     @Size(max = 255)
     @Nationalized
@@ -36,7 +40,15 @@ public class Cpu {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
+    @ColumnDefault("0")
     @Column(name = "trang_thai")
-    private Boolean trangThai;
+    private Integer trangThai;
+
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @OneToMany(mappedBy = "idCpu")
+    private Set<PhienBan> phienBans = new LinkedHashSet<>();
 
 }
