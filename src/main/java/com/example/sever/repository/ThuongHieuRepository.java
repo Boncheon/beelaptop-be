@@ -17,9 +17,9 @@ public interface ThuongHieuRepository extends JpaRepository<ThuongHieu, UUID> {
     @Query("SELECT t FROM ThuongHieu t WHERE t.moTa LIKE %?1%")
     List<ThuongHieu> findByMoTaContaining(String moTa);
     
-    @Query("SELECT t FROM ThuongHieu t WHERE t.ngayTao BETWEEN ?1 AND ?2")
-    List<ThuongHieu> findByNgayTaoBetween(Instant startDate, Instant endDate);
-    
-    @Query("SELECT t FROM ThuongHieu t ORDER BY t.ngayTao DESC")
-    List<ThuongHieu> findAllOrderByNgayTaoDesc();
+//    @Query("SELECT t FROM ThuongHieu t WHERE t.ngayTao BETWEEN ?1 AND ?2")
+//    List<ThuongHieu> findByNgayTaoBetween(Instant startDate, Instant endDate);
+//
+//    @Query("SELECT t FROM ThuongHieu t ORDER BY t.ngayTao DESC")
+//    List<ThuongHieu> findAllOrderByNgayTaoDesc();
 }

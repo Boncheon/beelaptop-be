@@ -3,6 +3,7 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -12,6 +13,8 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -21,15 +24,19 @@ import java.util.UUID;
 public class PhieuGiamGia {
     @Id
     @ColumnDefault("newid()")
-    @Column(name = "Ma", nullable = false)
+    @Column(name = "ID", nullable = false)
     private UUID id;
+
+    @Size(max = 20)
+    @Column(name = "ID_PhieuGiamGia", length = 20)
+    private String idPhieugiamgia;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "Ten")
+    @Column(name = "ten")
     private String ten;
 
-    @Column(name = "So_luong")
+    @Column(name = "so_luong")
     private Integer soLuong;
 
     @Size(max = 50)
@@ -37,8 +44,8 @@ public class PhieuGiamGia {
     @Column(name = "kieu_giam_gia", length = 50)
     private String kieuGiamGia;
 
-    @Column(name = "gia_tri", precision = 18, scale = 2)
-    private BigDecimal giaTri;
+    @Column(name = "gia_tri_giam", precision = 18, scale = 2)
+    private BigDecimal giaTriGiam;
 
     @Column(name = "ngay_bat_dau")
     private Instant ngayBatDau;
@@ -58,6 +65,9 @@ public class PhieuGiamGia {
     private String moTa;
 
     @Column(name = "trang_thai")
-    private Boolean trangThai;
+    private Integer trangThai;
+
+    @OneToMany(mappedBy = "idPhieuGiamGia")
+    private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
 
 }

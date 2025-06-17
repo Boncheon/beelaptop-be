@@ -2,8 +2,12 @@ package com.example.sever.enity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
@@ -19,6 +23,21 @@ public class GioHangChiTiet {
     @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
     private UUID id;
+
+    @Size(max = 20)
+    @Column(name = "ID_GioHangChiTiet", length = 20)
+    private String idGiohangchitiet;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ID_gio_hang")
+    private GioHang idGioHang;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ID_seri")
+    private Seri idSeri;
+
+    @Column(name = "is_selected")
+    private Integer isSelected;
 
     @Column(name = "so_luong")
     private Integer soLuong;

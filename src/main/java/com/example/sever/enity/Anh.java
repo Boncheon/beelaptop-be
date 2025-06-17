@@ -25,12 +25,17 @@ public class Anh {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Size(max = 1000)
-    @Nationalized
-    @Column(name = "imgURL", length = 1000)
-    private String imgURL;
+    @Size(max = 20)
+    @Column(name = "id_anh", length = 20)
+    private String idAnh;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_laptop_chi_tiet")
+    @JoinColumn(name = "id_laptop_chi_tiet")
     private LaptopChiTiet idLaptopChiTiet;
+
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "ImgURL", length = 500)
+    private String imgURL;
+
 }

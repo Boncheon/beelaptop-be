@@ -2,7 +2,11 @@ package com.example.sever.enity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -10,6 +14,8 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,24 +28,40 @@ public class DiaChi {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Size(max = 100)
-    @Nationalized
-    @Column(name = "tinh", length = 100)
-    private String tinh;
+    @Size(max = 20)
+    @Column(name = "id_dia_chi", length = 20)
+    private String idDiaChi;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tai_khoan")
+    private TaiKhoan idTaiKhoan;
 
     @Size(max = 100)
     @Nationalized
-    @Column(name = "huyen", length = 100)
-    private String huyen;
+    @Column(name = "quoc_gia", length = 100)
+    private String quocGia;
 
     @Size(max = 100)
     @Nationalized
-    @Column(name = "xa", length = 100)
-    private String xa;
+    @Column(name = "tinh_thanh", length = 100)
+    private String tinhThanh;
+
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "quan_huyen", length = 100)
+    private String quanHuyen;
+
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "phuong_xa", length = 100)
+    private String phuongXa;
 
     @Size(max = 255)
     @Nationalized
-    @Column(name = "ghi_chu")
-    private String ghiChu;
+    @Column(name = "dia_chi_chi_tiet")
+    private String diaChiChiTiet;
+
+    @OneToMany(mappedBy = "idDiaChi")
+    private Set<Order> orders = new LinkedHashSet<>();
 
 }

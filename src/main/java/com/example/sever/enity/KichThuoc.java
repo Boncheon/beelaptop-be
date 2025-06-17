@@ -3,13 +3,15 @@ package com.example.sever.enity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Nationalized;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -22,9 +24,9 @@ public class KichThuoc {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @ColumnDefault("newid()")
-    @Column(name = "ID_KichThuoc")
-    private UUID idKichthuoc;
+    @Size(max = 20)
+    @Column(name = "id_kich_thuoc", length = 20)
+    private String idKichThuoc;
 
     @Column(name = "chieu_dai")
     private Double chieuDai;
@@ -38,9 +40,7 @@ public class KichThuoc {
     @Column(name = "khoi_luong")
     private Double khoiLuong;
 
-    @Size(max = 500)
-    @Nationalized
-    @Column(name = "mo_ta", length = 500)
-    private String moTa;
+    @OneToMany(mappedBy = "idKichThuoc")
+    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
 
 }
