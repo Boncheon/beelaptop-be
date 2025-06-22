@@ -21,9 +21,8 @@ import java.util.UUID;
 @Table(name = "HeDieuHanh", schema = "dbo")
 public class HeDieuHanh {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "ma", length = 20)
@@ -39,7 +38,5 @@ public class HeDieuHanh {
     @Column(name = "phien_ban", length = 100)
     private String phienBan;
 
-    @OneToMany(mappedBy = "idHeDieuHanh")
-    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
 
 }

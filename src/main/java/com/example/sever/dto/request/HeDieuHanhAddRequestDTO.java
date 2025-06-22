@@ -11,14 +11,12 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CpuUpdateRequestDTO {
+public class HeDieuHanhAddRequestDTO {
 
-     UUID id;
-    
-     String idCpu;
-    
-     String ten;
-    
-     String moTa;
+     private String ma;
+
+     private String ten;
+
+     private String phienBan;
 
 }

@@ -47,7 +47,5 @@ public class Cpu {
 //    @Column(name = "ngay_tao")
 //    private Instant ngayTao;
 
-    @OneToMany(mappedBy = "idCpu")
-    private Set<PhienBan> phienBans = new LinkedHashSet<>();
 
 }

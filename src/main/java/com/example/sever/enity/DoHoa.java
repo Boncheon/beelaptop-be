@@ -62,7 +62,4 @@ public class DoHoa {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-    @OneToMany(mappedBy = "idDohoa")
-    private Set<PhienBan> phienBans = new LinkedHashSet<>();
-
 }

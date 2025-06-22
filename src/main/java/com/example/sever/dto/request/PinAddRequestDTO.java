@@ -11,14 +11,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CpuUpdateRequestDTO {
+public class PinAddRequestDTO {
 
-     UUID id;
-    
-     String idCpu;
-    
-     String ten;
-    
-     String moTa;
+     private String idPin;
 
+     private String dungLuong;
 }

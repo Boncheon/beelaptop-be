@@ -47,7 +47,5 @@ public class MauSac {
 //    @Column(name = "ngay_tao")
 //    private Instant ngayTao;
 
-    @OneToMany(mappedBy = "idMauSac")
-    private Set<PhienBan> phienBans = new LinkedHashSet<>();
 
 }
