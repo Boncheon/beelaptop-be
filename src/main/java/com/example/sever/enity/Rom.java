@@ -22,9 +22,8 @@ import java.util.UUID;
 @Table(name = "Rom", schema = "dbo")
 public class Rom {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_ssd", length = 20)
@@ -55,9 +54,9 @@ public class Rom {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-    @ColumnDefault("getdate()")
-    @Column(name = "ngay_tao")
-    private Instant ngayTao;
+//    @ColumnDefault("getdate()")
+//    @Column(name = "ngay_tao")
+//    private Instant ngayTao;
 
     @OneToMany(mappedBy = "idSsd")
     private Set<PhienBan> phienBans = new LinkedHashSet<>();

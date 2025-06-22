@@ -1,44 +1,46 @@
 package com.example.sever.dto.request;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Nationalized;
-
-import java.util.UUID;
 
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DoHoaRequestDTO {
-    private UUID id;
+public class DoHoaAddRequestDTO {
+
     @Size(max = 20)
-    private String idDohoa;
+     String idDohoa;
 
     @Size(max = 255)
-    private String hangcardOboard;
+     String hangcardOboard;
 
     @Size(max = 255)
-    private String modelcardOboard;
+    
+ String modelcardOboard;
 
     @Size(max = 255)
-    private String tenDayDu;
+    
+ String tenDayDu;
 
     @Size(max = 100)
-    private String loaiCard;
+    
+ String loaiCard;
 
     @Size(max = 50)
-    private String boNhoRam;
+    
+ String boNhoRam;
 
     @Size(max = 500)
-    private String moTa;
+    
+ String moTa;
 
     @ColumnDefault("0")
-    private Integer trangThai;
+    
+ Integer trangThai;
 }

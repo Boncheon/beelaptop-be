@@ -22,9 +22,8 @@ import java.util.UUID;
 @Table(name = "CPU", schema = "dbo")
 public class Cpu {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_cpu", length = 20)
@@ -44,9 +43,9 @@ public class Cpu {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-    @ColumnDefault("getdate()")
-    @Column(name = "ngay_tao")
-    private Instant ngayTao;
+//    @ColumnDefault("getdate()")
+//    @Column(name = "ngay_tao")
+//    private Instant ngayTao;
 
     @OneToMany(mappedBy = "idCpu")
     private Set<PhienBan> phienBans = new LinkedHashSet<>();

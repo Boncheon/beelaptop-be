@@ -21,9 +21,8 @@ import java.util.UUID;
 @Table(name = "RAM", schema = "dbo")
 public class Ram {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_loai_ram", length = 20)
