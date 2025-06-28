@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Event - Quản lý học kỳ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background-color: #ffffff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 60px;
+            box-sizing: border-box;
+        }
+
+        .header-left .logo {
+            display: flex;
+            align-items: center;
+            font-size: 60px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .header-left .logo img {
+            height: 50px;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+
+
+
+        .main-layout {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #ffffff;
+            padding: 20px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar nav ul li a {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: #555;
+            font-size: 15px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            text-align: left;
+        }
+        .sidebar nav ul li a span {
+            margin-left: 8px;
+        }
+
+        .sidebar nav ul li a i {
+            margin-right: 15px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar nav ul li a:hover {
+            background-color: #e0e2e5;
+            color: #007bff;
+        }
+
+        .sidebar nav ul li a.active {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            font-weight: bold;
+            border-right: 3px solid #1890ff;
+        }
+
+        /* Menu cấp 1 */
+        #sidebar-menu li a {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;   /* Căn trái hoàn toàn */
+            padding: 12px 16px;
+            color: #333;
+            font-size: 15px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        #sidebar-menu li a i {
+            margin-right: 10px;
+            width: 18px;
+            text-align: center;
+        }
+        #sidebar-menu li a span {
+            margin-left: 6px;
+        }
+
+        #sidebar-menu li a:hover {
+            background-color: #f0f5ff;
+            color: #0056d2;
+            border-left: 4px solid #1890ff;
+        }
+
+        #sidebar-menu li a.active {
+            background-color: #e6f7ff;
+            color: #1890ff;
+            font-weight: bold;
+            border-left: 4px solid #1890ff;
+        }
+
+        /*Submenu*/
+        .submenu {
+            display: none;
+            background-color: #f9f9f9;
+            padding-left: 0;
+            border-left: 2px solid #e1e1e1;
+        }
+
+        .submenu li a {
+            display: flex;
+            align-items: center;
+            padding: 10px 35px;
+            font-size: 14px;
+            color: #444;
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .submenu li a:hover {
+            background-color: #f0f0f0;
+            color: #007bff;
+            border-left: 4px solid #007bff;
+        }
+
+        /* Mũi tên xoay sang xuống khi mở */
+        .toggle-icon {
+            margin-left: auto;
+            font-size: 12px;
+            transition: transform 0.3s ease;
+            color: #666;
+        }
+
+        .has-submenu.open .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+
+
+        .content-area {
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .page-title h1 {
+            font-size: 26px;
+            margin-top: 0;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .section {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #555;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-controls input[type="text"] {
+            padding: 10px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #1890ff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #40a9ff;
+            box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+        }
+
+        .btn-secondary {
+            background-color: #f0f2f5;
+            color: #555;
+            border: 1px solid #d9d9d9;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e6e8eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .btn-success {
+            background-color: #52c41a;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #73d13d;
+            box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #f0f0f0;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .data-table th {
+            background-color: #fafafa;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #e6f7ff;
+        }
+
+        .fas {
+            margin-right: 8px;
+        }
+
+        .logo img {
+            background-color: #ddd;
+        }
+
+
+        .form-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+
+
+        .search-feedback p {
+            margin: 0;
+            font-weight: bold;
+        }
+
+
+
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <header class="app-header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="/imgA/Logo.png" alt="Admin Logo">
+                <span style="font-size: 17px; font-weight: bold;color: #343a40; ">Admin</span>
+            </div>
+        </div>
+
+    </header>
+
+    <div class="main-layout">
+        <aside class="sidebar">
+            <nav>
+                <ul id="sidebar-menu">
+                    <li><a><i class="fas fa-chart-bar"></i><span>Thống kê</span></a></li>
+                    <li><a ><i class="fas fa-cart-flatbed"></i><span>Bán hàng tại quầy </span></a></li>
+                    <li><a ><i class="fas fa-building"></i><span>Quản lý đơn hàng</span></a></li>
+                    <!-- Mục có submenu -->
+                    <li class="has-submenu">
+                        <a href="javascript:void(0);" class="submenu-toggle">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-box"></i>
+                                <span style="margin-left: 8px;">Quản lý sản phẩm</span>
+                            </div>
+                            <i class="fas fa-chevron-right toggle-icon"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="#"> Danh mục</a></li>
+                            <li><a href="#"> Hãng</a></li>
+                            <li><a href="#"> Màu sắc</a></li>
+                            <li><a href="#"> Imei</a></li>
+                            <li><a href="#"> Ram</a></li>
+                            <li><a href="#"> Rom</a></li>
+                            <li><a href="#"> VGA</a></li>
+                            <li><a href="#"> Ram</a></li>
+
+                        </ul>
+                    </li>
+                    <!-- Mục có submenu -->
+                    <li class="has-submenu">
+                        <a href="javascript:void(0);" class="submenu-toggle">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-user-tie"></i>
+                                <span style="margin-left: 8px;">Quản lý tài khoản</span>
+                            </div>
+                            <i class="fas fa-chevron-right toggle-icon"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="#"> Quản lý khách hàng</a></li>
+                            <li><a href="#"> Quản lý nhân viên</a></li>
+                        </ul>
+                    </li>
+                    <!-- Mục có submenu -->
+                    <li class="has-submenu">
+                        <a href="javascript:void(0);" class="submenu-toggle">
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-tags"></i>
+                                <span style="margin-left: 8px;">Quản lý phiếu giảm giá</span>
+                            </div>
+                            <i class="fas fa-chevron-right toggle-icon"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="#"> Phiếu giảm giá</a></li>
+                            <li><a href="#"> Đợt giảm giá</a></li>
+                        </ul>
+                    </li>                </ul>
+            </nav>
+        </aside>
+
+        <main class="content-area">
+            <div class="page-title">
+                <h1>Quản lý đợt giảm giá</h1>
+            </div>
+
+            <div class="section filter-section">
+                <h2>Bộ lọc</h2>
+                <form>
+                    <div class="filter-controls">
+                        <input type="text" name="dotGiamGia" placeholder="Nhập tên đợt giảm giá"/>
+                        <div class="filter-controls">
+                            <div class="form-group">
+                                <label for="start-date">Từ ngày:</label>
+                                <input type="date" id="start-date" name="start-date">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="end-date">Đến ngày:</label>
+                                <input type="date" id="end-date" name="end-date">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Tìm kiếm</button>
+                        <a class="btn btn-secondary">
+                            <i class="fas fa-sync-alt"></i> Làm mới bộ lọc
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+
+            <div class="section table-section">
+                <div class="table-header">
+                    <h2><i class="fa-solid fa-list-ul"></i> Danh sách đợt giảm giá</h2>
+                    <a style="text-decoration: none" class="btn btn-success">Tạo đợt giảm giá</a>
+                </div>
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên</th>
+                        <th>Giảm giá</th>
+                        <th>Thời gian</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!--                    //Code hiển thị-->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</div>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<!-- Toastr CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+<!-- Toastr JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('.submenu-toggle').click(function () {
+            const $parent = $(this).parent();
+            const $submenu = $parent.find('.submenu').first();
+
+            // Đóng các mục khác nếu cần
+            $('#sidebar-menu .has-submenu').not($parent).removeClass('open').find('.submenu').slideUp();
+
+            // Toggle submenu hiện tại
+            $submenu.slideToggle(200);
+            $parent.toggleClass('open');
+        });
+    });
+</script>
+
+</body>
+</html>

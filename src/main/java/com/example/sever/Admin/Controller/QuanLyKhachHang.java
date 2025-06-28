@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class QuanLyKhachHang {
-    @GetMapping("/khach-hang/hien-thi")
+    @GetMapping("/admin/khach-hang/hien-thi")
     public String QuanLyKhachHangHienThi(){
         return "/Admin/AdminQuanLyKhachHang/KhachHangHienThi";
     }
