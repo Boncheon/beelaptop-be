@@ -1,6 +1,6 @@
 package com.example.sever.repository;
 
-import com.example.sever.enity.PhienBan;
+import com.example.sever.entity.PhienBan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
