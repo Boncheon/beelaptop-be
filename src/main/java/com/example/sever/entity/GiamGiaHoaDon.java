@@ -1,14 +1,10 @@
 package com.example.sever.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
@@ -18,12 +14,15 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "GiamGiaHoaDon", schema = "dbo")
 public class GiamGiaHoaDon {
     @Id
+    @GeneratedValue
     @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
+    @Column(name = "ID", nullable = false, columnDefinition = "uniqueidentifier default newid()")
     private UUID id;
 
     @Size(max = 20)
@@ -45,5 +44,13 @@ public class GiamGiaHoaDon {
     @Nationalized
     @Column(name = "ten_phieu")
     private String tenPhieu;
+
+
+
+
+
+
+
+
 
 }

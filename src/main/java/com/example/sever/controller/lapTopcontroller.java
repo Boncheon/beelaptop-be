@@ -1,4 +1,4 @@
-package com.example.sever.controller;
+package com.example.sever.controler;
 
 import com.example.sever.repository.LapTopRepository;
 import org.springframework.web.bind.annotation.GetMapping;

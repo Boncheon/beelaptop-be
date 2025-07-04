@@ -1,30 +1,33 @@
 package com.example.sever.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "PhieuGiamGia", schema = "dbo")
 public class PhieuGiamGia {
     @Id
+    @GeneratedValue
     @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
+    @Column(name = "ID", nullable = false, columnDefinition = "uniqueidentifier default newid()")
     private UUID id;
 
     @Size(max = 20)
@@ -48,10 +51,10 @@ public class PhieuGiamGia {
     private BigDecimal giaTriGiam;
 
     @Column(name = "ngay_bat_dau")
-    private Instant ngayBatDau;
+    private LocalDate ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private Instant ngayKetThuc;
+    private LocalDate ngayKetThuc;
 
     @Column(name = "gia_tri_min", precision = 18, scale = 2)
     private BigDecimal giaTriMin;
@@ -69,5 +72,21 @@ public class PhieuGiamGia {
 
     @OneToMany(mappedBy = "idPhieuGiamGia")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
+
+    public PhieuGiamGia(String idPhieugiamgia,String ten, Integer soLuong,String kieuGiamGia, BigDecimal giaTriGiam, LocalDate ngayBatDau, LocalDate ngayKetThuc, BigDecimal giaTriMin, BigDecimal giaTriMax, String moTa, Integer trangThai) {
+        this.idPhieugiamgia = idPhieugiamgia;
+        this.ten = ten;
+        this.soLuong = soLuong;
+        this.kieuGiamGia = kieuGiamGia;
+        this.giaTriGiam = giaTriGiam;
+        this.ngayBatDau = ngayBatDau;
+        this.ngayKetThuc = ngayKetThuc;
+        this.giaTriMin = giaTriMin;
+        this.giaTriMax = giaTriMax;
+        this.moTa = moTa;
+        this.trangThai = trangThai;
+    }
+
+
 
 }
