@@ -1,10 +1,6 @@
 package com.example.sever.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,10 +17,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "MauSac", schema = "dbo")
 public class MauSac {
+
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_mau_sac", length = 20)
@@ -44,11 +40,17 @@ public class MauSac {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
+
     @ColumnDefault("getdate()")
     @Column(name = "ngay_tao")
     private Instant ngayTao;
 
     @OneToMany(mappedBy = "idMauSac")
     private Set<PhienBan> phienBans = new LinkedHashSet<>();
+
+//    @ColumnDefault("getdate()")
+//    @Column(name = "ngay_tao")
+//    private Instant ngayTao;
+
 
 }

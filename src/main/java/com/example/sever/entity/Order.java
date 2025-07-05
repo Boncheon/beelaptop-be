@@ -18,7 +18,6 @@ import java.util.UUID;
 @Table(name = "Orders", schema = "dbo")
 public class Order {
     @Id
-    @GeneratedValue
     @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
     private UUID id;

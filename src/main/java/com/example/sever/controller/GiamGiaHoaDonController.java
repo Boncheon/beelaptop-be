@@ -1,4 +1,4 @@
-package com.example.sever.controler;
+package com.example.sever.controller;
 
 import com.example.sever.dto.GiamGiaHoaDonDTO.GiamGiaHoaDonRespone;
 import com.example.sever.service.GiamGiaHoaDonService;

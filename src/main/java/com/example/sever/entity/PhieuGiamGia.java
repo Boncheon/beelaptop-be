@@ -10,9 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -73,7 +71,7 @@ public class PhieuGiamGia {
     @OneToMany(mappedBy = "idPhieuGiamGia")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
 
-    public PhieuGiamGia(String idPhieugiamgia,String ten, Integer soLuong,String kieuGiamGia, BigDecimal giaTriGiam, LocalDate ngayBatDau, LocalDate ngayKetThuc, BigDecimal giaTriMin, BigDecimal giaTriMax, String moTa, Integer trangThai) {
+    public PhieuGiamGia(String idPhieugiamgia, String ten, Integer soLuong, String kieuGiamGia, BigDecimal giaTriGiam, LocalDate ngayBatDau, LocalDate ngayKetThuc, BigDecimal giaTriMin, BigDecimal giaTriMax, String moTa, Integer trangThai) {
         this.idPhieugiamgia = idPhieugiamgia;
         this.ten = ten;
         this.soLuong = soLuong;

@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public enum ErrorCode {
-
+    ACCESS_DENIED(403, "Bạn không có quyền truy cập tài nguyên này.", HttpStatus.FORBIDDEN),
     INTERNAL_SERVER_ERROR(500, "Lỗi không xác định.", HttpStatus.INTERNAL_SERVER_ERROR),
     JSON_PROCESSING_ERROR(500, "Lỗi xử lý JSON.", HttpStatus.INTERNAL_SERVER_ERROR),
     UNAUTHORIZED(401, "Chưa xác thực: Token không hợp lệ hoặc đã hết hạn.", HttpStatus.UNAUTHORIZED),

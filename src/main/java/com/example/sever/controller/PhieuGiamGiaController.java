@@ -1,7 +1,6 @@
 package com.example.sever.controler;
 
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
-import com.example.sever.enity.PhieuGiamGia;
 import com.example.sever.service.PhieuGiamGiaService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -20,6 +20,7 @@ import java.util.Map;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/phieu-giam-gia")
+@PreAuthorize("hasRole('ADMIN')")
 public class PhieuGiamGiaController {
 
     @Autowired

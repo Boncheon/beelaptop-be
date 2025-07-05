@@ -1,9 +1,10 @@
 package com.example.sever.service;
 
-import com.example.sever.dto.req.UserCreationRequest;
-import com.example.sever.dto.res.UserDetailResponse;
-import com.example.sever.entity.TaiKhoan;
+
+import com.example.sever.dto.request.UserCreationRequest;
+import com.example.sever.dto.response.UserDetailResponse;
 import com.example.sever.entity.Role;
+import com.example.sever.entity.TaiKhoan;
 import com.example.sever.exception.AppException;
 import com.example.sever.exception.ErrorCode;
 import com.example.sever.mapper.UserMapper;

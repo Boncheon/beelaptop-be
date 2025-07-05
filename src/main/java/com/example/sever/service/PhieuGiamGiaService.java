@@ -1,13 +1,12 @@
 package com.example.sever.service;
 
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
-import com.example.sever.enity.PhieuGiamGia;
+import com.example.sever.entity.PhieuGiamGia;
 import org.springframework.data.domain.Page;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-
 
 
 public interface PhieuGiamGiaService {
