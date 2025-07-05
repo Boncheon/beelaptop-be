@@ -4,7 +4,7 @@ import com.example.sever.dto.request.DoHoaAddRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.request.DoHoaUpdateRequestDTO;
 import com.example.sever.dto.response.DoHoaDisplayReponse;
-import com.example.sever.enity.DoHoa;
+import com.example.sever.entity.DoHoa;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 

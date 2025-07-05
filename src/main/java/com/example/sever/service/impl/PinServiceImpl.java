@@ -3,7 +3,7 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.PinAddRequestDTO;
 import com.example.sever.dto.request.PinUpdateRequestDTO;
 import com.example.sever.dto.response.PinDisplayReponse;
-import com.example.sever.enity.Pin;
+import com.example.sever.entity.Pin;
 import com.example.sever.mapper.PinMapper;
 import com.example.sever.repository.PinRepository;
 import com.example.sever.service.PinService;

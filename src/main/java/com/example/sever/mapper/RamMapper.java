@@ -4,7 +4,7 @@ import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.request.RamAddRequestDTO;
 import com.example.sever.dto.request.RamUpdateRequestDTO;
 import com.example.sever.dto.response.RamDIsplayReponse;
-import com.example.sever.enity.Ram;
+import com.example.sever.entity.Ram;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 

@@ -3,7 +3,7 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.PhienBanAddRequestDTO;
 import com.example.sever.dto.request.PhienBanUpdateRequestDTO;
 import com.example.sever.dto.response.PhienBanDisplayReponse;
-import com.example.sever.enity.*;
+import com.example.sever.entity.*;
 import com.example.sever.mapper.PhienBanMapper;
 import com.example.sever.repository.*;
 import com.example.sever.service.PhienBanService;

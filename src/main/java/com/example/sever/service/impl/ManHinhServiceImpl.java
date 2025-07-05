@@ -3,7 +3,7 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.ManHinhAddRequestDTO;
 import com.example.sever.dto.request.ManHinhUpdateRequestDTO;
 import com.example.sever.dto.response.ManHinhDisplayReponse;
-import com.example.sever.enity.ManHinh;
+import com.example.sever.entity.ManHinh;
 import com.example.sever.mapper.ManHinhMapper;
 import com.example.sever.repository.ManHinhRepository;
 import com.example.sever.service.ManHinhService;

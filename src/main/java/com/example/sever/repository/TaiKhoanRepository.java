@@ -1,6 +1,6 @@
 package com.example.sever.repository;
 
-import com.example.sever.enity.TaiKhoan;
+import com.example.sever.entity.TaiKhoan;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

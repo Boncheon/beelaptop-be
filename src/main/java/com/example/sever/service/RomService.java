@@ -4,9 +4,11 @@ import com.example.sever.dto.request.RomAddRequestDTO;
 import com.example.sever.dto.request.RomUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Rom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.UUID;
 
 public interface RomService {
     Page<RomDisplayReponse> getAllRomforDisplay(Pageable pageable);
@@ -14,4 +16,5 @@ public interface RomService {
     Rom updateRom(RomUpdateRequestDTO updatedto);
     Rom updateStatus(StatusRequestDTO updatedto);
     Page<RomDisplayReponse> getRomByFilter(Integer trangThai, String keyword, Pageable pageable);
+    RomDisplayReponse getDetailedRom(UUID id);
 }

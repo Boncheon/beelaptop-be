@@ -1,7 +1,6 @@
 package com.example.sever.specification;
 
-import com.example.sever.enity.Ram;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Ram;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

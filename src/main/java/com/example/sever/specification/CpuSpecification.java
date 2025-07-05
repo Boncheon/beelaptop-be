@@ -1,6 +1,6 @@
 package com.example.sever.specification;
 
-import com.example.sever.enity.Cpu;
+import com.example.sever.entity.Cpu;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

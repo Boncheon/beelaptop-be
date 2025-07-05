@@ -3,7 +3,7 @@ package com.example.sever.service;
 import com.example.sever.dto.request.HeDieuHanhAddRequestDTO;
 import com.example.sever.dto.request.HeDieuHanhUpdateRequestDTO;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
-import com.example.sever.enity.HeDieuHanh;
+import com.example.sever.entity.HeDieuHanh;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

@@ -4,7 +4,7 @@ import com.example.sever.dto.request.RomAddRequestDTO;
 import com.example.sever.dto.request.RomUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Rom;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 

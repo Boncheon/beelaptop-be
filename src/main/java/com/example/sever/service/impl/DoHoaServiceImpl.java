@@ -4,16 +4,12 @@ import com.example.sever.dto.request.DoHoaAddRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.request.DoHoaUpdateRequestDTO;
 import com.example.sever.dto.response.DoHoaDisplayReponse;
-import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.enity.DoHoa;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.DoHoa;
 import com.example.sever.mapper.DoHoaMapper;
 import com.example.sever.repository.DoHoaRepository;
 import com.example.sever.service.DoHoaService;
 import com.example.sever.specification.DoHoaSpecification;
-import com.example.sever.specification.RomSpecification;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,5 +81,12 @@ public class DoHoaServiceImpl implements DoHoaService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(result, pageable, dohoaPage.getTotalElements());
+    }
+
+    @Override
+    public DoHoaDisplayReponse getDetailedDoHoa(UUID id) {
+        DoHoa dh = doHoaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy do hoa với ID: " + id));
+        return doHoaMapper.toDoHoaDisplayReponse(dh); // hoặc dùng getDetailCpu nếu bạn cần thông tin chi tiết hơn
     }
 }

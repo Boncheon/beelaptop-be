@@ -3,7 +3,6 @@ package com.example.sever.service;
 import com.example.sever.dto.request.PhienBanAddRequestDTO;
 import com.example.sever.dto.request.PhienBanUpdateRequestDTO;
 import com.example.sever.dto.response.PhienBanDisplayReponse;
-import com.example.sever.enity.PhienBan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

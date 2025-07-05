@@ -3,7 +3,7 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.HeDieuHanhAddRequestDTO;
 import com.example.sever.dto.request.HeDieuHanhUpdateRequestDTO;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
-import com.example.sever.enity.HeDieuHanh;
+import com.example.sever.entity.HeDieuHanh;
 import com.example.sever.mapper.HeDieuHanhMapper;
 import com.example.sever.repository.HeDieuHanhRepository;
 import com.example.sever.service.HeDieuHanhService;

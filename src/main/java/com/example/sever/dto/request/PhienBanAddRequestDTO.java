@@ -1,17 +1,16 @@
 package com.example.sever.dto.request;
 
-import com.example.sever.enity.Cpu;
-import com.example.sever.enity.DoHoa;
-import com.example.sever.enity.MauSac;
-import com.example.sever.enity.Ram;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Cpu;
+import com.example.sever.entity.DoHoa;
+import com.example.sever.entity.MauSac;
+import com.example.sever.entity.Ram;
+import com.example.sever.entity.Rom;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @Builder

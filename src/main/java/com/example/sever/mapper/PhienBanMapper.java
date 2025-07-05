@@ -1,23 +1,19 @@
 package com.example.sever.mapper;
 
-import com.example.sever.dto.request.PhienBanAddRequestDTO;
-import com.example.sever.dto.request.PhienBanUpdateRequestDTO;
-import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.CpuDisplayReponse;
 import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.MauSacDisplayReponse;
 import com.example.sever.dto.response.PhienBanDisplayReponse;
 import com.example.sever.dto.response.RamDIsplayReponse;
 import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.enity.Cpu;
-import com.example.sever.enity.DoHoa;
-import com.example.sever.enity.MauSac;
-import com.example.sever.enity.PhienBan;
-import com.example.sever.enity.Ram;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Cpu;
+import com.example.sever.entity.DoHoa;
+import com.example.sever.entity.MauSac;
+import com.example.sever.entity.PhienBan;
+import com.example.sever.entity.Ram;
+import com.example.sever.entity.Rom;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface PhienBanMapper {

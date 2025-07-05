@@ -4,7 +4,7 @@ import com.example.sever.dto.request.MauSacAddRequestDTO;
 import com.example.sever.dto.request.MauSacUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.MauSacDisplayReponse;
-import com.example.sever.enity.MauSac;
+import com.example.sever.entity.MauSac;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 

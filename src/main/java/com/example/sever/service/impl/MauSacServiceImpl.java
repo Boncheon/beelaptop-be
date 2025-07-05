@@ -4,13 +4,12 @@ import com.example.sever.dto.request.MauSacAddRequestDTO;
 import com.example.sever.dto.request.MauSacUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.MauSacDisplayReponse;
-import com.example.sever.enity.MauSac;
+import com.example.sever.entity.MauSac;
 import com.example.sever.mapper.MauSacMapper;
 import com.example.sever.repository.MauSacRepository;
 import com.example.sever.service.MauSacService;
 import com.example.sever.specification.MauSacSpecification;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -81,5 +81,12 @@ public class MauSacServiceImpl implements MauSacService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(result, pageable, mausacPage.getTotalElements());
+    }
+
+    @Override
+    public MauSacDisplayReponse getDetailedMauSac(UUID id) {
+        MauSac mausac = mausacRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy CPU với ID: " + id));
+        return mauSacMapper.getAlldisplayMauSac(mausac);
     }
 }

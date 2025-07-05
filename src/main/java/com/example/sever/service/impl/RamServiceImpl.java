@@ -4,16 +4,12 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.request.RamAddRequestDTO;
 import com.example.sever.dto.request.RamUpdateRequestDTO;
-import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.RamDIsplayReponse;
-import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.enity.Ram;
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Ram;
 import com.example.sever.mapper.RamMapper;
 import com.example.sever.repository.RamRepository;
 import com.example.sever.service.RamService;
 import com.example.sever.specification.RamSpecification;
-import com.example.sever.specification.RomSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,6 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -85,5 +82,12 @@ public class RamServiceImpl implements RamService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(result, pageable, ramPage.getTotalElements());
+    }
+
+    @Override
+    public RamDIsplayReponse getDetailedRam(UUID id) {
+        Ram ram = ramRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy CPU với ID: " + id));
+        return ramMapper.getAlldisplayRam(ram);
     }
 }

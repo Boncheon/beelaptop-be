@@ -3,7 +3,7 @@ package com.example.sever.service;
 import com.example.sever.dto.request.PinAddRequestDTO;
 import com.example.sever.dto.request.PinUpdateRequestDTO;
 import com.example.sever.dto.response.PinDisplayReponse;
-import com.example.sever.enity.Pin;
+import com.example.sever.entity.Pin;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

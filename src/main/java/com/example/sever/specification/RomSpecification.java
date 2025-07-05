@@ -1,6 +1,6 @@
 package com.example.sever.specification;
 
-import com.example.sever.enity.Rom;
+import com.example.sever.entity.Rom;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
