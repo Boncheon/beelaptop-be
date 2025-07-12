@@ -2,9 +2,9 @@ package com.example.sever.service.ipml;
 
 import com.example.sever.dto.OrderDTO.OrderRequest;
 import com.example.sever.dto.OrderDTO.OrderRespone;
-import com.example.sever.enity.GiamGiaHoaDon;
-import com.example.sever.enity.Order;
-import com.example.sever.enity.PhieuGiamGia;
+import com.example.sever.entity.GiamGiaHoaDon;
+import com.example.sever.entity.Order;
+import com.example.sever.entity.PhieuGiamGia;
 import com.example.sever.repository.GiamGiaHoaDonRepository;
 import com.example.sever.repository.OrderRepository;
 import com.example.sever.service.OrderService;

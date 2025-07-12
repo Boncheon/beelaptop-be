@@ -1,16 +1,12 @@
 package com.example.sever.dto.GiamGiaHoaDonDTO;
 
-import com.example.sever.enity.PhieuGiamGia;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter

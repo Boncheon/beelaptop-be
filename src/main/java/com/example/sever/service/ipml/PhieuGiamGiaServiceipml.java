@@ -1,8 +1,9 @@
 package com.example.sever.service.ipml;
 
+import com.example.sever.KieuGiamGia;
 import com.example.sever.TrangThaiVoucher;
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
-import com.example.sever.enity.PhieuGiamGia;
+import com.example.sever.entity.PhieuGiamGia;
 import com.example.sever.exception.ResourceNotFoundException;
 import com.example.sever.mapper.PhieuGiamGiaMapper;
 import com.example.sever.repository.PhieuGiamGiaRepository;
@@ -78,7 +79,7 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
         phieuGiamGia.setIdPhieugiamgia(phieuGiamGiaDto.getIdPhieugiamgia());
         phieuGiamGia.setTen(phieuGiamGiaDto.getTen());
         phieuGiamGia.setSoLuong(phieuGiamGiaDto.getSoLuong());
-        phieuGiamGia.setKieuGiamGia(phieuGiamGiaDto.getKieuGiamGia());
+        phieuGiamGia.setKieuGiamGia(KieuGiamGia.valueOf(phieuGiamGiaDto.getKieuGiamGia()));
         phieuGiamGia.setGiaTriGiam(phieuGiamGiaDto.getGiaTriGiam());
         phieuGiamGia.setNgayBatDau(phieuGiamGiaDto.getNgayBatDau());
         phieuGiamGia.setNgayKetThuc(phieuGiamGiaDto.getNgayKetThuc());
@@ -137,12 +138,11 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
     @Override
     public PhieuGiamGia findBestCouponForOrder(BigDecimal total) {
-
-
         LocalDate today = LocalDate.now();
+
         return phieuGiamGiaRepo.findAllValidCoupons(today).stream()
-                .filter(p -> total.compareTo(p.getGiaTriMin()) >= 0 &&
-                        total.compareTo(p.getGiaTriMax()) <= 0)
+                .filter(p -> p.getGiaTriMin() != null && total.compareTo(p.getGiaTriMin()) >= 0)
+                .filter(p -> p.getGiaTriMax() != null && total.compareTo(p.getGiaTriMax()) <= 0)
                 .max(Comparator.comparing(p -> calculateDiscount(p, total)))
                 .orElse(null);
     }
@@ -150,17 +150,30 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
     @Override
     public BigDecimal calculateDiscount(PhieuGiamGia coupon, BigDecimal total) {
+        if (coupon == null || total == null) return BigDecimal.ZERO;
 
-        BigDecimal discount;
+        // Kiểm tra điều kiện áp dụng theo đơn tối thiểu
+        if (coupon.getGiaTriMin() != null &&
+                total.compareTo(coupon.getGiaTriMin()) < 0) {
+            return BigDecimal.ZERO;
+        }
 
-        if ("PERCENT".equalsIgnoreCase(coupon.getKieuGiamGia())) {
-            discount = total.multiply(coupon.getGiaTriGiam().divide(new BigDecimal("100")));
-        } else {
+        BigDecimal discount = BigDecimal.ZERO;
+
+        if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_PHAN_TRAM) {
+            discount = total.multiply(coupon.getGiaTriGiam())
+                    .divide(BigDecimal.valueOf(100));
+
+            if (coupon.getGiaTriMax() != null &&
+                    discount.compareTo(coupon.getGiaTriMax()) > 0) {
+                discount = coupon.getGiaTriMax();
+            }
+
+        } else if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_CO_DINH) {
             discount = coupon.getGiaTriGiam();
         }
 
-        return discount.min(total);
-
+        return discount.min(total); // Không vượt quá tổng đơn
     }
 
 

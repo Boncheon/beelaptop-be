@@ -1,7 +1,7 @@
 package com.example.sever.service.ipml;
 
 import com.example.sever.dto.GiamGiaHoaDonDTO.GiamGiaHoaDonRespone;
-import com.example.sever.enity.GiamGiaHoaDon;
+import com.example.sever.entity.GiamGiaHoaDon;
 import com.example.sever.mapper.GiamGiaHoaDonMapper;
 import com.example.sever.repository.GiamGiaHoaDonRepository;
 import com.example.sever.repository.PhieuGiamGiaRepository;

@@ -2,11 +2,8 @@ package com.example.sever.mapper;
 
 import com.example.sever.dto.GiamGiaHoaDonDTO.GiamGiaHoaDonRequest;
 import com.example.sever.dto.GiamGiaHoaDonDTO.GiamGiaHoaDonRespone;
-import com.example.sever.enity.GiamGiaHoaDon;
-import com.example.sever.enity.PhieuGiamGia;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import com.example.sever.entity.GiamGiaHoaDon;
+import com.example.sever.entity.PhieuGiamGia;
 
 public class GiamGiaHoaDonMapper {
 

@@ -1,7 +1,7 @@
 package com.example.sever.mapper;
 
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
-import com.example.sever.enity.PhieuGiamGia;
+import com.example.sever.entity.PhieuGiamGia;
 
 public class PhieuGiamGiaMapper {
 
@@ -13,7 +13,7 @@ public class PhieuGiamGiaMapper {
                 phieuGiamGia.getIdPhieugiamgia(),
                 phieuGiamGia.getTen(),
                 phieuGiamGia.getSoLuong(),
-                phieuGiamGia.getKieuGiamGia(),
+                phieuGiamGia.getKieuGiamGia().name(),
                 phieuGiamGia.getGiaTriGiam(),
                 phieuGiamGia.getNgayBatDau(),
                 phieuGiamGia.getNgayKetThuc(),
