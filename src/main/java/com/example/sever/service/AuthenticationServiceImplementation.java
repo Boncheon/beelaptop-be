@@ -55,33 +55,33 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
                     new UsernamePasswordAuthenticationToken(request.getTenDangNhap(), request.getMatKhau()));
         } catch (BadCredentialsException e) {
             log.error("Invalid password for identifier: {}", request.getTenDangNhap());
-            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS, "Only JPEG and PNG images are allowed");
         } catch (InternalAuthenticationServiceException e) {
             if (e.getCause() instanceof AppException appEx && appEx.getErrorCode() == ErrorCode.USER_NOT_EXIST) {
                 log.error("User not found for identifier: {}", request.getTenDangNhap());
                 throw appEx;
             }
             log.error("Authentication service error for identifier: {}. Error: {}", request.getTenDangNhap(), e.getMessage());
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed");
         } catch (Exception e) {
             log.error("Unexpected error during authentication for identifier: {}. Error: {}", request.getTenDangNhap(), e.getMessage());
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed");
         }
 
-        TaiKhoan user = taiKhoanRepository.findByTenDangNhap(request.getTenDangNhap())
+        TaiKhoan user = taiKhoanRepository.findBySoDienThoai(request.getTenDangNhap())
                 .or(() -> taiKhoanRepository.findByEmail(request.getTenDangNhap()))
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXIST, "Only JPEG and PNG images are allowed"));
 
         if (!user.isEnabled()) {
-            log.error("Account is disabled for user: {}", user.getTenDangNhap());
-            throw new AppException(ErrorCode.USER_NOT_FOUND);
+            log.error("Account is disabled for user: {}", user.getSoDienThoai());
+            throw new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed");
         }
 
         String accessToken = tokenProvider.generateAccessToken(user);
         String refreshToken = tokenProvider.generateRefreshToken(user);
         user.setRefreshToken(refreshToken);
         taiKhoanRepository.save(user);
-        log.info("User {} logged in successfully", user.getTenDangNhap());
+        log.info("User {} logged in successfully", user.getSoDienThoai());
 
         Cookie cookie = setCookie(accessToken, refreshToken);
         response.addCookie(cookie);
@@ -101,19 +101,19 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
         TaiKhoan user = taiKhoanRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.error("No user found with email: {}. Should have been created.", email);
-                    return new AppException(ErrorCode.USER_NOT_FOUND);
+                    return new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed");
                 });
 
         if (!user.isEnabled()) {
-            log.error("Account is disabled for user: {}", user.getTenDangNhap());
-            throw new AppException(ErrorCode.USER_NOT_FOUND);
+            log.error("Account is disabled for user: {}", user.getSoDienThoai());
+            throw new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed");
         }
 
         String accessToken = tokenProvider.generateAccessToken(user);
         String refreshToken = tokenProvider.generateRefreshToken(user);
         user.setRefreshToken(refreshToken);
         taiKhoanRepository.save(user);
-        log.info("Google user {} logged in successfully", user.getTenDangNhap());
+        log.info("Google user {} logged in successfully", user.getSoDienThoai());
 
         Cookie cookie = setCookie(accessToken, refreshToken);
         response.addCookie(cookie);
@@ -131,14 +131,14 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     public void logout(String accessToken, HttpServletResponse response) throws ParseException {
         if (accessToken == null || !accessToken.startsWith("Bearer ")) {
             log.error("Invalid or missing token for logout");
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            throw new AppException(ErrorCode.INVALID_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         accessToken = accessToken.replace("Bearer ", "");
         String username = tokenProvider.verifyAndExtractUsername(accessToken);
-        TaiKhoan user = taiKhoanRepository.findByTenDangNhap(username)
+        TaiKhoan user = taiKhoanRepository.findBySoDienThoai(username)
                 .or(() -> taiKhoanRepository.findByEmail(username))
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed"));
 
         long accessTokenExpired = tokenProvider.verifyAndExtractTokenExpired(accessToken);
         long currentTime = System.currentTimeMillis();
@@ -151,7 +151,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             log.info("User {} logged out successfully", username);
         } else {
             log.error("Token expired for user: {}", username);
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            throw new AppException(ErrorCode.INVALID_TOKEN, "Only JPEG and PNG images are allowed");
         }
     }
 
@@ -159,23 +159,23 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     public RefreshTokenResponse refreshToken(String refreshToken, HttpServletResponse response) throws ParseException {
         if (refreshToken == null || refreshToken.isBlank()) {
             log.error("Invalid or missing refresh token");
-            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID);
+            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID, "Only JPEG and PNG images are allowed");
         }
 
         String username = tokenProvider.verifyAndExtractUsername(refreshToken);
-        TaiKhoan user = taiKhoanRepository.findByTenDangNhap(username)
+        TaiKhoan user = taiKhoanRepository.findBySoDienThoai(username)
                 .or(() -> taiKhoanRepository.findByEmail(username))
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed"));
 
         if (!Objects.equals(user.getRefreshToken(), refreshToken) || user.getRefreshToken() == null) {
             log.error("Refresh token mismatch for user: {}", username);
-            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID);
+            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID, "Only JPEG and PNG images are allowed");
         }
 
         var signJWT = tokenProvider.verifyToken(refreshToken);
         if (signJWT == null) {
             log.error("Invalid refresh token for user: {}", username);
-            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID);
+            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID, "Only JPEG and PNG images are allowed");
         }
 
         String accessToken = tokenProvider.generateAccessToken(user);
@@ -197,7 +197,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     @Override
     public void forgotPassword(ForgotPasswordRequest request) {
         TaiKhoan user = taiKhoanRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed"));
 
         String resetCode = String.valueOf((int) (Math.random() * 900000) + 100000);
         Date expiry = new Date(System.currentTimeMillis() + 15 * 60 * 1000);
@@ -205,7 +205,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
         user.setResetToken(resetCode);
         user.setResetTokenExpiry(expiry);
         taiKhoanRepository.save(user);
-        log.info("Reset token generated for user: {}", user.getTenDangNhap());
+        log.info("Reset token generated for user: {}", user.getSoDienThoai());
 
         String emailContent = "Mã xác thực đặt lại mật khẩu của bạn là: " + resetCode +
                 "\n\nLưu ý: Mã sẽ hết hạn sau 15 phút.";
@@ -215,23 +215,23 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         TaiKhoan user = taiKhoanRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "Only JPEG and PNG images are allowed"));
 
         if (user.getResetToken() == null || !user.getResetToken().equals(request.getResetToken())) {
-            log.error("Invalid reset token for user: {}", user.getTenDangNhap());
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            log.error("Invalid reset token for user: {}", user.getSoDienThoai());
+            throw new AppException(ErrorCode.INVALID_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().before(new Date())) {
-            log.error("Reset token expired for user: {}", user.getTenDangNhap());
-            throw new AppException(ErrorCode.RESET_TOKEN_EXPIRED);
+            log.error("Reset token expired for user: {}", user.getSoDienThoai());
+            throw new AppException(ErrorCode.RESET_TOKEN_EXPIRED, "Only JPEG and PNG images are allowed");
         }
 
         user.setMatKhau(passwordEncoder.encode(request.getNewMatKhau()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         taiKhoanRepository.save(user);
-        log.info("Password reset successfully for user: {}", user.getTenDangNhap());
+        log.info("Password reset successfully for user: {}", user.getSoDienThoai());
     }
 
     private Cookie setCookie(String accessToken, String refreshToken) {
@@ -245,7 +245,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             jsonData = objectMapper.writeValueAsString(tokenData);
         } catch (JsonProcessingException e) {
             log.error("Failed to process JSON for cookie: {}", e.getMessage());
-            throw new AppException(ErrorCode.JSON_PROCESSING_ERROR);
+            throw new AppException(ErrorCode.JSON_PROCESSING_ERROR, "Only JPEG and PNG images are allowed");
         }
 
         String formattedJsonData = jsonData.replace("\"", "%22").replace(",", "%2C");

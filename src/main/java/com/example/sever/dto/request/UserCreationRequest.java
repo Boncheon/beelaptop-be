@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -24,15 +25,12 @@ public class UserCreationRequest implements Serializable {
     @Email(message = "INVALID_EMAIL")
     String email;
 
-    @NotBlank(message = "INVALID_TEN_DANG_NHAP")
-    @Size(min = 3, max = 100, message = "INVALID_TEN_DANG_NHAP")
-    String tenDangNhap;
 
     @NotBlank(message = "INVALID_SO_DIEN_THOAI")
     @Size(min = 10, max = 20, message = "INVALID_SO_DIEN_THOAI")
     String soDienThoai;
 
-    @NotBlank(message = "INVALID_MAT_KHAU")
+
     @Size(min = 8, message = "INVALID_MAT_KHAU")
     String matKhau;
 
@@ -42,4 +40,26 @@ public class UserCreationRequest implements Serializable {
     @NotBlank(message = "INVALID_GIOI_TINH")
     @Size(max = 10, message = "INVALID_GIOI_TINH")
     String gioiTinh;
+
+
+    @Size(max = 100, message = "QUỐC GIA KHÔNG HỢP LỆ")
+    String quocGia;
+
+
+    @Size(max = 100, message = "TỈNH/THÀNH PHỐ KHÔNG HỢP LỆ")
+    String tinhThanh;
+
+
+    @Size(max = 100, message = "QUẬN/HUYỆN KHÔNG HỢP LỆ")
+    String quanHuyen;
+
+
+    @Size(max = 100, message = "PHƯỜNG/XÃ KHÔNG HỢP LỆ")
+    String phuongXa;
+
+
+    @Size(max = 255, message = "ĐỊA CHỈ CHI TIẾT KHÔNG HỢP LỆ")
+    String diaChiChiTiet;
+
+    MultipartFile anh;
 }

@@ -37,7 +37,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (email == null) {
             log.error("Google OAuth2 response missing email: {}", attributes);
-            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN);
+            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         log.debug("Processing Google OAuth2 user: email={}", email);
@@ -46,14 +46,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> {
                     log.info("Registering new TaiKhoan for Google user: {}", email);
                     Role role = roleRepository.findByTenChucVu("KHACH_HANG")
-                            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+                            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND, "Only JPEG and PNG images are allowed"));
 
                     TaiKhoan newUser = TaiKhoan.builder()
                             .id(UUID.randomUUID())
                             .idTaiKhoan("TK" + UUID.randomUUID().toString().substring(0, 18))
                             .email(email)
                             .ten(name != null ? name : "Google User")
-                            .tenDangNhap("google_" + UUID.randomUUID().toString().substring(0, 18))
                             .matKhau("")
                             .idRole(role)
                             .trangThai(1)
@@ -61,9 +60,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     return taiKhoanRepository.save(newUser);
                 });
 
-        log.info("Google user {} processed successfully", user.getTenDangNhap());
+        log.info("Google user {} processed successfully", user.getSoDienThoai());
         return (OAuth2User) new org.springframework.security.core.userdetails.User(
-                user.getTenDangNhap(),
+                user.getSoDienThoai(),
                 "",
                 user.getAuthorities()
         );

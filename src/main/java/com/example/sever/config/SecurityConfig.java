@@ -47,7 +47,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/auth/signin", "/auth/signup", "/auth/refresh", "/auth/signout","/auth/test-google-login",
             "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback", "/public/**",
-            "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page"
+            "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page", "/uploads/**"
     };
 
     @Bean
@@ -103,7 +103,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
-        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
         corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setExposedHeaders(List.of("Authorization"));
@@ -119,4 +119,6 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
+
+
 }

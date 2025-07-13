@@ -39,17 +39,12 @@ public class TaiKhoan extends AbstractEntity implements UserDetails {
 
     @Size(max = 100)
     @Nationalized
-    @Column(name = "Ten_dang_nhap", unique = true)
-    String tenDangNhap;
-
-    @Size(max = 100)
-    @Nationalized
     @Column(name = "Ten", unique = true)
     String ten;
 
     @Size(max = 20)
     @Nationalized
-    @Column(name = "So_dien_thoai", length = 20)
+    @Column(name = "So_dien_thoai", length = 20, unique = true)
     String soDienThoai;
 
     @Column(name = "Ngay_sinh")
@@ -112,7 +107,7 @@ public class TaiKhoan extends AbstractEntity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return tenDangNhap;
+        return soDienThoai;
     }
 
     @Override

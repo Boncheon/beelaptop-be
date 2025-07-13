@@ -52,7 +52,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         }
 
         if (username == null) {
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+            throw new AppException(ErrorCode.INVALID_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         TaiKhoan user = (TaiKhoan) customUserDetailService.loadUserByUsername(username);

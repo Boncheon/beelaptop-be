@@ -39,7 +39,7 @@ public class TokenProvider {
                 .issuer(ISSUER)
                 .issueTime(Date.from(Instant.now()))
                 .expirationTime(Date.from(Instant.now().plus(jwtUtil.getValidDuration(), java.time.temporal.ChronoUnit.SECONDS)))
-                .claim(USERNAME_CLAIM, user.getTenDangNhap())
+                .claim(USERNAME_CLAIM, user.getSoDienThoai())
                 .claim("tenChucVu", user.getIdRole().getTenChucVu())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -51,7 +51,7 @@ public class TokenProvider {
             jwsObject.sign(new MACSigner(jwtUtil.getSecretKey()));
             return jwsObject.serialize();
         } catch (JOSEException e) {
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, "Only JPEG and PNG images are allowed");
         }
     }
 
@@ -63,7 +63,7 @@ public class TokenProvider {
                 .issuer(ISSUER)
                 .issueTime(Date.from(Instant.now()))
                 .expirationTime(Date.from(Instant.now().plus(jwtUtil.getRefreshableDuration(), java.time.temporal.ChronoUnit.SECONDS)))
-                .claim(USERNAME_CLAIM, user.getTenDangNhap())
+                .claim(USERNAME_CLAIM, user.getSoDienThoai())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -74,7 +74,7 @@ public class TokenProvider {
             jwsObject.sign(new MACSigner(jwtUtil.getSecretKey()));
             return jwsObject.serialize();
         } catch (JOSEException e) {
-            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new AppException(ErrorCode.INTERNAL_SERVER_ERROR, "Only JPEG and PNG images are allowed");
         }
     }
 
@@ -90,19 +90,19 @@ public class TokenProvider {
             boolean verified = signedJWT.verify(verifier);
 
             if (!(verified && expiration.after(Date.from(Instant.now())))) {
-                throw new AppException(ErrorCode.UNAUTHORIZED);
+                throw new AppException(ErrorCode.UNAUTHORIZED, "Only JPEG and PNG images are allowed");
             }
 
             return signedJWT;
         } catch (ParseException | JOSEException e) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.UNAUTHORIZED, "Only JPEG and PNG images are allowed");
         }
     }
 
     public String verifyAndExtractUsername(String token) throws ParseException {
         Object usernameClaim = this.verifyToken(token).getJWTClaimsSet().getClaim(USERNAME_CLAIM);
         if (usernameClaim == null) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.UNAUTHORIZED, "Only JPEG and PNG images are allowed");
         }
         return usernameClaim.toString();
     }
@@ -110,7 +110,7 @@ public class TokenProvider {
     public long verifyAndExtractTokenExpired(String token) throws ParseException {
         Date expiredClaim = this.verifyToken(token).getJWTClaimsSet().getExpirationTime();
         if (expiredClaim == null) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
+            throw new AppException(ErrorCode.UNAUTHORIZED, "Only JPEG and PNG images are allowed");
         }
         return expiredClaim.getTime();
     }

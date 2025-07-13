@@ -1,17 +1,16 @@
-package com.example.sever.dto.response;
+package com.example.sever.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.io.Serializable;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RefreshTokenResponse implements Serializable {
-    String accessToken;
-    String refreshToken;
+public class LogoutRequest implements Serializable {
 
+    String accessToken;
 }

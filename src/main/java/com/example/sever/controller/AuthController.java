@@ -14,6 +14,7 @@ import com.example.sever.entity.TaiKhoan;
 import com.example.sever.exception.AppException;
 import com.example.sever.exception.ErrorCode;
 import com.example.sever.mapper.UserMapper;
+import com.example.sever.repository.DiaChiRepository;
 import com.example.sever.service.AuthenticationService;
 import com.example.sever.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -43,10 +44,11 @@ public class AuthController {
     AuthenticationService authenticationService;
     UserMapper userMapper;
     UserService userService;
+    DiaChiRepository diaChiRepository;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<UserDetailResponse>> signUp(@RequestBody @Valid UserCreationRequest request) {
-        log.info("Signup attempt for tenDangNhap: {}, email: {}", request.getTenDangNhap(), request.getEmail());
+        log.info("Signup attempt for tenDangNhap: {}, email: {}", request.getSoDienThoai(), request.getEmail());
         UserDetailResponse user = userService.createUser(request);
         return ResponseEntity.ok(ApiResponse.<UserDetailResponse>builder()
                 .code(201)
@@ -60,7 +62,7 @@ public class AuthController {
         log.info("Signin attempt with identifier: {}", request.getTenDangNhap());
         LoginResponse loginResponse = authenticationService.login(request, response);
         TaiKhoan user = userService.findUserById(loginResponse.getUserId());
-        UserDetailResponse userResponse = userMapper.toUserDetailResponse(user);
+        UserDetailResponse userResponse = userMapper.toUserDetailResponse(user,diaChiRepository );
         loginResponse.setUserId(null);
 
         Meta<LoginResponse> meta = Meta.<LoginResponse>builder().tokenInfo(loginResponse).build();
@@ -131,13 +133,13 @@ public class AuthController {
             HttpServletResponse response) {
         if (!(authentication instanceof OAuth2AuthenticationToken token)) {
             log.error("Invalid authentication type for Google callback");
-            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN);
+            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         String email = token.getPrincipal().getAttribute("email");
         if (email == null) {
             log.error("Google OAuth2 response missing email");
-            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN);
+            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN, "Only JPEG and PNG images are allowed");
         }
 
         log.info("Google callback for email: {}", email);
@@ -154,7 +156,7 @@ public class AuthController {
         String email = request.get("email");
         if (email == null) {
             log.error("Test Google login missing email");
-            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN);
+            throw new AppException(ErrorCode.INVALID_GOOGLE_TOKEN, "Only JPEG and PNG images are allowed");
         }
         log.info("Test Google login for email: {}", email);
         LoginResponse loginResponse = authenticationService.loginWithGoogle(email, response);
