@@ -1,6 +1,7 @@
 package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.PhienBanAddRequestDTO;
+import com.example.sever.dto.request.PhienBanBatchCreateDTO;
 import com.example.sever.dto.request.PhienBanUpdateRequestDTO;
 import com.example.sever.dto.response.PhienBanDisplayReponse;
 import com.example.sever.entity.*;
@@ -13,7 +14,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,83 +26,133 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class PhienBanServiceImpl implements PhienBanService {
 
-    private final PhienBanRepository phienbanRepository;
+    private final PhienBanRepository phienBanRepository;
     private final RamRepository ramRepository;
     private final RomRepository romRepository;
     private final CpuRepository cpuRepository;
     private final DoHoaRepository doHoaRepository;
     private final MauSacRepository mauSacRepository;
     private final PhienBanMapper phienBanMapper;
+    private final LaptopChiTietRepository laptopChiTietRepository;
+    private final PhienbanLaptopctRepository phienbanLaptopctRepository;
+    private final SeriRepository seriRepository;
 
     @Override
     public Page<PhienBanDisplayReponse> getAllPhienBanforDisplay(Pageable pageable) {
-        Page<PhienBan> phienBanPage = phienbanRepository.findAll(pageable);
-        List<PhienBanDisplayReponse> phienBanDisplayResponses = phienBanPage.getContent()
-                .stream()
-                .map(phienBanMapper::getAlldisplayPhienBan)
+        // 1. Lấy danh sách phiên bản có phân trang
+        Page<PhienBan> pageData = phienBanRepository.findAll(pageable);
+        List<PhienBan> danhSachPhienBan = pageData.getContent();
+
+        // 2. Lấy map số lượng Seri tồn kho (theo UUID id của phiên bản)
+        Map<UUID, Long> mapSoLuong = seriRepository.demSoLuongSeriTheoPhienBan().stream()
+                .filter(row -> row[0] != null && row[1] != null)
+                .collect(Collectors.toMap(
+                        row -> UUID.fromString(row[0].toString()),
+                        row -> ((Number) row[1]).longValue()
+                ));
+
+        // 3. Map sang DTO và gán số lượng tồn kho tương ứng
+        List<PhienBanDisplayReponse> responses = danhSachPhienBan.stream()
+                .map(phienBan -> {
+                    PhienBanDisplayReponse dto = phienBanMapper.getAlldisplayPhienBan(phienBan);
+                    dto.setSoLuongTonKho(mapSoLuong.getOrDefault(phienBan.getId(), 0L));
+                    return dto;
+                })
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(phienBanDisplayResponses, pageable, phienBanPage.getTotalElements());
+        return new PageImpl<>(responses, pageable, pageData.getTotalElements());
     }
-
-    @Override
-    public PhienBanDisplayReponse addPhienBan(PhienBanAddRequestDTO adddto) {
-        PhienBan phienBan = new PhienBan();
-        phienBan.setId(UUID.randomUUID());
-        phienBan.setIdPhienBan(adddto.getIdPhienBan());
-        phienBan.setGiaBan(adddto.getGiaBan());
-        phienBan.setTrangThai(adddto.getTrangThai());
-        phienBan.setMoTa(adddto.getMoTa());
-
-        // Lấy entity liên kết từ DB
-        Ram ram = ramRepository.findById(adddto.getRam().getId())
-                .orElseThrow(() -> new RuntimeException("RAM không tồn tại"));
-        Rom rom = romRepository.findById(adddto.getRom().getId())
-                .orElseThrow(() -> new RuntimeException("ROM không tồn tại"));
-        Cpu cpu = cpuRepository.findById(adddto.getCpu().getId())
-                .orElseThrow(() -> new RuntimeException("CPU không tồn tại"));
-        DoHoa doHoa = doHoaRepository.findById(adddto.getDoHoa().getId())
-                .orElseThrow(() -> new RuntimeException("Đồ họa không tồn tại"));
-        MauSac mauSac = mauSacRepository.findById(adddto.getMauSac().getId())
-                .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại"));
-
-        // Gán vào phiên bản
-        phienBan.setIdRam(ram);
-        phienBan.setIdSsd(rom);
-        phienBan.setIdCpu(cpu);
-        phienBan.setIdDohoa(doHoa);
-        phienBan.setIdMauSac(mauSac);
-
-        // Lưu lại
-        PhienBan saved = phienbanRepository.save(phienBan);
-        return phienBanMapper.getAlldisplayPhienBan(saved);
-}
 
     @Override
     public PhienBanDisplayReponse updatePhienBan(PhienBanUpdateRequestDTO dto) {
-        PhienBan phienBan = phienbanRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản"));
+        PhienBan entity = phienBanRepository.findById(dto.getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản với ID: " + dto.getId()));
+        mapCommonFields(entity, dto);
+        PhienBan saved = phienBanRepository.save(entity);
+        return phienBanMapper.getAlldisplayPhienBan(saved);
+    }
 
-        phienBan.setIdPhienBan(dto.getIdPhienBan());
-        phienBan.setGiaBan(dto.getGiaBan());
-        phienBan.setMoTa(dto.getMoTa());
-        phienBan.setTrangThai(dto.getTrangThai());
+    //các biên thể của laptop gen ra
+    @Override
+    public List<PhienBanDisplayReponse> generatePhienBanBienThe(PhienBanBatchCreateDTO dto) {
+        List<PhienBanDisplayReponse> result = new ArrayList<>();
 
-        phienBan.setIdRam(ramRepository.findById(dto.getRam().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy RAM")));
-        phienBan.setIdSsd(romRepository.findById(dto.getRom().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy ROM")));
-        phienBan.setIdCpu(cpuRepository.findById(dto.getCpu().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy CPU")));
-        phienBan.setIdDohoa(doHoaRepository.findById(dto.getDoHoa().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ hoạ")));
-        phienBan.setIdMauSac(mauSacRepository.findById(dto.getMauSac().getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Màu sắc")));
+        LaptopChiTiet ct = laptopChiTietRepository.findById(dto.getIdLaptopChiTiet())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy LaptopChiTiet"));
 
-        phienbanRepository.save(phienBan);
+        for (PhienBanAddRequestDTO item : dto.getCombinations()) {
+            PhienBan pb = new PhienBan();
+            pb.setId(UUID.randomUUID());
+            pb.setIdPhienBan(item.getIdPhienBan());
+            mapCommonFields(pb, item);
+            phienBanRepository.save(pb);
 
-        return phienBanMapper.getAlldisplayPhienBan(phienBan);
+            PhienbanLaptopct map = new PhienbanLaptopct();
+            map.setId(UUID.randomUUID());
+            map.setIdPhienBan(pb);
+            map.setIdLaptopChiTiet(ct);
+            map.setIdPhienBanLaptopct("PBCT_" + UUID.randomUUID().toString().substring(0, 8));
+            map.setTrangThai(item.getTrangThai());
+            map.setNgayTao(Instant.now());
+            map.setNgayCapNhat(Instant.now());
+            map.setNguoiTao(dto.getNguoiTao());
+            phienbanLaptopctRepository.save(map);
+
+            result.add(phienBanMapper.getAlldisplayPhienBan(pb));
+        }
+
+        return result;
+    }
+
+    private void mapCommonFields(PhienBan entity, PhienBanAddRequestDTO dto) {
+        entity.setIdPhienBan(dto.getIdPhienBan());
+        entity.setGiaBan(dto.getGiaBan());
+        entity.setMoTa(dto.getMoTa());
+        entity.setTrangThai(dto.getTrangThai());
+
+        entity.setIdRam(getRam(dto.getRamId()));
+        entity.setIdSsd(getRom(dto.getRomId()));
+        entity.setIdCpu(getCpu(dto.getCpuId()));
+        entity.setIdDohoa(getDoHoa(dto.getDoHoaId()));
+        entity.setIdMauSac(getMauSac(dto.getMauSacId()));
+    }
+    private void mapCommonFields(PhienBan entity, PhienBanUpdateRequestDTO dto) {
+        entity.setGiaBan(dto.getGiaBan());
+        entity.setMoTa(dto.getMoTa());
+        entity.setTrangThai(dto.getTrangThai());
+
+        entity.setIdRam(getRam(dto.getRamId()));
+        entity.setIdSsd(getRom(dto.getRomId()));
+        entity.setIdCpu(getCpu(dto.getCpuId()));
+        entity.setIdDohoa(getDoHoa(dto.getDoHoaId()));
+        entity.setIdMauSac(getMauSac(dto.getMauSacId()));
     }
 
 
+
+
+    private Ram getRam(UUID id) {
+        return ramRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy RAM với ID: " + id));
+    }
+
+    private Rom getRom(UUID id) {
+        return romRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ROM với ID: " + id));
+    }
+
+    private Cpu getCpu(UUID id) {
+        return cpuRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy CPU với ID: " + id));
+    }
+
+    private DoHoa getDoHoa(UUID id) {
+        return doHoaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ họa với ID: " + id));
+    }
+
+    private MauSac getMauSac(UUID id) {
+        return mauSacRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Màu sắc với ID: " + id));
+    }
 }

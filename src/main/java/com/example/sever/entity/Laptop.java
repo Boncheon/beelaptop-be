@@ -25,21 +25,20 @@ import java.util.UUID;
 @Table(name = "Laptop", schema = "dbo")
 public class Laptop {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_laptop", length = 20)
     private String idLaptop;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_danh_muc")
-    private DanhMuc idDanhMuc;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_thuonghieu")
-    private ThuongHieu idThuonghieu;
+//    @ManyToOne
+//    @JoinColumn(name = "id_danh_muc")
+//    private DanhMuc idDanhMuc;
+//
+//    @ManyToOne
+//    @JoinColumn(name = "id_thuonghieu")
+//    private ThuongHieu idThuonghieu;
 
     @Size(max = 255)
     @Nationalized
@@ -57,7 +56,7 @@ public class Laptop {
     @Column(name = "ngay_sua")
     private Instant ngaySua;
 
-    @OneToMany(mappedBy = "idLapTop")
-    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "idLapTop")
+//    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
 
 }

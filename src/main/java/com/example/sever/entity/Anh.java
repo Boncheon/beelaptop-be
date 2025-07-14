@@ -25,8 +25,8 @@ public class Anh {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Size(max = 20)
-    @Column(name = "id_anh", length = 20)
+    @Size(max = 100)
+    @Column(name = "id_anh", length =100)
     private String idAnh;
 
     @ManyToOne(fetch = FetchType.LAZY)

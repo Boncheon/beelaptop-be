@@ -30,7 +30,7 @@ public class DanhMuc {
     @Column(name = "Ten")
     private String ten;
 
-    @OneToMany(mappedBy = "idDanhMuc")
-    private Set<Laptop> laptops = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "idDanhMuc")
+//    private Set<Laptop> laptops = new LinkedHashSet<>();
 
 }

@@ -35,7 +35,7 @@ public class ThuongHieu {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
-    @OneToMany(mappedBy = "idThuonghieu")
-    private Set<Laptop> laptops = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "idThuonghieu")
+//    private Set<Laptop> laptops = new LinkedHashSet<>();
 
 }

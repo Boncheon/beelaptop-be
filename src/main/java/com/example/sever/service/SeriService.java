@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface SeriService {
     Page<SeriDisplayReponse> getAllSeriforDisplay(Pageable pageable);
     SeriDisplayReponse getDetailedSeri(UUID id);
-    Seri addSeri(SeriAddRequestDTO adddto);
+    SeriDisplayReponse addSeri(SeriAddRequestDTO adddto);
     Seri updateSeri(SeriUpdateRequestDTO updatedto);
     Seri updateStatus(StatusRequestDTO updatedto);
 //    Page<SeriDisplayReponse> getSeriByFilter(Integer trangThai, String keyword, Pageable pageable);

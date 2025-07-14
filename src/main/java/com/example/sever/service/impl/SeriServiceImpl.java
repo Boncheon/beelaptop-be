@@ -4,8 +4,10 @@ import com.example.sever.dto.request.SeriAddRequestDTO;
 import com.example.sever.dto.request.SeriUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.SeriDisplayReponse;
+import com.example.sever.entity.PhienBan;
 import com.example.sever.entity.Seri;
 import com.example.sever.mapper.SeriMapper;
+import com.example.sever.repository.PhienBanRepository;
 import com.example.sever.repository.SeriRepository;
 import com.example.sever.service.SeriService;
 import lombok.AllArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class SeriServiceImpl implements SeriService {
+    private final PhienBanRepository phienBanRepository;
     SeriRepository seriRepository;
     SeriMapper seriMapper;
 
@@ -42,10 +45,22 @@ public class SeriServiceImpl implements SeriService {
     }
 
     @Override
-    public Seri addSeri(SeriAddRequestDTO adddto) {
+    public SeriDisplayReponse addSeri(SeriAddRequestDTO adddto) {
         Seri seri = seriMapper.toSeri(adddto);
-        return seriRepository.save(seri);
+
+        // lấy entity PhienBan từ id
+        PhienBan phienBan = phienBanRepository.findById(adddto.getIdPhienBan())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản"));
+
+        seri.setPhienBan(phienBan);
+
+        Seri saved = seriRepository.save(seri);
+
+        // 🔁 Chuyển đổi sang DTO để trả về
+        return seriMapper.getAlldisplaySeri(saved);
     }
+
+
 
     @Override
     public Seri updateSeri(SeriUpdateRequestDTO updatedto) {

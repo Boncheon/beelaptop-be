@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -16,7 +17,7 @@ public class SeriAddRequestDTO {
 
      private String idSeri;
 
-     private PhienBan idPhienBan;
+     private UUID idPhienBan;
 
      private BigDecimal giaGoc;
 

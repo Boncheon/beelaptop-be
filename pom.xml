@@ -91,6 +91,13 @@
             <version>${lombok-mapstruct-binding.version}</version>
         </dependency>
 
+        <!--  https://mvnrepository.com/artifact/com.cloudinary/cloudinary-http44  -->
+        <dependency>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.39.0</version>
+        </dependency>
+
         <!-- JSON + Time -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>

@@ -1,38 +1,27 @@
 package com.example.sever.dto.request;
 
-import com.example.sever.entity.Cpu;
-import com.example.sever.entity.DoHoa;
-import com.example.sever.entity.MauSac;
-import com.example.sever.entity.Ram;
-import com.example.sever.entity.Rom;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PhienBanAddRequestDTO {
+public class PhienBanAddRequestDTO  {
+     private String idPhienBan;
 
-     String idPhienBan;
+     private UUID ramId;
+     private UUID romId;
+     private UUID cpuId;
+     private UUID doHoaId;
+     private UUID mauSacId;
 
-     Ram ram;
-
-     Rom rom;
-
-     Cpu cpu;
-
-     DoHoa doHoa;
-
-     MauSac mauSac;
-
-     BigDecimal giaBan;
-
-     Integer trangThai;
-
-     String moTa;
+     private BigDecimal giaBan;
+     private Integer trangThai;
+     private String moTa;
 }

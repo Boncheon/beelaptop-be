@@ -14,21 +14,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PhienBanDisplayReponse {
-     UUID id;
-     String idPhienBan;
+     private UUID id;
+     private String idPhienBan;
 
-     RamDIsplayReponse ram;
-    
-     RomDisplayReponse rom;
-     CpuDisplayReponse cpu;
+     private String tenRam;
+     private String tenRom;
+     private String tenCpu;
+     private String tenDoHoa;
+     private String tenMauSac;
 
-     DoHoaDisplayReponse doHoa;
-    
-     MauSacDisplayReponse mauSac;
+     private BigDecimal giaBan;
+     private Integer trangThai;
+     private String moTa;
 
-     BigDecimal giaBan;
-
-     Integer trangThai;
-    
-     String moTa;
+     private Long soLuongTonKho;
 }

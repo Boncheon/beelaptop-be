@@ -4,11 +4,15 @@ import com.example.sever.entity.LaptopChiTiet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface LaptopChiTietRepository extends JpaRepository<LaptopChiTiet, UUID> {
-    
+    List<LaptopChiTiet> findByIdLapTop_Id(UUID idLapTopId);
+
+
 //    List<LaptopChiTiet> findByIdLaptop(Laptop laptop);
 //
 //    List<LaptopChiTiet> findByIdLaptopId(UUID laptopId);

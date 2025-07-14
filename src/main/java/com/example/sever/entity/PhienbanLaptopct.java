@@ -22,19 +22,18 @@ import java.util.UUID;
 @Table(name = "PhienBan_LapTopCT", schema = "dbo")
 public class PhienbanLaptopct {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
     @Size(max = 20)
     @Column(name = "id_phien_ban_laptopct", length = 20)
     private String idPhienBanLaptopct;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_phien_ban")
     private PhienBan idPhienBan;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_laptop_chi_tiet")
     private LaptopChiTiet idLaptopChiTiet;
 

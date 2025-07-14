@@ -50,9 +50,9 @@ public class Sericontroller {
                 .build();
     }
     @PostMapping("/them-seri")
-    public ApiResponse<Seri> addSeri(@RequestBody SeriAddRequestDTO seriAddRequestDTO) {
-        Seri add = seriService.addSeri(seriAddRequestDTO);
-        return ApiResponse.<Seri>builder()
+    public ApiResponse<SeriDisplayReponse> addSeri(@RequestBody SeriAddRequestDTO seriAddRequestDTO) {
+        SeriDisplayReponse add = seriService.addSeri(seriAddRequestDTO);
+        return ApiResponse.<SeriDisplayReponse>builder()
                 .message("them thanh cong")
                 .data(add)
                 .build();

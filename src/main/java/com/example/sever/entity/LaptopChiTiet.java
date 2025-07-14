@@ -25,31 +25,29 @@ import java.util.UUID;
 @Table(name = "LaptopChiTiet", schema = "dbo")
 public class LaptopChiTiet {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
 
-    @Size(max = 20)
-    @Column(name = "id_laptop_chi_tiet", length = 20)
+    @Column(name = "id_laptop_chi_tiet")
     private String idLaptopChiTiet;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_lap_top")
     private Laptop idLapTop;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_man_hinh")
     private ManHinh idManHinh;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_pin")
     private Pin idPin;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_kich_thuoc")
     private KichThuoc idKichThuoc;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_he_dieu_hanh")
     private HeDieuHanh idHeDieuHanh;
 
@@ -77,10 +75,10 @@ public class LaptopChiTiet {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-    @OneToMany(mappedBy = "idLaptopChiTiet")
-    private Set<Anh> anhs = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "idLaptopChiTiet")
-    private Set<PhienbanLaptopct> phienbanLaptopcts = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "idLaptopChiTiet")
+//    private Set<Anh> anhs = new LinkedHashSet<>();
+//
+//    @OneToMany(mappedBy = "idLaptopChiTiet")
+//    private Set<PhienbanLaptopct> phienbanLaptopcts = new LinkedHashSet<>();
 
 }

@@ -1,10 +1,5 @@
 package com.example.sever.dto.request;
 
-import com.example.sever.dto.response.CpuDisplayReponse;
-import com.example.sever.dto.response.DoHoaDisplayReponse;
-import com.example.sever.dto.response.MauSacDisplayReponse;
-import com.example.sever.dto.response.RamDIsplayReponse;
-import com.example.sever.dto.response.RomDisplayReponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,17 +12,17 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PhienBanUpdateRequestDTO {
-     UUID id;
-     String idPhienBan;
+public class PhienBanUpdateRequestDTO  {
+     private UUID id;
+     private String idPhienBan;
 
-     RamDIsplayReponse ram;
-     RomDisplayReponse rom;
-     CpuDisplayReponse cpu;
-     DoHoaDisplayReponse doHoa;
-     MauSacDisplayReponse mauSac;
+     private UUID ramId;
+     private UUID romId;
+     private UUID cpuId;
+     private UUID doHoaId;
+     private UUID mauSacId;
 
-     BigDecimal giaBan;
-     Integer trangThai;
-     String moTa;
+     private BigDecimal giaBan;
+     private Integer trangThai;
+     private String moTa;
 }

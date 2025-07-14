@@ -14,22 +14,19 @@ import com.example.sever.entity.Ram;
 import com.example.sever.entity.Rom;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Mappings;
 
 @Mapper(componentModel = "spring")
 public interface PhienBanMapper {
 
-    @Mapping(source = "idRam", target = "ram")
-    @Mapping(source = "idSsd", target = "rom")
-    @Mapping(source = "idCpu", target = "cpu")
-    @Mapping(source = "idDohoa", target = "doHoa")
-    @Mapping(source = "idMauSac", target = "mauSac")
+    @Mappings({
+            @Mapping(source = "idRam.dungLuongRam", target = "tenRam"),
+            @Mapping(source = "idSsd.dungLuongSsd", target = "tenRom"),
+            @Mapping(source = "idCpu.ten", target = "tenCpu"),
+            @Mapping(source = "idDohoa.tenDayDu", target = "tenDoHoa"),
+            @Mapping(source = "idMauSac.ten", target = "tenMauSac")
+    })
     PhienBanDisplayReponse getAlldisplayPhienBan(PhienBan entity);
-
-    RamDIsplayReponse toRamDisplay(Ram ram);
-    RomDisplayReponse toRomDisplay(Rom rom);
-    CpuDisplayReponse toCpuDisplay(Cpu cpu);
-    DoHoaDisplayReponse toDoHoaDisplay(DoHoa doHoa);
-    MauSacDisplayReponse toMauSacDisplay(MauSac mauSac);
 
 //    PhienBanDisplayReponse updatePhienBan(PhienBanUpdateRequestDTO dto);
 }
