@@ -29,7 +29,7 @@ public class KichThuoccontroller {
 
     @GetMapping()
     public ResponseEntity<Page<KichThuocDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                       @RequestParam(defaultValue = "4") int size) {
+                                                                       @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
         if (perPage < 0) perPage = 0;
         Pageable pageable = PageRequest.of(perPage, size);

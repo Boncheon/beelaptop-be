@@ -45,6 +45,7 @@ public class Laptop {
     @Column(name = "ten_san_pham")
     private String tenSanPham;
 
+
     @Size(max = 500)
     @Nationalized
     @Column(name = "mo_ta", length = 500)
@@ -55,6 +56,10 @@ public class Laptop {
 
     @Column(name = "ngay_sua")
     private Instant ngaySua;
+
+    @Column(name = "trang_thai")
+    private Integer trangThai;
+
 
 //    @OneToMany(mappedBy = "idLapTop")
 //    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
