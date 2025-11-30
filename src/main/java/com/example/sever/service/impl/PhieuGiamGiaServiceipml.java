@@ -208,7 +208,9 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
         capNhatTrangThaiTuDong();
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayBatDau").descending());
+        // Đảm bảo page không âm
+        int validPage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(validPage, size, Sort.by("ngayBatDau").descending());
         Page<PhieuGiamGia> entityPage = phieuGiamGiaRepo.findAll(pageable);
         return entityPage.map(PhieuGiamGiaMapper::mapTopVoucher);
 

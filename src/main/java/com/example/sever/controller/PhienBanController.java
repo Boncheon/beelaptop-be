@@ -69,8 +69,9 @@ public class PhienBanController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        // Đảm bảo page không âm
-        int currentPage = Math.max(page, 0);
+        // Chuyển đổi từ 1-based (từ request) sang 0-based (cho Spring Data JPA)
+        // và đảm bảo page không âm
+        int currentPage = Math.max(page - 1, 0);
 
         Pageable pageable = PageRequest.of(currentPage, size);
 

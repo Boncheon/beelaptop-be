@@ -72,6 +72,11 @@ public class Romcontroller {
             @RequestParam(required = false) Integer trangThai,
             Pageable pageable) {
 
+        // Đảm bảo page không âm
+        if (pageable.getPageNumber() < 0) {
+            pageable = PageRequest.of(0, pageable.getPageSize(), pageable.getSort());
+        }
+
         Page<RomDisplayReponse> result = romService.getRomByFilter(trangThai,keyword, pageable);
 
         return ResponseEntity.ok(

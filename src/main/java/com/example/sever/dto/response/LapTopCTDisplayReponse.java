@@ -18,7 +18,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,8 +36,8 @@ public class LapTopCTDisplayReponse {
      private String kichThuoc;     // VD: "30.4 x 21.2 x 1.56 cm - 1.25kg"
      private String heDieuHanh;    // VD: "Windows 10"
      private String moTa;
-     private Instant ngayTao;
-     private Instant ngayCapNhat;
+     private LocalDateTime ngayTao;
+     private LocalDateTime ngayCapNhat;
      private String nguoiTao;
      private String ghiChu;
      private Integer trangThai;

@@ -73,6 +73,11 @@ public class MauSaccontroller {
             @RequestParam(required = false) Integer trangThai,
             Pageable pageable) {
 
+        // Đảm bảo page không âm
+        if (pageable.getPageNumber() < 0) {
+            pageable = PageRequest.of(0, pageable.getPageSize(), pageable.getSort());
+        }
+
         Page<MauSacDisplayReponse> result = mausacService.getMauSacByFilter(trangThai,keyword, pageable);
 
         return ResponseEntity.ok(

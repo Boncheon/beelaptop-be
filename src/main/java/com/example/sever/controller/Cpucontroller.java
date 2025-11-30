@@ -82,6 +82,11 @@ public class Cpucontroller {
             @RequestParam(required = false) Integer trangThai,
             Pageable pageable) {
 
+        // Đảm bảo page không âm
+        if (pageable.getPageNumber() < 0) {
+            pageable = PageRequest.of(0, pageable.getPageSize(), pageable.getSort());
+        }
+
         Page<CpuDisplayReponse> result = cpuService.getCpuByFilter(trangThai,keyword, pageable);
 
         return ResponseEntity.ok(

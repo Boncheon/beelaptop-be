@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -21,8 +21,8 @@ public class LaptopResponseDTO {
     private UUID id; // ID của laptop
     private String tenSanPham; // Tên sản phẩm
     private BigDecimal giaNhap; // Giá nhập
-    private Instant ngayTao; // Ngày tạo
-    private Instant ngaySua; // Ngày sửa
+    private LocalDateTime ngayTao; // Ngày tạo
+    private LocalDateTime ngaySua; // Ngày sửa
     private String moTa; // Mô tả
     
     // Thông tin chi tiết
