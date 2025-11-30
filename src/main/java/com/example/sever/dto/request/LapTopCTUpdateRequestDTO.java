@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -21,7 +21,7 @@ public class LapTopCTUpdateRequestDTO {
      private UUID idKichThuoc;
      private UUID idHeDieuHanh;
      private String moTa;
-     private Instant ngayCapNhat;
+     private LocalDateTime ngayCapNhat;
      private String nguoiTao;
      private String ghiChu;
      private Integer trangThai;

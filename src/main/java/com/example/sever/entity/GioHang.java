@@ -15,7 +15,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -39,8 +39,8 @@ public class GioHang {
     private TaiKhoan idTaiKhoan;
 
     @ColumnDefault("getdate()")
-    @Column(name = "Ngay_tao")
-    private Instant ngayTao;
+    @Column(name = "Ngay_tao", columnDefinition = "DATETIME")
+    private LocalDateTime ngayTao;
 
     @OneToMany(mappedBy = "idGioHang")
     private Set<GioHangChiTiet> gioHangChiTiets = new LinkedHashSet<>();

@@ -26,7 +26,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -59,8 +59,8 @@ public class LapTopCTServiceImpl implements LapTopCTService {
         ltct.setId(UUID.randomUUID());
         ltct.setIdLaptopChiTiet(dto.getIdLaptopChiTiet());
         ltct.setMoTa(dto.getMoTa());
-        ltct.setNgayTao(Instant.now());
-        ltct.setNgayCapNhat(Instant.now());
+        ltct.setNgayTao(LocalDateTime.now());
+        ltct.setNgayCapNhat(LocalDateTime.now());
         ltct.setNguoiTao(dto.getNguoiTao());
         ltct.setGhiChu(dto.getGhiChu());
         ltct.setTrangThai(dto.getTrangThai());
@@ -95,7 +95,7 @@ public class LapTopCTServiceImpl implements LapTopCTService {
 
         ltct.setIdLaptopChiTiet(dto.getIdLaptopChiTiet());
         ltct.setMoTa(dto.getMoTa());
-        ltct.setNgayCapNhat(Instant.now());
+        ltct.setNgayCapNhat(LocalDateTime.now());
         ltct.setNguoiTao(dto.getNguoiTao());
         ltct.setGhiChu(dto.getGhiChu());
         ltct.setTrangThai(dto.getTrangThai());

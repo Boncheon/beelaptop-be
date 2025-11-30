@@ -18,6 +18,7 @@ public interface LapTopRepository extends JpaRepository<Laptop, UUID> {
 
     Optional<Laptop> findByTenSanPham(@Size(max = 255) String tenSanPham);
 
+
 }
 
 

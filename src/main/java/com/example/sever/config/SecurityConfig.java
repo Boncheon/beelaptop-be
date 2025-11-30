@@ -47,7 +47,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/auth/signin", "/auth/signup", "/auth/refresh", "/auth/signout","/auth/test-google-login",
             "/auth/forgot-password", "/auth/reset-password", "/auth/google/callback", "/public/**",
-            "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page", "/uploads/**"
+            "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page", "/uploads/**","/api/thong-ke/**"
     };
 
     @Bean

@@ -85,7 +85,9 @@ public class DotGiamGiaChiTietServiceIpml implements DotGiamGiaChiTietService {
     public Page<DotGiamGiaChiTietResponse> getDotGiamGiaPage(int page, int size) {
         capNhatTrangThaiTuDong();
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("dotGiamGia.ngayBatDau").descending());
+        // Đảm bảo page không âm
+        int validPage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(validPage, size, Sort.by("dotGiamGia.ngayBatDau").descending());
         Page<DotGiamGiaChiTiet> chiTietPage = dotGiamGiaChiTietRepo.findAll(pageable);
 
         return chiTietPage.map(DotGiamGiaChiTietMapper::toResponse);
@@ -105,7 +107,9 @@ public class DotGiamGiaChiTietServiceIpml implements DotGiamGiaChiTietService {
 
     @Override
     public Page<DotGiamGiaChiTietResponse> filterDot(String keyword, LocalDate start, LocalDate end, Integer status, int page, int size, String sortBy) {
-        Pageable pageable = PageRequest.of(page, size, buildSort(sortBy));
+        // Đảm bảo page không âm
+        int validPage = Math.max(page, 0);
+        Pageable pageable = PageRequest.of(validPage, size, buildSort(sortBy));
         Page<DotGiamGiaChiTiet> result = dotGiamGiaChiTietRepo.filterDot(keyword, start, end, status, pageable);
         return result.map(DotGiamGiaChiTietMapper::toResponse);
     }

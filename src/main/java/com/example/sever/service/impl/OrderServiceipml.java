@@ -58,7 +58,7 @@ public class OrderServiceipml implements OrderService {
         if (phieu != null) {
             GiamGiaHoaDon giam = new GiamGiaHoaDon();
             giam.setIdGiamgiahoadon("GG" + System.currentTimeMillis()); // ✅ fix lỗi trùng null
-            giam.setIdOrders(order);
+            giam.setIdOrder(order);
             giam.setIdPhieuGiamGia(phieu);
             giam.setSoTienGiam(soTienGiam);
             giam.setTenPhieu(phieu.getTen());

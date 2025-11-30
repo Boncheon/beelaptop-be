@@ -14,7 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,8 +93,8 @@ public class PhienBanServiceImpl implements PhienBanService {
             map.setIdLaptopChiTiet(ct);
             map.setIdPhienBanLaptopct("PBCT_" + UUID.randomUUID().toString().substring(0, 8));
             map.setTrangThai(item.getTrangThai());
-            map.setNgayTao(Instant.now());
-            map.setNgayCapNhat(Instant.now());
+            map.setNgayTao(LocalDateTime.now());
+            map.setNgayCapNhat(LocalDateTime.now());
             map.setNguoiTao(dto.getNguoiTao());
             phienbanLaptopctRepository.save(map);
 

@@ -33,8 +33,8 @@ public class GiamGiaHoaDon {
     private String idGiamgiahoadon;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_orders")
-    private Order idOrders;
+    @JoinColumn(name = "ID_order")
+    private Order idOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ID_phieu_giam_gia")

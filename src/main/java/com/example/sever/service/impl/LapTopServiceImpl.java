@@ -26,7 +26,7 @@ import com.example.sever.repository.CpuRepository;
 import com.example.sever.repository.DoHoaRepository;
 import com.example.sever.repository.HeDieuHanhRepository;
 import com.example.sever.repository.KichThuocRepository;
-import com.example.sever.repository.LapTopRepository;;
+import com.example.sever.repository.LapTopRepository;
 import com.example.sever.repository.LaptopChiTietRepository;
 import com.example.sever.repository.ManHinhRepository;
 import com.example.sever.repository.MauSacRepository;
@@ -44,7 +44,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -152,7 +152,7 @@ public class LapTopServiceImpl implements LaptopService {
             idLaptop = UUID.randomUUID();
             laptop.setId(idLaptop);
             laptop.setIdLaptop("LAP" + idLaptop.toString().substring(0, 8));
-            laptop.setNgayTao(Instant.now());
+            laptop.setNgayTao(LocalDateTime.now());
 
             laptopRepository.save(laptop);
         }
@@ -170,8 +170,8 @@ public class LapTopServiceImpl implements LaptopService {
         chiTiet.setTrangThai(dto.getLaptopChiTiet().getTrangThai());
         chiTiet.setMoTa(dto.getLaptopChiTiet().getMoTa());
         chiTiet.setNguoiTao(dto.getNguoiTao());
-        chiTiet.setNgayTao(Instant.now());
-        chiTiet.setNgayCapNhat(Instant.now());
+        chiTiet.setNgayTao(LocalDateTime.now());
+        chiTiet.setNgayCapNhat(LocalDateTime.now());
 
         laptopChiTietRepository.save(chiTiet);
 
@@ -191,8 +191,8 @@ public class LapTopServiceImpl implements LaptopService {
             mapping.setIdPhienBanLaptopct("PBCT_" + UUID.randomUUID().toString().substring(0, 8));
             mapping.setTrangThai(item.getTrangThai());
             mapping.setNguoiTao(dto.getNguoiTao());
-            mapping.setNgayTao(Instant.now());
-            mapping.setNgayCapNhat(Instant.now());
+            mapping.setNgayTao(LocalDateTime.now());
+            mapping.setNgayCapNhat(LocalDateTime.now());
 
             phienbanLaptopctRepository.save(mapping);
         }

@@ -24,9 +24,8 @@ import java.util.UUID;
 @Table(name = "PhieuGiamGia", schema = "dbo")
 public class PhieuGiamGia {
     @Id
-    @GeneratedValue
     @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false, columnDefinition = "uniqueidentifier default newid()")
+    @Column(name = "ID", nullable = false)
     private UUID id;
 
     @Size(max = 20)

@@ -14,7 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -56,11 +56,11 @@ public class LaptopChiTiet {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
-    @Column(name = "ngay_tao")
-    private Instant ngayTao;
+    @Column(name = "ngay_tao", columnDefinition = "DATETIME")
+    private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_cap_nhat")
-    private Instant ngayCapNhat;
+    @Column(name = "ngay_cap_nhat", columnDefinition = "DATETIME")
+    private LocalDateTime ngayCapNhat;
 
     @Size(max = 100)
     @Nationalized
