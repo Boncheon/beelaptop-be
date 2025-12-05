@@ -2,21 +2,18 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.SeriAddRequestDTO;
 import com.example.sever.dto.request.SeriUpdateRequestDTO;
-import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.SeriDisplayReponse;
-import com.example.sever.entity.PhienBan;
+import com.example.sever.entity.LaptopChiTiet;
 import com.example.sever.entity.Seri;
 import com.example.sever.mapper.SeriMapper;
-import com.example.sever.repository.PhienBanRepository;
+import com.example.sever.repository.LaptopChiTietRepository;
 import com.example.sever.repository.SeriRepository;
 import com.example.sever.service.SeriService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,82 +21,133 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class SeriServiceImpl implements SeriService {
-    private final PhienBanRepository phienBanRepository;
-    SeriRepository seriRepository;
-    SeriMapper seriMapper;
 
+    private final SeriRepository seriRepository;
+    private final LaptopChiTietRepository laptopChiTietRepository;
+    private final SeriMapper seriMapper; // tạm vẫn giữ, nếu không dùng chỗ nào thì có thể xoá sau
+
+    /**
+     * Thêm nhiều seri cho một biến thể LaptopChiTiet
+     */
     @Override
-    public Page<SeriDisplayReponse> getAllSeriforDisplay(Pageable pageable) {
-        Page<Seri> SeriPage = seriRepository.findAll(pageable);
-        List<SeriDisplayReponse> romDisplayReponses = SeriPage.getContent().stream()
-                .map(seriMapper::getAlldisplaySeri).collect(Collectors.toList());
+    @Transactional
+    public void addListSeri(SeriAddRequestDTO dto) {
+        // lấy biến thể
+        LaptopChiTiet ct = laptopChiTietRepository.findById(dto.getIdLaptopCt())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể LaptopChiTiet"));
 
-        return new PageImpl<>(romDisplayReponses , pageable, SeriPage.getTotalElements());
-    }
+        List<Seri> entities = new ArrayList<>();
 
-    @Override
-    public SeriDisplayReponse getDetailedSeri(UUID id) {
-        Seri seri = seriRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy CPU với ID: " + id));
-        return seriMapper.getAlldisplaySeri(seri); // hoặc dùng getDetailSeri nếu bạn cần thông tin chi tiết hơn
-    }
+        if (dto.getList() != null) {
+            dto.getList().forEach(item -> {   // item = SeriAddRequestDTO.SeriItemDTO
+                if (item == null) return;
 
-    @Override
-    public SeriDisplayReponse addSeri(SeriAddRequestDTO adddto) {
-        Seri seri = seriMapper.toSeri(adddto);
+                String seriStr = item.getIdSeri();
+                if (seriStr == null) return;
 
-        // lấy entity PhienBan từ id
-        PhienBan phienBan = phienBanRepository.findById(adddto.getIdPhienBan())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản"));
+                seriStr = seriStr.trim();
+                if (seriStr.isEmpty()) return;
 
-        seri.setPhienBan(phienBan);
+                // tránh trùng seri
+                if (seriRepository.existsByIdSeri(seriStr)) return;
 
-        Seri saved = seriRepository.save(seri);
+                // tạo Seri mới
+                Seri seri = new Seri();
+                seri.setIdSeri(seriStr);
+                seri.setIdLapTopCt(ct);
 
-        // 🔁 Chuyển đổi sang DTO để trả về
-        return seriMapper.getAlldisplaySeri(saved);
-    }
+                // lấy trangThai từ body, nếu null thì default = 1 (ACTIVE)
+                Integer tt = item.getTrangThai();
+                if (tt == null) {
+                    tt = 1;
+                }
+                seri.setTrangThai(tt);
 
-
-
-    @Override
-    public Seri updateSeri(SeriUpdateRequestDTO updatedto) {
-        Seri  existing = seriRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
-
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
-        seriMapper.updateSeri(existing, updatedto);
-
-        // 3. Lưu lại bản ghi đã cập nhật
-        return seriRepository.save(existing);
-    }
-
-    @Override
-    public Seri updateStatus(StatusRequestDTO updatedto) {
-        Seri existing = seriRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
-        //cap nhap stattus
-        if(existing.getTrangThai()==0){
-            updatedto.setTrangThai(1);
-        }else {
-            updatedto.setTrangThai(0);
+                entities.add(seri);
+            });
         }
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
-        seriMapper.updateStatusSeri(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
-        return seriRepository.save(existing);
+        if (!entities.isEmpty()) {
+            seriRepository.saveAll(entities);
+        }
+
+        // hiện tại KHÔNG cập nhật soLuongTon vì LaptopChiTiet chưa có field này
+        // nếu sau này bạn thêm cột so_luong_ton:
+        // long soLuong = seriRepository.countByIdLapTopCt_IdAndTrangThai(ct.getId(), 1);
+        // ct.setSoLuongTon((int) soLuong);
+        // laptopChiTietRepository.save(ct);
     }
 
-//    @Override
-//    public Page<SeriDisplayReponse> getSeriByFilter(Integer trangThai, String keyword, Pageable pageable) {
-//        Specification<Seri> spec = SeriSpecification.filterByKeywordAndTrangThai(keyword, trangThai);
-//        Page<Seri> seriPage = seriRepository.findAll(spec, pageable);
-//
-//        List<SeriDisplayReponse> result = seriPage.getContent().stream()
-//                .map(seriMapper::getAlldisplaySeri)
-//                .collect(Collectors.toList());
-//
-//        return new PageImpl<>(result, pageable, seriPage.getTotalElements());
-//    }
+
+    /**
+     * Lấy toàn bộ seri của một biến thể
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<SeriDisplayReponse> getByLaptopCt(UUID idLaptopCt) {
+        List<Seri> list = seriRepository.findByIdLapTopCt_Id(idLaptopCt);
+
+        // ⚠ Map tay để đảm bảo trangThai không bị null do mapper
+        return list.stream()
+                .map(s -> SeriDisplayReponse.builder()
+                        .id(s.getId())
+                        .idSeri(s.getIdSeri())
+                        .trangThai(s.getTrangThai())
+                        .build()
+                )
+                .collect(Collectors.toList());
+    }
+    /**
+     * Sửa thông tin 1 Seri (mã seri + trạng thái)
+     */
+    @Override
+    @Transactional
+    public void updateSeri(SeriUpdateRequestDTO dto) {
+        if (dto.getId() == null) {
+            throw new RuntimeException("Thiếu id của Seri cần sửa");
+        }
+
+        // lấy Seri hiện có
+        Seri seri = seriRepository.findById(dto.getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Seri với id = " + dto.getId()));
+
+        // --- xử lý đổi mã seri (nếu có truyền lên) ---
+        if (dto.getIdSeri() != null) {
+            String newSeri = dto.getIdSeri().trim();
+            if (newSeri.isEmpty()) {
+                throw new RuntimeException("Mã seri không được để trống");
+            }
+
+            // nếu mã mới khác mã cũ thì kiểm tra trùng
+            if (!newSeri.equals(seri.getIdSeri())
+                    && seriRepository.existsByIdSeri(newSeri)) {
+                throw new RuntimeException("Mã seri '" + newSeri + "' đã tồn tại");
+            }
+
+            seri.setIdSeri(newSeri);
+        }
+
+        // --- xử lý đổi trạng thái (nếu có truyền lên) ---
+        if (dto.getTrangThai() != null) {
+            seri.setTrangThai(dto.getTrangThai());   // ví dụ: 0 = INACTIVE, 1 = ACTIVE
+        }
+
+        // lưu lại
+        seriRepository.save(seri);
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public List<SeriDisplayReponse> getAll() {
+        List<Seri> list = seriRepository.findAll();
+        return seriMapper.toResponseList(list);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SeriDisplayReponse getDetail(UUID id) {
+        Seri seri = seriRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Seri với id = " + id));
+        return seriMapper.toResponse(seri);
+    }
+
 }

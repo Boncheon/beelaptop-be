@@ -1,12 +1,12 @@
 package com.example.sever.dto.request;
 
-import com.example.sever.entity.PhienBan;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -15,12 +15,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SeriAddRequestDTO {
 
-     private String idSeri;
+     private UUID idLaptopCt;          // id_lap_top_ct
 
-     private UUID idPhienBan;
+     // Danh sách seri cần thêm
+     private List<SeriItemDTO> list;
 
-     private BigDecimal giaGoc;
-
-     private String nguonSeri;
-     private Integer trangThai;
+     @Data
+     public static class SeriItemDTO {
+          private String idSeri;
+          private  Integer trangThai;
+//          private Long giaGoc;          // optional
+//          private String nguonSeri;     // optional
+     }
 }

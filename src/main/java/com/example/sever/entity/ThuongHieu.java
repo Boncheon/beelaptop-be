@@ -21,9 +21,9 @@ import java.util.UUID;
 @Table(name = "ThuongHieu", schema = "dbo")
 public class ThuongHieu {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
+
 
     @Size(max = 255)
     @Nationalized

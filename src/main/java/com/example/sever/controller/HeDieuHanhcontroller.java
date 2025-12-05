@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.HeDieuHanhAddRequestDTO;
 import com.example.sever.dto.request.HeDieuHanhUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.entity.HeDieuHanh;
 import com.example.sever.service.HeDieuHanhService;
@@ -12,13 +13,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
@@ -53,6 +50,14 @@ public class HeDieuHanhcontroller {
         return ApiResponse.<HeDieuHanh>builder()
                 .message("cap nhap thanh cong")
                 .data(updated)
+                .build();
+    }
+    @GetMapping("/detail/{id}")
+    public ApiResponse<HeDieuHanhDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
+        HeDieuHanhDisplayReponse hdh = hedieuhanhService.getDetailedHeDieuHanh(id);
+        return ApiResponse.<HeDieuHanhDisplayReponse>builder()
+                .message("Lấy chi tiết HDH thành công")
+                .data(hdh)
                 .build();
     }
 }

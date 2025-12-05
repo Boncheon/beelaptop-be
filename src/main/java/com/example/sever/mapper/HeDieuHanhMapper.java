@@ -11,6 +11,7 @@ import org.mapstruct.MappingTarget;
 public interface HeDieuHanhMapper {
 
     HeDieuHanh toHeDieuHanh(HeDieuHanhAddRequestDTO request);
+    HeDieuHanhDisplayReponse toHeDieuHanhDisplayReponse(HeDieuHanh hedieuhanh);
 
     HeDieuHanhDisplayReponse getAlldisplayHeDieuHanh(HeDieuHanh hedieuhanh);
 

@@ -8,13 +8,15 @@ import com.example.sever.entity.Seri;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface SeriService {
-    Page<SeriDisplayReponse> getAllSeriforDisplay(Pageable pageable);
-    SeriDisplayReponse getDetailedSeri(UUID id);
-    SeriDisplayReponse addSeri(SeriAddRequestDTO adddto);
-    Seri updateSeri(SeriUpdateRequestDTO updatedto);
-    Seri updateStatus(StatusRequestDTO updatedto);
-//    Page<SeriDisplayReponse> getSeriByFilter(Integer trangThai, String keyword, Pageable pageable);
+    void addListSeri(SeriAddRequestDTO dto);
+
+    List<SeriDisplayReponse> getByLaptopCt(UUID idLaptopCt);
+    void updateSeri(SeriUpdateRequestDTO dto);
+    List<SeriDisplayReponse> getAll();
+
+    SeriDisplayReponse getDetail(UUID id);
 }

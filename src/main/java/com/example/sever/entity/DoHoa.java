@@ -60,9 +60,5 @@ public class DoHoa {
 
 
 
-    @OneToMany(mappedBy = "idDohoa")
-    private Set<PhienBan> phienBans = new LinkedHashSet<>();
-
-
 
 }

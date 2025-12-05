@@ -32,13 +32,25 @@ public class Laptop {
     @Column(name = "id_laptop", length = 20)
     private String idLaptop;
 
-//    @ManyToOne
-//    @JoinColumn(name = "id_danh_muc")
-//    private DanhMuc idDanhMuc;
-//
-//    @ManyToOne
-//    @JoinColumn(name = "id_thuonghieu")
-//    private ThuongHieu idThuonghieu;
+    @ManyToOne
+    @JoinColumn(name = "id_thuonghieu")
+    private ThuongHieu idThuonghieu;
+
+    @ManyToOne
+    @JoinColumn(name = "id_man_hinh")
+    private ManHinh idManHinh;
+
+    @ManyToOne
+    @JoinColumn(name = "id_pin")
+    private Pin idPin;
+
+    @ManyToOne
+    @JoinColumn(name = "id_kich_thuoc")
+    private KichThuoc idKichThuoc;
+
+    @ManyToOne
+    @JoinColumn(name = "id_dieu_hanh")
+    private HeDieuHanh idHeDieuHanh;
 
     @Size(max = 255)
     @Nationalized
@@ -55,6 +67,7 @@ public class Laptop {
 
     @Column(name = "ngay_sua")
     private Instant ngaySua;
+
 
 //    @OneToMany(mappedBy = "idLapTop")
 //    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();

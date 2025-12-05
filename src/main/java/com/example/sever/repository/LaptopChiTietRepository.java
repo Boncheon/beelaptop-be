@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface LaptopChiTietRepository extends JpaRepository<LaptopChiTiet, UUID> {
 
-    List<LaptopChiTiet> findByIdLapTop_Id(UUID idLapTopId);
+    List<LaptopChiTiet> findByIdLaptop_Id(UUID idLaptopId);
 
 
 //    List<LaptopChiTiet> findByIdLaptop(Laptop laptop);
@@ -22,7 +22,7 @@ public interface LaptopChiTietRepository extends JpaRepository<LaptopChiTiet, UU
 //
 //    @Query("SELECT lct FROM LaptopChiTiet lct WHERE lct.trangThai = ?1")
 //    List<LaptopChiTiet> findByTrangThai(Boolean trangThai);
-    
+
 //    @Query("SELECT lct FROM LaptopChiTiet lct WHERE lct.soLuong > 0")
 //    List<LaptopChiTiet> findAvailableItems();
 }

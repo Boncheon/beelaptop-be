@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,5 +49,12 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
 
         // 3. Lưu lại bản ghi đã cập nhật
         return hedieuhanhRepository.save(existing);
+    }
+
+    @Override
+    public HeDieuHanhDisplayReponse getDetailedHeDieuHanh(UUID id) {
+        HeDieuHanh hdh = hedieuhanhRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy do hoa với ID: " + id));
+        return hedieuhanhMapper.toHeDieuHanhDisplayReponse(hdh);
     }
 }

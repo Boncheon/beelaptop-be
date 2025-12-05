@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -13,15 +16,33 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LapTopCTAddRequestDTO {
-     private UUID idLaptop;
-     private String idLaptopChiTiet;
-     private UUID idManHinh;
-     private UUID idPin;
-     private UUID idKichThuoc;
-     private UUID idHeDieuHanh;
 
+     @NotNull
+     private UUID idLaptop;      // FK Laptop base
+     @NotNull
+     private String idLaptopCT;
+     @NotNull
+     private UUID idRam;
+
+     @NotNull
+     private UUID idSsd;
+
+     @NotNull
+     private UUID idCpu;
+
+     @NotNull
+     private UUID idDohoa;
+
+     @NotNull
+     private UUID idMauSac;
+
+     @NotNull
+     private BigDecimal giaBan;
+
+     @Size(max = 500)
      private String moTa;
-     private String nguoiTao;
-     private String ghiChu;
+
      private Integer trangThai;
+
+     private String ghiChu;
 }

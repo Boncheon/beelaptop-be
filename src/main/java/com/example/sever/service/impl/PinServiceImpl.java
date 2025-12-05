@@ -2,7 +2,9 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.PinAddRequestDTO;
 import com.example.sever.dto.request.PinUpdateRequestDTO;
+import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.PinDisplayReponse;
+import com.example.sever.entity.HeDieuHanh;
 import com.example.sever.entity.Pin;
 import com.example.sever.mapper.PinMapper;
 import com.example.sever.repository.PinRepository;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,5 +50,13 @@ public class PinServiceImpl implements PinService {
 
         // 3. Lưu lại bản ghi đã cập nhật
         return pinRepository.save(existing);
+    }
+
+
+    @Override
+    public PinDisplayReponse getDetailedPin(UUID id) {
+        Pin p = pinRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy do hoa với ID: " + id));
+        return pinMapper.toPinDisplayReponse(p);
     }
 }

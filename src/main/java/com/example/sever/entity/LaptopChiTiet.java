@@ -19,42 +19,54 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "LaptopChiTiet", schema = "dbo")
+@Getter
+@Setter
 public class LaptopChiTiet {
+
     @Id
     @Column(name = "ID", nullable = false, updatable = false)
     private UUID id = UUID.randomUUID();
-
     @Column(name = "id_laptop_chi_tiet")
-    private String idLaptopChiTiet;
-
-    @ManyToOne
+    private String idLaptopCT;
+    // FK Laptop base
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_lap_top")
-    private Laptop idLapTop;
+    private Laptop idLaptop;
 
-    @ManyToOne
-    @JoinColumn(name = "id_man_hinh")
-    private ManHinh idManHinh;
+    // ============= CÁC THÀNH PHẦN CẤU HÌNH =============
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_ram")
+    private Ram idRam;
 
-    @ManyToOne
-    @JoinColumn(name = "id_pin")
-    private Pin idPin;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_ssd")
+    private Rom idSsd;
 
-    @ManyToOne
-    @JoinColumn(name = "id_kich_thuoc")
-    private KichThuoc idKichThuoc;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cpu")
+    private Cpu idCpu;
 
-    @ManyToOne
-    @JoinColumn(name = "id_he_dieu_hanh")
-    private HeDieuHanh idHeDieuHanh;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_dohoa")
+    private DoHoa idDohoa;
 
-    @Size(max = 500)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_mau_sac")
+    private MauSac idMauSac;
+
+    // ============= THÔNG TIN CHI TIẾT =============
+    @Column(name = "gia_ban")
+    private java.math.BigDecimal giaBan;
+
     @Nationalized
-    @Column(name = "mo_ta", length = 500)
+    @Size(max = 500)
+    @Column(name = "mo_ta")
     private String moTa;
+
+    @Column(name = "trang_thai")
+    private Integer trangThai;
 
     @Column(name = "ngay_tao")
     private Instant ngayTao;
@@ -62,23 +74,13 @@ public class LaptopChiTiet {
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
 
-    @Size(max = 100)
     @Nationalized
-    @Column(name = "nguoi_tao", length = 100)
+    @Size(max = 100)
+    @Column(name = "nguoi_tao")
     private String nguoiTao;
 
-    @Size(max = 255)
     @Nationalized
+    @Size(max = 255)
     @Column(name = "ghi_chu")
     private String ghiChu;
-
-    @Column(name = "trang_thai")
-    private Integer trangThai;
-
-//    @OneToMany(mappedBy = "idLaptopChiTiet")
-//    private Set<Anh> anhs = new LinkedHashSet<>();
-//
-//    @OneToMany(mappedBy = "idLaptopChiTiet")
-//    private Set<PhienbanLaptopct> phienbanLaptopcts = new LinkedHashSet<>();
-
 }

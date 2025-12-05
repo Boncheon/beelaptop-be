@@ -5,16 +5,26 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 
 public class LaptopUpdateRequestDTO {
+    @NotBlank
+    @Size(max = 255)
     private String tenSanPham;
-//    private UUID idDanhMuc;
-//    private UUID idThuongHieu;
+
+    @Size(max = 500)
     private String moTa;
-    private String nguoiTao;
-    private Integer trangThai;
+
+    private UUID idThuongHieu;
+    private UUID idManHinh;
+    private UUID idKichThuoc;
+    private UUID idHeDieuHanh;
+    private UUID idPin;
 }

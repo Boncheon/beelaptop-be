@@ -40,7 +40,8 @@ public class ManHinh {
     @Column(name = "kich_thuoc")
     private Double kichThuoc;
 
-    @OneToMany(mappedBy = "idManHinh")
-    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
+//    @OneToMany(mappedBy = "idManHinh")
+//    private Set<Laptop> laptops;
+
 
 }

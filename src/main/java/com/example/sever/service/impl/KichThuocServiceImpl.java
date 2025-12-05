@@ -2,7 +2,9 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.KichThuocAddRequestDTO;
 import com.example.sever.dto.request.KichThuocUpdateRequestDTO;
+import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.KichThuocDisplayReponse;
+import com.example.sever.entity.HeDieuHanh;
 import com.example.sever.entity.KichThuoc;
 import com.example.sever.mapper.KichThuocMapper;
 import com.example.sever.repository.KichThuocRepository;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,5 +50,10 @@ public class KichThuocServiceImpl implements KichThuocService {
         // 3. Lưu lại bản ghi đã cập nhật
         return kichthuocRepository.save(existing);
     }
-
+    @Override
+    public KichThuocDisplayReponse getDetailedKichThuoc(UUID id) {
+        KichThuoc kt = kichthuocRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy do hoa với ID: " + id));
+        return kichThuocMapper.toKichThuocDisplayReponse(kt);
+    }
 }
