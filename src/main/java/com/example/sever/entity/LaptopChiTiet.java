@@ -14,6 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -74,6 +75,9 @@ public class LaptopChiTiet {
 
     @Column(name = "trang_thai")
     private Integer trangThai;
+
+    @Column(name = "gia_ban")
+    private BigDecimal giaBan;
 
 //    @OneToMany(mappedBy = "idLaptopChiTiet")
 //    private Set<Anh> anhs = new LinkedHashSet<>();

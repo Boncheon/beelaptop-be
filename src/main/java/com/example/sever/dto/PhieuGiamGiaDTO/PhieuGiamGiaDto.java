@@ -1,7 +1,7 @@
 package com.example.sever.dto.PhieuGiamGiaDTO;
 
 import jakarta.persistence.Column;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -44,7 +44,7 @@ public class PhieuGiamGiaDto {
     private BigDecimal giaTriMin;
 
 
-    private BigDecimal giaTriMax;
+//    private BigDecimal giaTriMax;
 
 
     private String moTa;
