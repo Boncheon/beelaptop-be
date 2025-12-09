@@ -20,4 +20,5 @@ public class HeDieuHanhUpdateRequestDTO {
 
      private String phienBan;
 
+     private Integer trangThai;
 }

@@ -19,4 +19,5 @@ public class MauSacUpdateRequestDTO {
      String ten;
 
      String moTa;
+     Integer trangThai;
 }

@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,19 +35,38 @@ public class ThuongHieuServiceImpl implements ThuongHieuService {
 
     @Override
     public ThuongHieu addThuongHieu(ThuongHieuAddRequestDTO adddto) {
-        ThuongHieu ThuongHieu = thuongHieuMapper.toThuongHieu(adddto);
-        return ThuongHieuRepository.save(ThuongHieu);
+        ThuongHieu thuongHieu = thuongHieuMapper.toThuongHieu(adddto);
+
+        // mặc định trạng thái = 1 nếu chưa set
+        if (thuongHieu.getTrangThai() == null) {
+            thuongHieu.setTrangThai(1);
+        }
+
+        Instant now = Instant.now();
+        thuongHieu.setNgayTao(now);
+        thuongHieu.setNgaySua(now);
+
+        return ThuongHieuRepository.save(thuongHieu);
     }
 
     @Override
     public ThuongHieu updateThuongHieu(ThuongHieuUpdateRequestDTO updatedto) {
-        ThuongHieu  existing = ThuongHieuRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        ThuongHieu existing = ThuongHieuRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy Thương Hiệu với ID: " + updatedto.getId())
+                );
 
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
+        // map các field text
         thuongHieuMapper.updateThuongHieu(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // cập nhật trạng thái nếu DTO gửi lên
+        if (updatedto.getTrangThai() != null) {
+            existing.setTrangThai(updatedto.getTrangThai());
+        }
+
+        // cập nhật ngày sửa
+        existing.setNgaySua(Instant.now());
+
         return ThuongHieuRepository.save(existing);
     }
 

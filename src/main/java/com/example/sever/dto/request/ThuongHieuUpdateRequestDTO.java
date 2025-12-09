@@ -18,4 +18,6 @@ public class ThuongHieuUpdateRequestDTO {
 
      private String moTa;
 
+     private Integer trangThai;
+
 }

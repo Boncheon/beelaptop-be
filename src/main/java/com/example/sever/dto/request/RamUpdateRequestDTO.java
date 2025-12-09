@@ -23,4 +23,6 @@ public class RamUpdateRequestDTO {
      Integer bus;
 
      String moTa;
+
+     Integer trangThai;
 }

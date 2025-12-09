@@ -21,4 +21,5 @@ public class ThuongHieuDisplayReponse {
 
      private String moTa;
 
+     private Integer trangThai;
 }

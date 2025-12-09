@@ -48,4 +48,6 @@ public class DoHoaUpdateRequestDTO {
     
  String moTa;
 
+    Integer trangThai;
+
 }

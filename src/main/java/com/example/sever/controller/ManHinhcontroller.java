@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.ManHinhAddRequestDTO;
 import com.example.sever.dto.request.ManHinhUpdateRequestDTO;
+import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.ManHinhDisplayReponse;
 import com.example.sever.entity.ManHinh;
 import com.example.sever.service.ManHinhService;
@@ -12,13 +13,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
 @CrossOrigin("*")
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
@@ -30,7 +28,7 @@ public class ManHinhcontroller {
 
     @GetMapping()
     public ResponseEntity<Page<ManHinhDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                           @RequestParam(defaultValue = "4") int size) {
+                                                                           @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
         if (perPage < 0) perPage = 0;
         Pageable pageable = PageRequest.of(perPage, size);
@@ -52,6 +50,14 @@ public class ManHinhcontroller {
         return ApiResponse.<ManHinh>builder()
                 .message("cap nhap thanh cong")
                 .data(updated)
+                .build();
+    }
+    @GetMapping("/detail/{id}")
+    public ApiResponse<ManHinhDisplayReponse> getManhHinhById(@PathVariable("id") UUID id) {
+        ManHinhDisplayReponse mh = manhinhService.getDetailedManHinh(id);
+        return ApiResponse.<ManHinhDisplayReponse>builder()
+                .message("Lấy chi tiết HDH thành công")
+                .data(mh)
                 .build();
     }
 }

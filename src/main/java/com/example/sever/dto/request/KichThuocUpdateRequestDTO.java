@@ -24,4 +24,5 @@ public class KichThuocUpdateRequestDTO {
      private Double chieuCao;
 
      private Double khoiLuong;
+     private Integer trangThai;
 }

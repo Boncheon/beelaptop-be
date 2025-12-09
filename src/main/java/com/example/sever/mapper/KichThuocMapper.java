@@ -9,13 +9,28 @@ import com.example.sever.entity.HeDieuHanh;
 import com.example.sever.entity.KichThuoc;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface KichThuocMapper {
 
+    // Add
     KichThuoc toKichThuoc(KichThuocAddRequestDTO request);
-    KichThuocDisplayReponse getAlldisplayKichThuoc(KichThuoc kichthuoc);
-    void updateKichThuoc(@MappingTarget KichThuoc kichthuoc, KichThuocUpdateRequestDTO request);
-    void updateStatusKichThuoc(@MappingTarget KichThuoc kichthuoc, StatusRequestDTO request);
+
+    // Detail
     KichThuocDisplayReponse toKichThuocDisplayReponse(KichThuoc kichthuoc);
+
+    // List
+    KichThuocDisplayReponse getAlldisplayKichThuoc(KichThuoc kichthuoc);
+
+    // Update (ignore field = null, giữ nguyên giá trị cũ)
+    void updateKichThuoc(@MappingTarget KichThuoc kichthuoc,
+                         KichThuocUpdateRequestDTO request);
+
+    // Update trạng thái (nếu bạn có API đổi trạng thái riêng)
+    void updateStatusKichThuoc(@MappingTarget KichThuoc kichthuoc,
+                               StatusRequestDTO request);
 }

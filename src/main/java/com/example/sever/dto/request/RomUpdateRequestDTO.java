@@ -27,4 +27,5 @@ public class RomUpdateRequestDTO {
 
     String moTa;
 
+    Integer trangThai;
 }

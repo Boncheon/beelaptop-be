@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,18 +40,41 @@ public class RomServiceImpl implements RomService {
     @Override
     public Rom addRom(RomAddRequestDTO adddto) {
         Rom rom = romMapper.toDorom(adddto);
+
+        // Nếu chưa set trạng thái thì mặc định = 1 (Hoạt động)
+        if (rom.getTrangThai() == null) {
+            rom.setTrangThai(1);
+        }
+
+        Instant now = Instant.now();
+        rom.setNgayTao(now);
+        rom.setNgaySua(now);
+
         return romRepository.save(rom);
     }
 
     @Override
     public Rom updateRom(RomUpdateRequestDTO updatedto) {
-        Rom  existing = romRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        // 1. Lấy bản ghi hiện có từ DB
+        Rom existing = romRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy ROM với ID: " + updatedto.getId())
+                );
 
         // 2. Cập nhật dữ liệu từ DTO vào entity cũ
         romMapper.updateDisplayRom(existing, updatedto);
+        // hoặc nếu mapper của bạn đặt tên khác:
+        // romMapper.updateRom(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // 2.1 Đảm bảo trạng thái được cập nhật nếu DTO có gửi lên
+        if (updatedto.getTrangThai() != null) {
+            existing.setTrangThai(updatedto.getTrangThai());
+        }
+
+        // 3. Cập nhật ngày sửa
+        existing.setNgaySua(Instant.now());
+
+        // 4. Lưu lại bản ghi đã cập nhật
         return romRepository.save(existing);
     }
 

@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnhUpdateRequestDTO {
-     private UUID id;
-     private String idAnh;
+     private String idAnh;             // nếu muốn đổi mã
      private MultipartFile file;
 }

@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AnhAddRequestDTO {
 
-     private String idAnh;
+     private UUID idLaptopChiTiet;
      private MultipartFile file;
+     private String idAnh;
 }

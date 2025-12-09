@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -31,65 +32,105 @@ public class AnhServiceipml implements AnhService {
     private final AnhRepository anhRepository;
     private final AnhMapper anhMapper;
 
+    // ================== ADD ==================
     @Override
     public AnhDisplayReponse uploadImageAndSave(AnhAddRequestDTO request) throws IOException {
         MultipartFile file = request.getFile();
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File ảnh không được trống");
+        }
+
         String originalName = file.getOriginalFilename();
-        assert originalName != null;
+        if (originalName == null) {
+            throw new IllegalArgumentException("Tên file không hợp lệ");
+        }
 
         // Sinh idAnh theo kiểu anh0001, anh0002...
         String idAnh = StringUtils.isNotBlank(request.getIdAnh())
-                ? request.getIdAnh()
+                ? request.getIdAnh().trim()
                 : generateNextIdAnh();
 
         String extension = getFileExtension(originalName);
         File fileUpload = convert(file, idAnh, extension);
 
-        // Upload lên Cloudinary
-        cloudinary.uploader().upload(fileUpload, ObjectUtils.asMap("public_id", idAnh));
-        cleanDisk(fileUpload);
+        try {
+            // Upload lên Cloudinary với public_id = idAnh
+            cloudinary.uploader().upload(
+                    fileUpload,
+                    ObjectUtils.asMap("public_id", idAnh, "resource_type", "image")
+            );
+        } finally {
+            cleanDisk(fileUpload);
+        }
 
         String imageUrl = cloudinary.url().generate(idAnh + "." + extension);
 
-        // Tạo entity và lưu
+        // Tạo entity & gắn LaptopChiTiet từ mapper
         Anh anh = anhMapper.toEntity(request);
         anh.setId(UUID.randomUUID());
         anh.setIdAnh(idAnh);
         anh.setImgURL(imageUrl);
 
         anhRepository.save(anh);
-
         return anhMapper.toResponse(anh);
     }
 
+    // ================== UPDATE FILE ẢNH ==================
     @Override
     public AnhDisplayReponse updateImage(UUID id, AnhUpdateRequestDTO request) throws IOException {
         Anh anh = anhRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ảnh với ID: " + id));
 
         MultipartFile file = request.getFile();
-        String fileName = file.getOriginalFilename();
-        assert fileName != null;
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File ảnh không được trống");
+        }
 
-        // Dùng idAnh mới nếu có, còn không giữ nguyên
+        String fileName = file.getOriginalFilename();
+        if (fileName == null) {
+            throw new IllegalArgumentException("Tên file không hợp lệ");
+        }
+
+        // Dùng idAnh mới nếu có, không thì giữ idAnh cũ
         String newIdAnh = StringUtils.isNotBlank(request.getIdAnh())
-                ? request.getIdAnh()
+                ? request.getIdAnh().trim()
                 : anh.getIdAnh();
 
         String extension = getFileExtension(fileName);
         File fileUpload = convert(file, newIdAnh, extension);
 
-        // Upload lại lên Cloudinary
-        cloudinary.uploader().upload(fileUpload, ObjectUtils.asMap("public_id", newIdAnh));
-        cleanDisk(fileUpload);
+        try {
+            cloudinary.uploader().upload(
+                    fileUpload,
+                    ObjectUtils.asMap("public_id", newIdAnh, "resource_type", "image")
+            );
+        } finally {
+            cleanDisk(fileUpload);
+        }
 
-        // Update entity
         anh.setIdAnh(newIdAnh);
         anh.setImgURL(cloudinary.url().generate(newIdAnh + "." + extension));
 
         anhRepository.save(anh);
         return anhMapper.toResponse(anh);
     }
+
+    // ================== LIST THEO SPCT ==================
+    @Override
+    public List<AnhDisplayReponse> getByLaptopChiTiet(UUID idLaptopChiTiet) {
+        return anhRepository.findByIdLaptopChiTiet_Id(idLaptopChiTiet)
+                .stream()
+                .map(anhMapper::toResponse)
+                .toList();
+    }
+
+    // ================== DELETE ==================
+//    @Override
+//    public void delete(UUID id) {
+//        anhRepository.deleteById(id);
+//    }
+
+    // ================== HELPERS ==================
 
     // Sinh idAnh kiểu: anh0001, anh0002, ...
     private String generateNextIdAnh() {
@@ -103,7 +144,6 @@ public class AnhServiceipml implements AnhService {
                 log.warn("Failed to parse idAnh number: {}", lastId);
             }
         }
-
         return String.format("anh%04d", next); // => "anh0026"
     }
 
@@ -124,6 +164,10 @@ public class AnhServiceipml implements AnhService {
     }
 
     private String getFileExtension(String originalFilename) {
-        return originalFilename.substring(originalFilename.lastIndexOf('.') + 1);
+        int dot = originalFilename.lastIndexOf('.');
+        if (dot < 0 || dot == originalFilename.length() - 1) {
+            throw new IllegalArgumentException("File không có phần mở rộng hợp lệ: " + originalFilename);
+        }
+        return originalFilename.substring(dot + 1);
     }
 }

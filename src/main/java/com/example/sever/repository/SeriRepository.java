@@ -3,6 +3,7 @@ package com.example.sever.repository;
 import com.example.sever.entity.Seri;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
@@ -22,5 +23,10 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
 
     long countByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
 
-
+    @Query("""
+        SELECT COUNT(s)
+        FROM Seri s
+        WHERE s.idLapTopCt.idLaptop.id = :idLaptop
+    """)
+    long countSeriByLaptop(@Param("idLaptop") UUID idLaptop);
 }

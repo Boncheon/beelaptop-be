@@ -22,4 +22,5 @@ public class PinDisplayReponse {
      private String idPin;
 
      private String dungLuong;
+     private Integer trangThai;
 }

@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -42,19 +43,39 @@ public class RamServiceImpl implements RamService {
     @Override
     public Ram addRam(RamAddRequestDTO adddto) {
         Ram ram = ramMapper.toDoram(adddto);
+
+        // Nếu chưa set trạng thái thì mặc định = 1 (Hoạt động)
+        if (ram.getTrangThai() == null) {
+            ram.setTrangThai(1);
+        }
+
+        Instant now = Instant.now();
+        ram.setNgayTao(now);
+        ram.setNgaySua(now);
+
         return ramRepository.save(ram);
     }
 
     @Override
     public Ram updateRam(RamUpdateRequestDTO updatedto) {
         // 1. Lấy bản ghi hiện có từ DB
-         Ram  existing = ramRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        Ram existing = ramRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy RAM với ID: " + updatedto.getId())
+                );
 
         // 2. Cập nhật dữ liệu từ DTO vào entity cũ
         ramMapper.updateDisplayRam(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // 2.1 đảm bảo trạng thái được cập nhật nếu DTO có gửi lên
+        if (updatedto.getTrangThai() != null) {
+            existing.setTrangThai(updatedto.getTrangThai());
+        }
+
+        // 3. Cập nhật ngày sửa
+        existing.setNgaySua(Instant.now());
+
+        // 4. Lưu lại bản ghi đã cập nhật
         return ramRepository.save(existing);
     }
     @Override
