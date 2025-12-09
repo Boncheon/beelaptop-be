@@ -28,7 +28,7 @@ public class HinhThucThanhToanChiTiet {
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "ID_HinhThucThanhToanChiTiet", length = 20)
+    @Column(name = "id_thanh_toan_ct", length = 20)
     private String idHinhthucthanhtoanchitiet;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -39,7 +39,16 @@ public class HinhThucThanhToanChiTiet {
     @JoinColumn(name = "ID_hinh_thuc_thanh_toan")
     private HinhThucThanhToan idHinhThucThanhToan;
 
-    @Column(name = "so_tien_thanh_toan", precision = 18, scale = 2)
+    @Column(name = "so_tien", precision = 18, scale = 2)
     private BigDecimal soTienThanhToan;
+
+    @Column(name = "khach_dua", precision = 18, scale = 2)
+    private BigDecimal khachDua;
+    @Column(name = "tien_tra_lai", precision = 18, scale = 2)
+    private BigDecimal traLai;
+
+    @Column(name = "ghi_chu", precision = 18, scale = 2)
+    private BigDecimal ghiChu;
+
 
 }

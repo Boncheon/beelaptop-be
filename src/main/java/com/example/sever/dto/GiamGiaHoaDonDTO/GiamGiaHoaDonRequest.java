@@ -14,7 +14,7 @@ public class GiamGiaHoaDonRequest {
 
     private String idGiamgiahoadon;
 
-    private String tenPhieu;
+
 
 
 

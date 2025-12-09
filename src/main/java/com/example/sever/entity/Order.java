@@ -1,14 +1,7 @@
 package com.example.sever.entity;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -17,6 +10,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -86,6 +80,20 @@ public class Order {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ID_nhan_vien")   // tên cột trong DB, bạn tạo thêm nếu chưa có
+    private TaiKhoan idNhanVien;
+
+
+    @Column(name = "trang_thai_thanh_toan")
+    private Integer trangThaiThanhToan;  // 0: chưa TT, 1: đã TT,...
+
+    @Column(name = "ngay_tao")
+    private LocalDateTime ngayTao;
+
+    @Column(name = "ngay_cap_nhat")
+    private LocalDateTime ngayCapNhat;
+
     @OneToMany(mappedBy = "idOrders")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
 
@@ -97,5 +105,24 @@ public class Order {
 
     @OneToMany(mappedBy = "idOrder")
     private Set<OrderCT> orderCTS = new LinkedHashSet<>();
+
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (ngayTao == null) {
+            ngayTao = now;
+        }
+        ngayCapNhat = now;
+
+        if (trangThaiThanhToan == null) {
+            trangThaiThanhToan = 0; // default: chưa thanh toán
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        ngayCapNhat = LocalDateTime.now();
+    }
 
 }

@@ -22,5 +22,6 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
 
     long countByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
 
-
+    // Seri còn hoạt động cho 1 LaptopCT
+    List<Seri> findByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
 }

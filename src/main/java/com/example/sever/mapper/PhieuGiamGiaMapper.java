@@ -9,7 +9,7 @@ public class PhieuGiamGiaMapper {
 
         return new PhieuGiamGiaDto(
 
-
+phieuGiamGia.getId(),
                 phieuGiamGia.getIdPhieugiamgia(),
                 phieuGiamGia.getTen(),
                 phieuGiamGia.getSoLuong(),

@@ -12,7 +12,6 @@ public class GiamGiaHoaDonMapper {
 
         return new GiamGiaHoaDonRespone(
                 giamGiaHoaDon.getIdGiamgiahoadon(),
-                giamGiaHoaDon.getTenPhieu(),
                 giamGiaHoaDon.getIdPhieuGiamGia().getIdPhieugiamgia(),
                 giamGiaHoaDon.getIdPhieuGiamGia().getGiaTriGiam(),
                 giamGiaHoaDon.getIdPhieuGiamGia().getMoTa(),
@@ -27,7 +26,7 @@ public class GiamGiaHoaDonMapper {
 
         GiamGiaHoaDon giamGiaHoaDon = new GiamGiaHoaDon();
         giamGiaHoaDon.setIdGiamgiahoadon(request.getIdGiamgiahoadon());
-        giamGiaHoaDon.setTenPhieu(request.getTenPhieu());
+
 
         return giamGiaHoaDon;
 
@@ -39,7 +38,7 @@ public class GiamGiaHoaDonMapper {
 
         GiamGiaHoaDon giamGiaHoaDon = new GiamGiaHoaDon();
         giamGiaHoaDon.setIdGiamgiahoadon(respone.getIdGiamgiahoadon());
-        giamGiaHoaDon.setTenPhieu(respone.getTenPhieu());
+
 
         PhieuGiamGia phieu = new PhieuGiamGia();
         phieu.setIdPhieugiamgia(respone.getIdPhieugiamgia());
