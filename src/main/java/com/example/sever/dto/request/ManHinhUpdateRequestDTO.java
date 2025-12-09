@@ -22,4 +22,5 @@ public class ManHinhUpdateRequestDTO {
      private Integer tanSoQuet;
 
      private Double kichThuoc;
+     private Integer trangThai;
 }

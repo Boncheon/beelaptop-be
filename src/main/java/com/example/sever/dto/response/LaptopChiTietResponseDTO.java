@@ -43,7 +43,7 @@ public class LaptopChiTietResponseDTO {
     private Instant ngayCapNhat;
     public LaptopChiTietResponseDTO(LaptopChiTiet l, Long soLuongSeri) {
         this.id = l.getId();
-        this.idLaptop = l.getIdLaptop().getId();;
+        this.idLaptop = l.getIdLaptop().getId();
         this.idLaptopCT = l.getIdLaptopCT();
 
         // ID cấu hình

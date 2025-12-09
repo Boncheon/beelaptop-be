@@ -1,5 +1,6 @@
 package com.example.sever.dto.request;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,5 +35,7 @@ public class LaptopAddRequestDTO {
     private UUID idHeDieuHanh;   // id_he_dieu_hanh
     // FK (tuỳ chọn)
     private UUID idPin;
+
+    private Integer trangThai;
 
 }

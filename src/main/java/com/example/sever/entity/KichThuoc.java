@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -35,7 +36,13 @@ public class KichThuoc {
     @Column(name = "khoi_luong")
     private Double khoiLuong;
 
-//    @OneToMany(mappedBy = "idKichThuoc")
-//    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
+    @Column(name = "trang_thai")
+    private Integer trangThai;
+
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 
 }

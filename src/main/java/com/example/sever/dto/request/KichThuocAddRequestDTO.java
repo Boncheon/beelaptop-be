@@ -21,4 +21,5 @@ public class KichThuocAddRequestDTO {
      private Double chieuCao;
 
      private Double khoiLuong;
+     private Integer trangThai;
 }

@@ -35,25 +35,18 @@ public class LapTopCTServiceImpl implements LapTopCTService {
 
     private final LapTopCTMapper mapper;
     private final LapTopRepository lapTopRepository;
+    private final LaptopChiTietRepository laptopChiTietRepository;
 
     // ====================== LIST ======================
     @Override
     public Page<LaptopChiTietResponseDTO> getAll(Pageable pageable) {
-        Page<LaptopChiTiet> page = laptopChiTietRepo.findAll(pageable);
-
-        List<LaptopChiTietResponseDTO> data = page.getContent()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
-
-        return new PageImpl<>(data, pageable, page.getTotalElements());
+        return laptopChiTietRepository.findAllWithSeri(pageable);
     }
 
     // ====================== LIST BY LAPTOP ======================
     @Override
     public List<LaptopChiTietResponseDTO> getByLaptop(UUID idLaptop) {
-        List<LaptopChiTiet> list = laptopChiTietRepo.findByIdLaptop_Id(idLaptop);
-        return list.stream().map(mapper::toResponse).toList();
+        return laptopChiTietRepository.findDtoByLaptopWithSeri(idLaptop);
     }
 
     // ====================== GET DETAIL ======================
@@ -92,7 +85,10 @@ public class LapTopCTServiceImpl implements LapTopCTService {
                 isEmpty(req.getIdCpus()) ||
                 isEmpty(req.getIdDohoas()) ||
                 isEmpty(req.getIdMauSacs())) {
-            throw new IllegalArgumentException("Danh sách RAM/SSD/CPU/Đồ hoạ/Màu sắc không được rỗng");
+
+            throw new IllegalArgumentException(
+                    "Danh sách RAM/SSD/CPU/Đồ hoạ/Màu sắc không được rỗng"
+            );
         }
 
         Laptop laptop = lapTopRepository.findById(req.getIdLaptop())
@@ -111,7 +107,21 @@ public class LapTopCTServiceImpl implements LapTopCTService {
                     for (UUID vgaId : req.getIdDohoas()) {
                         for (UUID colorId : req.getIdMauSacs()) {
 
-                            // 🔥 Mỗi biến thể có 1 mã idLaptopCT khác nhau
+                            // 🔍 1) CHECK TRÙNG BIẾN THỂ
+                            boolean existed = laptopChiTietRepo.existsVariant(
+                                    laptop.getId(),
+                                    ramId,
+                                    ssdId,
+                                    cpuId,
+                                    vgaId,
+                                    colorId
+                            );
+                            if (existed) {
+                                // đã có biến thể này rồi => bỏ qua, không tạo nữa
+                                continue;
+                            }
+
+                            // 🔥 2) Sinh mã biến thể mới
                             String variantCode = baseCode + "-" +
                                     UUID.randomUUID().toString().substring(0, 8);
 
@@ -140,13 +150,18 @@ public class LapTopCTServiceImpl implements LapTopCTService {
             }
         }
 
+        // nếu tất cả tổ hợp đều trùng thì trả về list rỗng
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
         List<LaptopChiTiet> saved = laptopChiTietRepo.saveAll(entities);
 
+        // Nếu bạn muốn luôn có soLuongSeri = 0 khi mới tạo
         return saved.stream()
-                .map(mapper::toResponse)
+                .map(e -> new LaptopChiTietResponseDTO(e, 0L))
                 .toList();
     }
-
 
     private boolean isEmpty(List<?> list) {
         return list == null || list.isEmpty();

@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,18 +37,33 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
     @Override
     public HeDieuHanh addHeDieuHanh(HeDieuHanhAddRequestDTO adddto) {
         HeDieuHanh hedieuhanh = hedieuhanhMapper.toHeDieuHanh(adddto);
+
+        if (hedieuhanh.getTrangThai() == null) {
+            hedieuhanh.setTrangThai(1);
+        }
+
+        Instant now = Instant.now();
+        hedieuhanh.setNgayTao(now);
+        hedieuhanh.setNgaySua(now);
+
         return hedieuhanhRepository.save(hedieuhanh);
     }
 
     @Override
     public HeDieuHanh updateHeDieuHanh(HeDieuHanhUpdateRequestDTO updatedto) {
-        HeDieuHanh  existing = hedieuhanhRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        HeDieuHanh existing = hedieuhanhRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy Hệ Điều Hành với ID: " + updatedto.getId())
+                );
 
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
         hedieuhanhMapper.updateHeDieuHanh(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        if (updatedto.getTrangThai() != null) {
+            existing.setTrangThai(updatedto.getTrangThai());
+        }
+
+        existing.setNgaySua(Instant.now());
+
         return hedieuhanhRepository.save(existing);
     }
 

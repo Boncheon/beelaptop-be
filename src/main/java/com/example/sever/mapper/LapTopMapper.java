@@ -71,5 +71,8 @@ public interface LapTopMapper {
         if (k == null) return null;
         return k.getChieuDai() + " x " + k.getChieuRong() + " x " + k.getChieuCao();
     }
+    default Integer defaultTrangThai(Integer value) {
+        return value == null ? 1 : value;
+    }
 }
 

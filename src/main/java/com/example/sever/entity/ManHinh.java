@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -40,8 +41,14 @@ public class ManHinh {
     @Column(name = "kich_thuoc")
     private Double kichThuoc;
 
-//    @OneToMany(mappedBy = "idManHinh")
-//    private Set<Laptop> laptops;
+    @Column(name = "trang_thai")
+    private Integer trangThai;
+
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 
 
 }

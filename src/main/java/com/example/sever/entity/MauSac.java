@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -35,13 +36,14 @@ public class MauSac {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
-    @ColumnDefault("0")
     @Column(name = "trang_thai")
     private Integer trangThai;
 
-//    @ColumnDefault("getdate()")
-//    @Column(name = "ngay_tao")
-//    private Instant ngayTao;
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 
 
 }

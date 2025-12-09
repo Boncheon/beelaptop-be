@@ -38,15 +38,32 @@ public class LaptopServiceImpl implements LaptopService {
     @Override
     @jakarta.transaction.Transactional(jakarta.transaction.Transactional.TxType.SUPPORTS)
     public Page<LapTopDisplayReponse> getAllLapTopForDisplay(Pageable pageable) {
+        // Lấy page Laptop
         Page<Laptop> laptopPage = laptopRepository.findAllByOrderByNgayTaoDesc(pageable);
 
+        // Map + gán thêm 2 số lượng
         List<LapTopDisplayReponse> responses = laptopPage.getContent()
                 .stream()
-                .map(lapTopMapper::getAlldisplayLapTop) // map thẳng, KHÔNG set soLuongTon
+                .map(lap -> {
+                    // map các field cơ bản
+                    LapTopDisplayReponse dto = lapTopMapper.getAlldisplayLapTop(lap);
+
+                    // 1️⃣ số lượng biến thể (LaptopChiTiet) của laptop này
+                    long soBienThe = laptopChiTietRepository.countByIdLaptop_Id(lap.getId());
+
+                    // 2️⃣ tổng số seri của TẤT CẢ biến thể thuộc laptop này
+                    long tongSeri = seriRepository.countSeriByLaptop(lap.getId());
+
+                    dto.setSoLuongBienThe(soBienThe);
+                    dto.setTongSoLuongSeri(tongSeri);      // nếu bạn dùng tên khác thì set field tương ứng
+
+                    return dto;
+                })
                 .collect(Collectors.toList());
 
         return new PageImpl<>(responses, pageable, laptopPage.getTotalElements());
     }
+
 
 
     /**
@@ -57,12 +74,15 @@ public class LaptopServiceImpl implements LaptopService {
     public LaptopResponseDTO addLaptop(LaptopAddRequestDTO dto) {
         Laptop laptop = lapTopMapper.toEntity(dto);
 
-        // Nếu entity chưa tự gán id, sinh tại đây
+        // ✅ Mặc định trạng thái = 1 nếu chưa set
+        if (laptop.getTrangThai() == null) {
+            laptop.setTrangThai(1);
+        }
+
         if (laptop.getId() == null) {
             laptop.setId(UUID.randomUUID());
         }
 
-        // Chuẩn hoá & kiểm tra mã do client gửi (nếu có)
         if (laptop.getIdLaptop() != null && !laptop.getIdLaptop().isBlank()) {
             String provided = laptop.getIdLaptop().trim().toUpperCase();
             if (laptopRepository.existsByIdLaptop(provided)) {
@@ -70,7 +90,6 @@ public class LaptopServiceImpl implements LaptopService {
             }
             laptop.setIdLaptop(provided);
         } else {
-            // Tự sinh SKU và đảm bảo unique
             String sku;
             do {
                 sku = "LAP_" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -84,6 +103,7 @@ public class LaptopServiceImpl implements LaptopService {
         laptopRepository.save(laptop);
         return lapTopMapper.toResponse(laptop);
     }
+
 
 
     /**

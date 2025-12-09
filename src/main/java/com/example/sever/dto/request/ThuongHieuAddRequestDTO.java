@@ -16,4 +16,5 @@ public class ThuongHieuAddRequestDTO {
 
      private String moTa;
 
+     private Integer trangThai;
 }

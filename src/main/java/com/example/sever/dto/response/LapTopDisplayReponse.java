@@ -1,5 +1,6 @@
 package com.example.sever.dto.response;
 
+import jakarta.persistence.Column;
 import lombok.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -32,4 +33,7 @@ public class LapTopDisplayReponse {
 
      private Instant ngayTao;
      private Instant ngaySua;
+     private Long soLuongBienThe;
+     private Long tongSoLuongSeri;
+     private Integer trangThai;
 }

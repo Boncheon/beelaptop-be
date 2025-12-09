@@ -62,6 +62,9 @@ public class Laptop {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
+    @Column(name = "trang_thai")
+    private Integer trangThai;
+
     @Column(name = "ngay_tao")
     private Instant ngayTao;
 

@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,19 +39,38 @@ public class MauSacServiceImpl implements MauSacService {
 
     @Override
     public MauSac addMauSac(MauSacAddRequestDTO adddto) {
+        // map từ DTO sang entity
         MauSac mausac = mauSacMapper.toMauSac(adddto);
+
+        // nếu chưa set trạng thái thì mặc định = 1 (Hoạt động)
+        if (mausac.getTrangThai() == null) {
+            mausac.setTrangThai(1);
+        }
+
+        Instant now = Instant.now();
+        mausac.setNgayTao(now);
+        mausac.setNgaySua(now);
+
         return mausacRepository.save(mausac);
     }
 
     @Override
     public MauSac updateMauSac(MauSacUpdateRequestDTO updatedto) {
-        MauSac  existing = mausacRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        MauSac existing = mausacRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy Màu sắc với ID: " + updatedto.getId())
+                );
 
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
+        // map các field từ DTO vào entity cũ
         mauSacMapper.updateMauSac(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // đảm bảo trạng thái được cập nhật (tránh trường hợp mapper bỏ qua)
+        if (updatedto.getTrangThai() != null) {
+            existing.setTrangThai(updatedto.getTrangThai());
+        }
+
+        existing.setNgaySua(Instant.now());
+
         return mausacRepository.save(existing);
     }
 

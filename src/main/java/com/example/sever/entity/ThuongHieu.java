@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -35,7 +36,12 @@ public class ThuongHieu {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
-//    @OneToMany(mappedBy = "idThuonghieu")
-//    private Set<Laptop> laptops = new LinkedHashSet<>();
+    @Column(name = "trang_thai")
+    private Integer trangThai;
 
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 }

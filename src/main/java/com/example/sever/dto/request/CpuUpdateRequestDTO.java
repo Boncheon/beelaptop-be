@@ -21,4 +21,5 @@ public class CpuUpdateRequestDTO {
     
      String moTa;
 
+     Integer trangThai;
 }

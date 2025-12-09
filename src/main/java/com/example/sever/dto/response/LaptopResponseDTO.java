@@ -25,4 +25,6 @@ public class LaptopResponseDTO {
     private String tenThuongHieu;
     private java.time.Instant ngayTao;
     private java.time.Instant ngaySua;
+    private Integer trangThai;
+
 }

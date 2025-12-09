@@ -18,4 +18,5 @@ public class HeDieuHanhAddRequestDTO {
 
      private String phienBan;
 
+     private Integer trangThai;
 }

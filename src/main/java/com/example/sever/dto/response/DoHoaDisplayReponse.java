@@ -22,4 +22,5 @@ public class DoHoaDisplayReponse {
     private String boNhoRam;
     private String moTa;
     private Integer trangThai;
+
 }
