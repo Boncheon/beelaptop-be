@@ -2,27 +2,20 @@ package com.example.sever.service;
 
 
 
-import com.example.sever.dto.DotGiamGiaDTO.DotGiamGiaChiTietResponse;
+import com.example.sever.dto.DotGiamGia.DotGiamGiaChiTietDTO;
+import com.example.sever.entity.DotGiamGiaChiTiet;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 public interface DotGiamGiaChiTietService {
 
-    List<DotGiamGiaChiTietResponse> getAllDotGiamGia();
+    DotGiamGiaChiTiet create(DotGiamGiaChiTietDTO dto);
 
-    void capNhatTrangThaiTuDong();
+    List<DotGiamGiaChiTiet> getByDot(UUID idDot);
 
-    DotGiamGiaChiTietResponse doiTrangThaiNgungHoatDong(String idDotGiamGia);
-
-    Page<DotGiamGiaChiTietResponse> getDotGiamGiaPage(int page, int size);
-
-    List<DotGiamGiaChiTietResponse> searchDotByIdOrTen(String keyword);
-
-
-    Page<DotGiamGiaChiTietResponse> filterDot(String keyword, LocalDate start, LocalDate end, Integer trangThai, int page, int size,String sortBy);
-
-
+    void delete(UUID id);
 
 }

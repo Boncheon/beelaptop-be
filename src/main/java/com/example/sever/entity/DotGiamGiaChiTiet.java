@@ -1,5 +1,6 @@
 package com.example.sever.entity;
 
+import com.example.sever.KieuGiamGia;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,20 +25,19 @@ public class DotGiamGiaChiTiet {
     @Column(name = "ID")
     private UUID id;
 
-    @Column(name = "id_dot_giam_gia_ct")
+    // Mã hiển thị — không phải ID database
+    @Column(name = "ma_dot_giam_gia_ct", nullable = false, unique = true, length = 50)
     private String idDotGiamGiaCT;
 
-
-    @ManyToOne
-    @JoinColumn(name = "id_dot_giam_gia")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_dot_giam_gia", nullable = false)
     private DotGiamGia dotGiamGia;
 
-    @Column(name = "kieu_giam_gia")
-    private String kieuGiamGia;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kieu_giam_gia", nullable = false)
+    private KieuGiamGia kieuGiamGia;
 
-    @Column(name = "gia_tri_giam")
+    @Column(name = "gia_tri_giam", nullable = false)
     private BigDecimal giaTriGiam;
-
-
 
 }

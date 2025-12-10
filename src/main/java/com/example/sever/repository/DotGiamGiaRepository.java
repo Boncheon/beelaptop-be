@@ -14,11 +14,7 @@ import java.util.UUID;
 @Repository
 public interface DotGiamGiaRepository extends JpaRepository<DotGiamGia, UUID> {
 
-    List<DotGiamGia> findAll();
 
-    Optional<DotGiamGia> findByIdDotGiamGia(String idDotGiamGia);
-
-    Page<DotGiamGia> findAll(Pageable pageable);
 
 
 

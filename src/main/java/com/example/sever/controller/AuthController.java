@@ -137,7 +137,6 @@ public class AuthController {
                 .data(user)
                 .build());
     }
-
     @GetMapping("/google/callback")
     public ResponseEntity<ApiResponse<LoginResponse>> googleCallback(
             Authentication authentication,
