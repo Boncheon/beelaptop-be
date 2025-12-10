@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -21,7 +20,7 @@ import java.util.UUID;
 public class PhieuGiamGiaDto {
 
 
-    private UUID id;
+
     private String idPhieugiamgia;
 
 

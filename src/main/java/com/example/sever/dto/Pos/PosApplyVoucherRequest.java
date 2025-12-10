@@ -11,5 +11,5 @@ import java.util.UUID;
 public class PosApplyVoucherRequest {
 
     // Ví dụ "VC123" = ID_PhieuGiamGia
-    private List<UUID> voucherIds;
+    private List<String> voucherIds;
 }

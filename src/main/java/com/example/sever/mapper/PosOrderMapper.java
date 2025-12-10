@@ -93,7 +93,6 @@ public interface PosOrderMapper {
     @Mapping(target = "giaTriGiam",
             expression = "java( com.example.sever.mapper.PosOrderMapper.computeGiaTriGiam(entity) )")
     @Mapping(target = "giaTriMin", source = "idPhieuGiamGia.giaTriMin")
-    @Mapping(target = "giaTriMax", source = "idPhieuGiamGia.giaTriMax")
     @Mapping(target = "trangThai", source = "idPhieuGiamGia.trangThai")
     PosVoucherDTO toPosVoucher(GiamGiaHoaDon entity);
 

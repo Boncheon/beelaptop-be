@@ -210,13 +210,17 @@ public class PosOrderServiceImpl implements PosOrderService {
             throw new IllegalArgumentException("Thiếu ID phiếu giảm giá");
         }
 
-        UUID voucherId = request.getVoucherIds().get(0);
+        // Lấy mã phiếu dạng "PGG001"
+        String voucherCode = request.getVoucherIds().get(0);
 
         Order order = getOrderOrThrow(orderId);
         requireDraft(order);
 
-        PhieuGiamGia phieu = phieuGiamGiaRepository.findById(voucherId)
-                .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+        // Tìm theo mã phiếu (idPhieugiamgia), KHÔNG dùng UUID nữa
+        PhieuGiamGia phieu = phieuGiamGiaRepository
+                .findByIdPhieugiamgia(voucherCode)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Phiếu giảm giá không tồn tại: " + voucherCode));
 
         // Tổng tiền hàng từ chi tiết
         BigDecimal tongTien = nvl(orderCTRepository.sumGiaBanByOrderId(order.getId()));
@@ -258,7 +262,7 @@ public class PosOrderServiceImpl implements PosOrderService {
         res.setMaDonHang(order.getMaDonHang());
         res.setTongTien(order.getGiaTriChuaGiam());
         res.setSoTienGiam(order.getGiaTriGiamGia());
-        res.setPhieuGiamGia(phieu.getIdPhieugiamgia());
+        res.setPhieuGiamGia(phieu.getIdPhieugiamgia()); // trả về đúng mã
         res.setTongPhaiTra(order.getTongTienThuHo());
 
         return res;
