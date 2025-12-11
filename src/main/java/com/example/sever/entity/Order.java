@@ -17,6 +17,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -85,6 +86,10 @@ public class Order {
     @Nationalized
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
+
+    @ColumnDefault("getdate()")
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
 
     @OneToMany(mappedBy = "idOrders")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();

@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -28,18 +29,23 @@ public class HinhThucThanhToanChiTiet {
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "ID_HinhThucThanhToanChiTiet", length = 20)
+    @Column(name = "id_thanh_toan_ct", length = 20)
     private String idHinhthucthanhtoanchitiet;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_order")
+    @JoinColumn(name = "id_order")
     private Order idOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_hinh_thuc_thanh_toan")
+    @JoinColumn(name = "id_hinh_thuc_thanh_toan")
     private HinhThucThanhToan idHinhThucThanhToan;
 
-    @Column(name = "so_tien_thanh_toan", precision = 18, scale = 2)
+    @Column(name = "so_tien", precision = 18, scale = 2)
     private BigDecimal soTienThanhToan;
+    
+    @Size(max = 500)
+    @Nationalized
+    @Column(name = "ghi_chu", length = 500)
+    private String ghiChu;
 
 }

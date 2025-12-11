@@ -2,11 +2,15 @@ package com.example.sever.service;
 
 import com.example.sever.dto.request.LapTopCTAddRequestDTO;
 import com.example.sever.dto.request.LapTopCTUpdateRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopChiTietResponse;
+import com.example.sever.dto.response.GioHang.ProductCartResponse;
 import com.example.sever.dto.response.LapTopCTDisplayReponse;
-import com.example.sever.entity.LaptopChiTiet;
+import com.example.sever.dto.response.ListLaptopCustomerProjection;
+import com.example.sever.dto.response.Search.LaptopSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface LapTopCTService {
@@ -29,4 +33,11 @@ public interface LapTopCTService {
     LapTopCTDisplayReponse addLapTopCT(LapTopCTAddRequestDTO  adddto);
     LapTopCTDisplayReponse updateLapTopCT(LapTopCTUpdateRequestDTO dto);
     LapTopCTDisplayReponse getById (UUID id);
+
+    List<CustomerLaptopChiTietResponse> getLapTopCustomer(UUID laptopId);
+    String checkQuantityProduct(UUID id , int quantity);
+    List<ListLaptopCustomerProjection> listProductLaptop();
+
+    ProductCartResponse getProductForCustomer(UUID id);
+    List<LaptopSearchResponse> searchLaptopCustomer(String keyword);
 }

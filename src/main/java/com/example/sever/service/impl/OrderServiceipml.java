@@ -14,6 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Random;
 
 @Service
 public class OrderServiceipml implements OrderService {
@@ -34,15 +38,22 @@ public class OrderServiceipml implements OrderService {
     public OrderRespone taoDonHang(OrderRequest request) {
 
         Order order = modelMapper.map(request, Order.class);
-
-        // Gán các giá trị bắt buộc
-        order.setIdOrder("ORD" + System.currentTimeMillis()); // ✅ tránh lỗi UNIQUE NULL
+        Random random = new Random();
+        StringBuilder ord = new StringBuilder("ORD");
+        for (int i = 0; i < 6; i++) {
+            ord.append(random.nextInt(10));
+        }
+        StringBuilder mdh = new StringBuilder("MDH");
+        for (int i = 0; i < 6; i++) {
+            mdh.append(random.nextInt(10));
+        }
+        order.setIdOrder(ord.toString());
         order.setGiaTriChuaGiam(request.getTongTien());
         order.setTongTienThuHo(request.getTongTien());
-        order.setMaDonHang(generateMaDonHang()); // Mã đơn hiển thị
-        order.setTrangThai(1); // Trạng thái mặc định
+        order.setMaDonHang(mdh.toString());
+        order.setTrangThai(1);
+        order.setNgayTao(ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant());
 
-        // Tìm phiếu giảm giá phù hợp
         PhieuGiamGia phieu = phieuGiamGiaService.findBestCouponForOrder(order.getGiaTriChuaGiam());
         BigDecimal soTienGiam = BigDecimal.ZERO;
 
@@ -51,22 +62,21 @@ public class OrderServiceipml implements OrderService {
             order.setGiaTriGiamGia(soTienGiam);
         }
 
-        // ✅ 1. Lưu đơn hàng trước (phải có ID mới tạo quan hệ được)
         orderRepo.save(order);
-
-        // ✅ 2. Nếu có phiếu giảm giá → tạo bản ghi giảm giá đơn
+        StringBuilder gg = new StringBuilder("GG");
+        for (int i = 0; i < 6; i++) {
+            gg.append(random.nextInt(10));
+        }
         if (phieu != null) {
             GiamGiaHoaDon giam = new GiamGiaHoaDon();
-            giam.setIdGiamgiahoadon("GG" + System.currentTimeMillis()); // ✅ fix lỗi trùng null
+            giam.setIdGiamgiahoadon(gg.toString());
             giam.setIdOrders(order);
             giam.setIdPhieuGiamGia(phieu);
-            giam.setSoTienGiam(soTienGiam);
-            giam.setTenPhieu(phieu.getTen());
+            giam.setSoTienTruocGiam(soTienGiam);
 
             giamGiaHoaDonRepo.save(giam);
         }
 
-        // ✅ Tạo phản hồi trả về
         OrderRespone res = new OrderRespone();
         res.setMaDonHang(order.getMaDonHang());
         res.setTongTien(order.getGiaTriChuaGiam());
@@ -86,7 +96,7 @@ public class OrderServiceipml implements OrderService {
 
         if (lastCode != null && lastCode.length() >= 8) {
             try {
-                String numberStr = lastCode.substring(2, 5); // VD: OD007-2024 → "007"
+                String numberStr = lastCode.substring(2, 5);
                 next = Integer.parseInt(numberStr) + 1;
             } catch (NumberFormatException ignored) {
                 next = 1;

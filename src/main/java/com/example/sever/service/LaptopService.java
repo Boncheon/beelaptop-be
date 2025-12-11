@@ -4,8 +4,11 @@ import com.example.sever.dto.request.LaptopAddRequestDTO;
 import com.example.sever.dto.request.LaptopUpdateRequestDTO;
 import com.example.sever.dto.request.SanPhamFullCreateDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopProjection;
 import com.example.sever.dto.response.LapTopCTDisplayReponse;
 import com.example.sever.dto.response.LapTopDisplayReponse;
+import com.example.sever.dto.response.Search.BrandSearchResponse;
+import com.example.sever.dto.response.Search.LaptopSearchBrandProjection;
 import com.example.sever.entity.Laptop;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,5 +29,9 @@ public interface LaptopService {
     //    Laptop updateStatus(StatusRequestDTO updatedto);
 //    Page<LapTopDisplayReponse> getLapTopByFilter(Integer trangThai, String keyword, Pageable pageable);
     List<LapTopCTDisplayReponse> getDetailedLapTop(UUID idLaptop);
+    List<CustomerLaptopProjection> getCustomerLaptop();
+    List<CustomerLaptopProjection> getLatestLaptops();
+    List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand);
+    List<BrandSearchResponse> getAllBrand();
 
 }

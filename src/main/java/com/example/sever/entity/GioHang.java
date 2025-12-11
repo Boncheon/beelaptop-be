@@ -35,8 +35,11 @@ public class GioHang {
     private String idGioHang;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tai_khoan")
+    @JoinColumn(name = "id_tai_khoan" )
     private TaiKhoan idTaiKhoan;
+
+
+
 
     @ColumnDefault("getdate()")
     @Column(name = "Ngay_tao")

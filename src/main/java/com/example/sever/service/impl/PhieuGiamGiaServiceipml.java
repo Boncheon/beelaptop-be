@@ -3,6 +3,7 @@ package com.example.sever.service.impl;
 import com.example.sever.KieuGiamGia;
 import com.example.sever.TrangThaiVoucher;
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
+import com.example.sever.dto.response.PhieuGiamGiaCustomerProjection;
 import com.example.sever.entity.PhieuGiamGia;
 import com.example.sever.exception.ResourceNotFoundException;
 import com.example.sever.mapper.PhieuGiamGiaMapper;
@@ -155,6 +156,11 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
         BigDecimal discount = BigDecimal.ZERO;
 
+        if (coupon.getKieuGiamGia() == null) {
+            System.err.println("Warning: PhieuGiamGia có kieuGiamGia là null. ID: " + coupon.getId());
+            return BigDecimal.ZERO;
+        }
+
         if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_PHAN_TRAM) {
             discount = total.multiply(coupon.getGiaTriGiam())
                     .divide(BigDecimal.valueOf(100));
@@ -235,6 +241,10 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
     }
 
+    @Override
+    public List<PhieuGiamGiaCustomerProjection> getAllVoucherForCustomer(BigDecimal total) {
+        return phieuGiamGiaRepo.findPhieuGiamGiaPhuHop(total);
+    }
 
 
     private int tinhTrangThai(LocalDate ngayBatDau, LocalDate ngayKetThuc) {

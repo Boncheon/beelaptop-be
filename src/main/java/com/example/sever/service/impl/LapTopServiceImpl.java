@@ -5,11 +5,9 @@ import com.example.sever.dto.request.LaptopAddRequestDTO;
 import com.example.sever.dto.request.LaptopUpdateRequestDTO;
 import com.example.sever.dto.request.PhienBanAddRequestDTO;
 import com.example.sever.dto.request.SanPhamFullCreateDTO;
-import com.example.sever.dto.request.StatusRequestDTO;
-import com.example.sever.dto.response.LapTopCTDisplayReponse;
-import com.example.sever.dto.response.LapTopDisplayReponse;
-import com.example.sever.dto.response.PhienBanDisplayReponse;
-import com.example.sever.dto.response.RomDisplayReponse;
+import com.example.sever.dto.response.*;
+import com.example.sever.dto.response.Search.BrandSearchResponse;
+import com.example.sever.dto.response.Search.LaptopSearchBrandProjection;
 import com.example.sever.entity.Cpu;
 import com.example.sever.entity.DoHoa;
 import com.example.sever.entity.Laptop;
@@ -22,35 +20,16 @@ import com.example.sever.entity.Rom;
 import com.example.sever.mapper.LapTopCTMapper;
 import com.example.sever.mapper.LapTopMapper;
 import com.example.sever.mapper.PhienBanMapper;
-import com.example.sever.repository.CpuRepository;
-import com.example.sever.repository.DoHoaRepository;
-import com.example.sever.repository.HeDieuHanhRepository;
-import com.example.sever.repository.KichThuocRepository;
-import com.example.sever.repository.LapTopRepository;;
-import com.example.sever.repository.LaptopChiTietRepository;
-import com.example.sever.repository.ManHinhRepository;
-import com.example.sever.repository.MauSacRepository;
-import com.example.sever.repository.PhienBanRepository;
-import com.example.sever.repository.PhienbanLaptopctRepository;
-import com.example.sever.repository.PinRepository;
-import com.example.sever.repository.RamRepository;
-import com.example.sever.repository.RomRepository;
-import com.example.sever.repository.SeriRepository;
+import com.example.sever.repository.*;
 import com.example.sever.service.LaptopService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,6 +53,7 @@ public class LapTopServiceImpl implements LaptopService {
     private final LapTopCTMapper lapTopCTMapper;
     private final PhienBanMapper phienBanMapper;
     private final SeriRepository seriRepository;
+    private final ThuongHieuRepository thuongHieuRepository;
 
     @Override
     public Page<LapTopDisplayReponse> getAllLapTopforDisplay(Pageable pageable) {
@@ -131,6 +111,26 @@ public class LapTopServiceImpl implements LaptopService {
         }
 
         return result;
+    }
+
+    @Override
+    public List<CustomerLaptopProjection> getCustomerLaptop() {
+        return laptopRepository.getLaptopsForHome();
+    }
+
+    @Override
+    public List<CustomerLaptopProjection> getLatestLaptops() {
+        return laptopRepository.getLatestLaptops();
+    }
+
+    @Override
+    public List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand) {
+        return laptopRepository.findAllByBrandId(idBrand);
+    }
+
+    @Override
+    public List<BrandSearchResponse> getAllBrand() {
+        return thuongHieuRepository.listBrandSearch();
     }
 
 
@@ -199,7 +199,6 @@ public class LapTopServiceImpl implements LaptopService {
 
         return idLaptop;
     }
-
 
 
     private Map<UUID, Long> demSoLuongSeriTheoLaptop() {

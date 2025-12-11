@@ -45,6 +45,8 @@ public class OrderCT {
     @Column(name = "gia_ban", precision = 18, scale = 2)
     private BigDecimal giaBan;
 
+    // Đã bỏ cột so_luong trong database (1 seri = 1 sản phẩm)
+
     @OneToMany(mappedBy = "idOrderCt")
     private Set<BaoHanh> baoHanhs = new LinkedHashSet<>();
 

@@ -28,7 +28,7 @@ public class Seri {
     @Column(name = "id_seri", length = 20)
     private String idSeri;
 
-    @ManyToOne
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
     @JoinColumn(name = "id_phien_ban")
     private PhienBan phienBan;
 

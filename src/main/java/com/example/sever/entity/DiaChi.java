@@ -62,6 +62,12 @@ public class DiaChi {
     @Nationalized
     @Column(name = "dia_chi_chi_tiet")
     private String diaChiChiTiet;
+    @Column(name = "mac_dinh")
+    private Boolean macDinh;
+    @Column(name = "ho_ten")
+    private String hoTen;
+    @Column(name = "so_dien_thoai")
+    private String soDienThoai;
 
     @OneToMany(mappedBy = "idDiaChi")
     private Set<Order> orders = new LinkedHashSet<>();

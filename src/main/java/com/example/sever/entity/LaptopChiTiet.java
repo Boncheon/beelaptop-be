@@ -13,6 +13,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -47,8 +49,9 @@ public class LaptopChiTiet {
     @JoinColumn(name = "id_kich_thuoc")
     private KichThuoc idKichThuoc;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_he_dieu_hanh")
+    @NotFound(action = NotFoundAction.IGNORE)
     private HeDieuHanh idHeDieuHanh;
 
     @Size(max = 500)
@@ -61,7 +64,8 @@ public class LaptopChiTiet {
 
     @Column(name = "ngay_cap_nhat")
     private Instant ngayCapNhat;
-
+    @Column(name = "so_luong")
+    private Integer soLuong;
     @Size(max = 100)
     @Nationalized
     @Column(name = "nguoi_tao", length = 100)

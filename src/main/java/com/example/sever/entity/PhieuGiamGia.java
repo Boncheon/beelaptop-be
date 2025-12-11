@@ -43,7 +43,7 @@ public class PhieuGiamGia {
 
     @Nationalized
     @Column(name = "kieu_giam_gia", length = 50)
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.example.sever.converter.KieuGiamGiaConverter.class)
     private KieuGiamGia kieuGiamGia;
 
     @Column(name = "gia_tri_giam", precision = 18, scale = 2)

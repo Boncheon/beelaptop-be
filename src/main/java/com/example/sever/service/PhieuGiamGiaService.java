@@ -1,6 +1,7 @@
 package com.example.sever.service;
 
 import com.example.sever.dto.PhieuGiamGiaDTO.PhieuGiamGiaDto;
+import com.example.sever.dto.response.PhieuGiamGiaCustomerProjection;
 import com.example.sever.entity.PhieuGiamGia;
 import org.springframework.data.domain.Page;
 
@@ -41,6 +42,6 @@ public interface PhieuGiamGiaService {
 
     PhieuGiamGiaDto doiTrangThaiNgungHoatDong(String idPhieuGiamGia);
 
-
+    List<PhieuGiamGiaCustomerProjection> getAllVoucherForCustomer(BigDecimal total);
 
 }

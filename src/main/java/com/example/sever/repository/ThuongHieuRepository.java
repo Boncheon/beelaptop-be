@@ -1,5 +1,6 @@
 package com.example.sever.repository;
 
+import com.example.sever.dto.response.Search.BrandSearchResponse;
 import com.example.sever.entity.ThuongHieu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,4 +22,6 @@ public interface ThuongHieuRepository extends JpaRepository<ThuongHieu, UUID> {
 //
 //    @Query("SELECT t FROM ThuongHieu t ORDER BY t.ngayTao DESC")
 //    List<ThuongHieu> findAllOrderByNgayTaoDesc();
+    @Query(value = "SELECT id , ten FROM ThuongHieu" , nativeQuery = true)
+    List<BrandSearchResponse> listBrandSearch();
 }
