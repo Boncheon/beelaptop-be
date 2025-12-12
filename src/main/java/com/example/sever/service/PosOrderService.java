@@ -3,6 +3,8 @@ package com.example.sever.service;
 
 import com.example.sever.dto.OrderDTO.OrderRespone;
 import com.example.sever.dto.Pos.*;
+
+import java.util.List;
 import java.util.UUID;
 
 public interface PosOrderService {
@@ -25,4 +27,6 @@ public interface PosOrderService {
 
     PosOrderDetailDTO getDetail(UUID orderId);
     void addSeriToOrder(UUID orderId, PosAddItemsRequest request);
+
+    PosOrderDetailDTO addItemsBySeriCode(UUID orderId, List<String> seriCodes);
 }

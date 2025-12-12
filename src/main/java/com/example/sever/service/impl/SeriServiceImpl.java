@@ -135,6 +135,8 @@ public class SeriServiceImpl implements SeriService {
         // lưu lại
         seriRepository.save(seri);
     }
+
+
     @Override
     @Transactional(readOnly = true)
     public List<SeriDisplayReponse> getAll() {
@@ -147,6 +149,14 @@ public class SeriServiceImpl implements SeriService {
     public SeriDisplayReponse getDetail(UUID id) {
         Seri seri = seriRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Seri với id = " + id));
+        return seriMapper.toResponse(seri);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SeriDisplayReponse findByIdSeri(String idSeri) {
+        Seri seri = seriRepository.findByIdSeriAndTrangThai(idSeri, 1)  // Chỉ tìm nếu ACTIVE (1)
+                .orElseThrow(() -> new RuntimeException("Seri không tồn tại hoặc không khả dụng"));
         return seriMapper.toResponse(seri);
     }
 

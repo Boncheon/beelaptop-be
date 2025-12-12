@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -34,6 +35,7 @@ public class PosOrderController {
                         .build()
         );
     }
+
 
     // 2. Lấy chi tiết đơn
     @GetMapping("/{orderId}")
@@ -63,6 +65,21 @@ public class PosOrderController {
                 .build();
 
         return ResponseEntity.ok(res);
+    }
+    // QUÉT QR: Thêm sản phẩm bằng mã seri (String)
+    @PostMapping("/{orderId}/items/by-seri-code")
+    public ResponseEntity<ApiResponse<PosOrderDetailDTO>> addItemsBySeriCode(
+            @PathVariable UUID orderId,
+            @RequestBody List<String> seriCodes) {
+
+        PosOrderDetailDTO dto = posOrderService.addItemsBySeriCode(orderId, seriCodes);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PosOrderDetailDTO>builder()
+                        .message("Thêm sản phẩm bằng mã seri thành công")
+                        .data(dto)
+                        .build()
+        );
     }
 
 

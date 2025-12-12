@@ -96,4 +96,18 @@ public class Sericontroller {
                         .build()
         );
     }
+
+    @GetMapping("/by-id-seri/{idSeri}")
+    public ResponseEntity<ApiResponse<SeriDisplayReponse>> findByIdSeri(
+            @PathVariable String idSeri) {
+
+        SeriDisplayReponse data = seriService.findByIdSeri(idSeri);
+
+        return ResponseEntity.ok(
+                ApiResponse.<SeriDisplayReponse>builder()
+                        .message("Tìm seri thành công")
+                        .data(data)
+                        .build()
+        );
+    }
 }

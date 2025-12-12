@@ -29,7 +29,7 @@ public class OrderListDTO {
 
     private Integer trangThaiDon;     // trạng thái đơn
     private Integer trangThaiThanhToan;
-
+    Integer trangThaiDonForTaiQuay;
     private LocalDateTime ngayTao;
     private LocalDateTime ngayCapNhat;
 }

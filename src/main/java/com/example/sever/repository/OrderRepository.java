@@ -23,29 +23,56 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     @Query(value = "SELECT TOP 1 ma_don_hang FROM Orders ORDER BY ID DESC", nativeQuery = true)
     String findLastMaDonHang();
 
+//    @Query("""
+//        SELECT o
+//        FROM Order o
+//        LEFT JOIN o.idNhanVien nv
+//        WHERE (:keyword IS NULL OR :keyword = '' OR
+//               LOWER(o.maDonHang) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+//               LOWER(o.tenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+//               o.sdtKhachHang LIKE CONCAT('%', :keyword, '%'))
+//          AND (:loaiDon IS NULL OR :loaiDon = '' OR o.loaiDon = :loaiDon)
+//          AND (:trangThaiDon IS NULL OR o.trangThai = :trangThaiDon)
+//          AND (:trangThaiThanhToan IS NULL OR o.trangThaiThanhToan = :trangThaiThanhToan)
+//          AND (:fromDate IS NULL OR o.ngayTao >= :fromDate)
+//          AND (:toDate IS NULL OR o.ngayTao < :toDate)
+//    """)
+//    Page<Order> searchOrders(
+//            @Param("keyword") String keyword,
+//            @Param("loaiDon") String loaiDon,
+//            @Param("trangThaiDon") Integer trangThaiDon,
+//            @Param("trangThaiThanhToan") Integer trangThaiThanhToan,
+//            @Param("fromDate") LocalDateTime fromDate,
+//            @Param("toDate") LocalDateTime toDate,
+//            Pageable pageable
+//    );
+
     @Query("""
-        SELECT o
-        FROM Order o
-        LEFT JOIN o.idNhanVien nv
-        WHERE (:keyword IS NULL OR :keyword = '' OR
-               LOWER(o.maDonHang) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               LOWER(o.tenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
-               o.sdtKhachHang LIKE CONCAT('%', :keyword, '%'))
-          AND (:loaiDon IS NULL OR :loaiDon = '' OR o.loaiDon = :loaiDon)
-          AND (:trangThaiDon IS NULL OR o.trangThai = :trangThaiDon)
-          AND (:trangThaiThanhToan IS NULL OR o.trangThaiThanhToan = :trangThaiThanhToan)
-          AND (:fromDate IS NULL OR o.ngayTao >= :fromDate)
-          AND (:toDate IS NULL OR o.ngayTao < :toDate)
+    SELECT o FROM Order o WHERE 1=1
+    AND (:keyword IS NULL OR LOWER(o.maDonHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(o.tenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(o.sdtKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    AND (:loaiDon IS NULL OR o.loaiDon = :loaiDon)
+    AND (:trangThaiDon IS NULL OR o.trangThai = :trangThaiDon)
+    AND (:trangThaiThanhToan IS NULL OR o.trangThaiThanhToan = :trangThaiThanhToan)
+    AND (:fromDate IS NULL OR o.ngayTao >= :fromDate)
+    AND (:toDate IS NULL OR o.ngayTao < :toDate)
+
+    AND (
+      :trangThaiDonForTaiQuay IS NULL 
+      OR o.loaiDon != 'TAI_QUAY' 
+      OR o.trangThai IN :trangThaiDonForTaiQuay
+    )
     """)
     Page<Order> searchOrders(
             @Param("keyword") String keyword,
             @Param("loaiDon") String loaiDon,
             @Param("trangThaiDon") Integer trangThaiDon,
             @Param("trangThaiThanhToan") Integer trangThaiThanhToan,
+            @Param("trangThaiDonForTaiQuay") List<Integer> trangThaiDonForTaiQuay,
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,
-            Pageable pageable
-    );
+            Pageable pageable);
 
     @Query(
             value = "SELECT TOP 1 ma_don_hang " +

@@ -16,5 +16,5 @@ public interface OrderCTRepository extends JpaRepository<OrderCT, UUID> {
     boolean existsByIdSeri_Id(UUID seriId);
     @Query("SELECT COALESCE(SUM(o.giaBan), 0) FROM OrderCT o WHERE o.idOrder.id = :orderId")
     BigDecimal sumGiaBanByOrderId(@Param("orderId") UUID orderId);
-
+    boolean existsByIdOrder_IdAndIdSeri_Id(UUID orderId, UUID seriId);
 }

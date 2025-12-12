@@ -482,10 +482,48 @@ public class PosOrderServiceImpl implements PosOrderService {
         orderRepository.save(order);
     }
 
+
+
+
+
     private BigDecimal nvl(BigDecimal b) {
         return b == null ? BigDecimal.ZERO : b;
     }
 
+
+    @Override
+    @Transactional
+    public PosOrderDetailDTO addItemsBySeriCode(UUID orderId, List<String> seriCodes) {
+        Order order = getOrderOrThrow(orderId);
+        requireDraft(order);
+
+        if (seriCodes == null || seriCodes.isEmpty()) {
+            throw new IllegalArgumentException("Danh sách mã seri trống");
+        }
+
+        List<UUID> seriUuids = new ArrayList<>();
+
+        for (String code : seriCodes) {
+            String trimmed = code.trim().toUpperCase();
+            if (trimmed.isEmpty()) continue;
+
+            Seri seri = seriRepository.findByIdSeriAndTrangThai(trimmed, SERI_ACTIVE)
+                    .orElseThrow(() -> new RuntimeException("Seri '" + trimmed + "' không tồn tại hoặc đã bán"));
+
+            // Kiểm tra trùng trong đơn (tránh quét 2 lần cùng seri)
+            boolean alreadyInOrder = orderCTRepository.existsByIdOrder_IdAndIdSeri_Id(orderId, seri.getId());
+            if (alreadyInOrder) {
+                throw new RuntimeException("Seri '" + trimmed + "' đã có trong đơn hàng");
+            }
+
+            seriUuids.add(seri.getId());
+        }
+
+        // Dùng lại hàm cũ (an toàn, không cần viết lại logic)
+        PosAddItemsRequest request = new PosAddItemsRequest();
+        request.setSeriIds(seriUuids);
+        return addItems(orderId, request);
+    }
     private String generateMaDonHang() {
         // Phần ngày: yyyyMMdd
         String datePart = LocalDate.now()

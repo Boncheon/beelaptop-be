@@ -7,6 +7,7 @@ import com.example.sever.dto.response.SeriDisplayReponse;
 import com.example.sever.entity.Seri;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,4 +20,7 @@ public interface SeriService {
     List<SeriDisplayReponse> getAll();
 
     SeriDisplayReponse getDetail(UUID id);
+
+
+    SeriDisplayReponse findByIdSeri(String idSeri);
 }
