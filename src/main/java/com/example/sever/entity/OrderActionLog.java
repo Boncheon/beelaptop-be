@@ -1,17 +1,9 @@
 package com.example.sever.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
@@ -22,8 +14,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "OrderActionLog", schema = "dbo")
 public class OrderActionLog {
+
     @Id
-    @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
     private UUID id;
 
@@ -35,7 +27,6 @@ public class OrderActionLog {
     @JoinColumn(name = "id_order")
     private Order idOrder;
 
-    @ColumnDefault("getdate()")
     @Column(name = "ngay_tao")
     private Instant ngayTao;
 
@@ -51,4 +42,14 @@ public class OrderActionLog {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
+    @PrePersist
+    public void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (ngayTao == null) ngayTao = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        ngayTao = Instant.now(); // vì bạn muốn 1 log duy nhất => ngay_tao hiểu là "lần cập nhật gần nhất"
+    }
 }

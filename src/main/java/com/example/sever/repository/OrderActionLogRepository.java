@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,5 +16,11 @@ public interface OrderActionLogRepository extends JpaRepository<OrderActionLog, 
 
     @Query(value = "SELECT TOP 1 ngay_tao FROM dbo.OrderActionLog WHERE id_order = :idOrder ORDER BY ngay_tao ASC", nativeQuery = true)
     Optional<Instant> findFirstNgayTaoByIdOrder(@Param("idOrder") UUID idOrder);
+
+    List<OrderActionLog> findByIdOrder_IdOrderByNgayTaoAsc(UUID orderId);
+    // Lấy 1 log duy nhất (log đầu tiên) của order
+
+
+    Optional<OrderActionLog> findByIdOrder_Id(UUID orderId);
 }
 
