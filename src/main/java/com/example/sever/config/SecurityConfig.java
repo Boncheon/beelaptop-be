@@ -50,7 +50,7 @@ public class SecurityConfig {
             "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page", "/uploads/**",  "/api/pos/payment/vnpay-return",
             "/api/pos/payment/momo-return",
             "/api/pos/payment/vnpay-ipn",
-            "/api/pos/payment/momo-ipn"
+            "/api/pos/payment/momo-ipn", "/api/v1/**"
     };
 
     @Bean

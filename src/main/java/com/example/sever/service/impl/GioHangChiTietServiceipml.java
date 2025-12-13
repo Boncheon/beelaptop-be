@@ -4,10 +4,11 @@ import com.example.sever.dto.GioHang.GioHangChiTietDTO;
 import com.example.sever.entity.GioHangChiTiet;
 import com.example.sever.repository.GioHangChiTietRepository;
 import com.example.sever.repository.GioHangRepository;
-import com.example.sever.repository.SeriRepository;
+import com.example.sever.repository.LaptopChiTietRepository;
 import com.example.sever.service.GioHangChiTietService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,59 +17,78 @@ import java.util.UUID;
 public class GioHangChiTietServiceipml implements GioHangChiTietService {
 
     @Autowired
-    GioHangChiTietRepository gioHangCTRepo;
+    private GioHangChiTietRepository gioHangCTRepo;
 
     @Autowired
-    GioHangRepository gioHangRepo;
+    private GioHangRepository gioHangRepo;
 
     @Autowired
-    SeriRepository seriRepo;
-
+    private LaptopChiTietRepository laptopChiTietRepo;
 
     @Override
+    @Transactional
     public GioHangChiTietDTO addToCart(GioHangChiTietDTO dto) {
-        var gioHang = gioHangRepo.findById(dto.getIdGioHang())
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+        if (dto.getIdGioHang() == null) throw new IllegalArgumentException("idGioHang is required");
+        if (dto.getIdSpct() == null) throw new IllegalArgumentException("idSpct is required");
+        if (dto.getSoLuong() == null || dto.getSoLuong() <= 0) dto.setSoLuong(1);
+        if (dto.getIsSelected() == null) dto.setIsSelected(1);
 
-        var seri = seriRepo.findById(dto.getIdSeri())
-                .orElseThrow(() -> new RuntimeException("Seri not found"));
+        var gioHang = gioHangRepo.findById(dto.getIdGioHang())
+                .orElseThrow(() -> new RuntimeException("Cart not found: " + dto.getIdGioHang()));
+
+        var spct = laptopChiTietRepo.findById(dto.getIdSpct())
+                .orElseThrow(() -> new RuntimeException("LaptopChiTiet not found: " + dto.getIdSpct()));
 
         GioHangChiTiet item = new GioHangChiTiet();
-        item.setId(UUID.randomUUID());
+
+        // ✅ CỰC QUAN TRỌNG: KHÔNG setId() vì entity có @GeneratedValue/@UuidGenerator
+        // item.setId(UUID.randomUUID()); ❌ XÓA
+
+        item.setIdGiohangchitiet("CT" + System.currentTimeMillis());
         item.setIdGioHang(gioHang);
-        item.setIdSeri(seri);
+        item.setIdSpct(spct);
         item.setSoLuong(dto.getSoLuong());
         item.setIsSelected(dto.getIsSelected());
-        item.setIdGiohangchitiet("CT" + System.currentTimeMillis());
 
-        gioHangCTRepo.save(item);
+        GioHangChiTiet saved = gioHangCTRepo.save(item);
 
-        dto.setId(item.getId());
+        dto.setId(saved.getId());
+        dto.setIdGiohangchitiet(saved.getIdGiohangchitiet());
         return dto;
     }
 
     @Override
     public List<GioHangChiTietDTO> getCartItems(UUID idGioHang) {
         return gioHangCTRepo.findByIdGioHang_Id(idGioHang)
-                .stream().map(item -> {
+                .stream()
+                .map(item -> {
                     GioHangChiTietDTO dto = new GioHangChiTietDTO();
                     dto.setId(item.getId());
+                    dto.setIdGiohangchitiet(item.getIdGiohangchitiet());
                     dto.setIdGioHang(idGioHang);
-                    dto.setIdSeri(item.getIdSeri().getId());
+                    dto.setIdSpct(item.getIdSpct() != null ? item.getIdSpct().getId() : null);
                     dto.setSoLuong(item.getSoLuong());
                     dto.setIsSelected(item.getIsSelected());
                     return dto;
-                }).toList();
+                })
+                .toList();
     }
 
     @Override
+    @Transactional
     public void updateQuantity(UUID id, Integer quantity) {
-        var item = gioHangCTRepo.findById(id).orElseThrow();
+        if (quantity == null || quantity <= 0) throw new IllegalArgumentException("quantity must be > 0");
+
+        GioHangChiTiet item = gioHangCTRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Cart item not found: " + id));
+
         item.setSoLuong(quantity);
+        // ✅ item managed -> save cũng được, không save vẫn update
         gioHangCTRepo.save(item);
     }
 
     @Override
+    @Transactional
     public void deleteItem(UUID id) {
         gioHangCTRepo.deleteById(id);
     }

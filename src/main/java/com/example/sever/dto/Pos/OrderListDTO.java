@@ -4,6 +4,7 @@ package com.example.sever.dto.Pos;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -30,6 +31,6 @@ public class OrderListDTO {
     private Integer trangThaiDon;     // trạng thái đơn
     private Integer trangThaiThanhToan;
     Integer trangThaiDonForTaiQuay;
-    private LocalDateTime ngayTao;
-    private LocalDateTime ngayCapNhat;
+    private Instant ngayTao;
+    private Instant ngayCapNhat;
 }

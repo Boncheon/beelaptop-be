@@ -16,7 +16,7 @@ public class HeDieuHanhAddRequestDTO {
 
      private String ten;
 
-     private String phienBan;
+
 
      private Integer trangThai;
 }

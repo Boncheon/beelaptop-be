@@ -10,6 +10,6 @@ public interface OrderService {
 
     OrderRespone taoDonHang(OrderRequest request);
 
-    void addItemsToOrder(UUID orderId, List<UUID> seriIds);
+
 
 }

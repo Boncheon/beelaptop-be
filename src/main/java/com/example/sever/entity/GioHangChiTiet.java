@@ -1,42 +1,38 @@
 package com.example.sever.entity;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "GioHangChiTiet", schema = "dbo")
+@Table(name = "GioHangCT", schema = "dbo")
 public class GioHangChiTiet {
     @Id
-    @ColumnDefault("newid()")
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "ID", nullable = false)
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "ID_GioHangChiTiet", length = 20)
+    @Column(name = "id_gio_hang_ct", length = 20)
     private String idGiohangchitiet;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_gio_hang")
+    @JoinColumn(name = "id_gioHang")
     private GioHang idGioHang;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_seri")
-    private Seri idSeri;
+    @JoinColumn(name = "id_spct")
+    private LaptopChiTiet idSpct;
 
     @Column(name = "is_selected")
     private Integer isSelected;

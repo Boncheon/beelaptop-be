@@ -48,7 +48,7 @@ public class HinhThucThanhToanChiTiet {
     private BigDecimal traLai;
 
     @Column(name = "ghi_chu", precision = 18, scale = 2)
-    private BigDecimal ghiChu;
+    private String ghiChu;
 
 
 }

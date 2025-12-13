@@ -3,6 +3,7 @@ package com.example.sever.dto.Pos;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -42,8 +43,8 @@ public class PosOrderDetailDTO {
     private String sdtNhanVien;         // 🔥 thêm
     private String emailNhanVien;       // 🔥 thêm
 
-    private LocalDateTime ngayTao;
-    private LocalDateTime ngayCapNhat;
+    private Instant ngayTao;
+    private Instant ngayCapNhat;
 
     // Chi tiết
     private List<PosOrderItemDTO> items;       // danh sách seri trong đơn

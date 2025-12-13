@@ -1,8 +1,6 @@
 package com.example.sever.entity;
 
-
 import jakarta.persistence.*;
-
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +8,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +18,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "Orders", schema = "dbo")
 public class Order {
+
     @Id
     @ColumnDefault("newid()")
     @Column(name = "ID", nullable = false)
@@ -81,18 +80,18 @@ public class Order {
     private String ghiChu;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ID_nhan_vien")   // tên cột trong DB, bạn tạo thêm nếu chưa có
+    @JoinColumn(name = "ID_nhan_vien") // đúng theo DB của bạn
     private TaiKhoan idNhanVien;
 
-
     @Column(name = "trang_thai_thanh_toan")
-    private Integer trangThaiThanhToan;  // 0: chưa TT, 1: đã TT,...
+    private Integer trangThaiThanhToan; // 0: chưa TT, 1: đã TT,...
 
+    // ✅ SỬA: dùng Instant để khớp dữ liệu kiểu ...Z (UTC)
     @Column(name = "ngay_tao")
-    private LocalDateTime ngayTao;
+    private Instant ngayTao;
 
     @Column(name = "ngay_cap_nhat")
-    private LocalDateTime ngayCapNhat;
+    private Instant ngayCapNhat;
 
     @OneToMany(mappedBy = "idOrders")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
@@ -106,23 +105,22 @@ public class Order {
     @OneToMany(mappedBy = "idOrder")
     private Set<OrderCT> orderCTS = new LinkedHashSet<>();
 
-
     @PrePersist
     public void prePersist() {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
+
         if (ngayTao == null) {
             ngayTao = now;
         }
         ngayCapNhat = now;
 
         if (trangThaiThanhToan == null) {
-            trangThaiThanhToan = 0; // default: chưa thanh toán
+            trangThaiThanhToan = 0;
         }
     }
 
     @PreUpdate
     public void preUpdate() {
-        ngayCapNhat = LocalDateTime.now();
+        ngayCapNhat = Instant.now();
     }
-
 }

@@ -23,4 +23,10 @@ public interface HinhThucThanhToanChiTietRepository
            WHERE h.idOrder.id = :orderId
            """)
     BigDecimal sumSoTienByOrder(@Param("orderId") UUID orderId);
+
+
+    @Query("SELECT httt.tenHinhThuc FROM HinhThucThanhToanChiTiet htttct " +
+            "JOIN htttct.idHinhThucThanhToan httt " +
+            "WHERE htttct.idOrder.id = :idOrder")
+    List<String> findTenHinhThucThanhToanByIdOrder(@Param("idOrder") UUID idOrder);
 }

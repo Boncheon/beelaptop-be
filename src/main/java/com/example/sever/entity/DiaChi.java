@@ -63,6 +63,21 @@ public class DiaChi {
     @Column(name = "dia_chi_chi_tiet")
     private String diaChiChiTiet;
 
+    // ⭐ Thêm 3 trường mới
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "ho_ten", length = 100)
+    private String hoTen;
+
+    @Size(max = 20)
+    @Nationalized
+    @Column(name = "so_dien_thoai", length = 20)
+    private String soDienThoai;
+
+    @Column(name = "mac_dinh")
+    @ColumnDefault("0")
+    private Boolean macDinh;
+
     @OneToMany(mappedBy = "idDiaChi")
     private Set<Order> orders = new LinkedHashSet<>();
 

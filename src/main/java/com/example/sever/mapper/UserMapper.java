@@ -42,14 +42,14 @@ public interface UserMapper {
         response.setUpdatedAt(taiKhoan.getUpdatedAt());
 
         // Lấy địa chỉ từ DiaChi
-        DiaChi address = diaChiRepository.findByIdTaiKhoan(taiKhoan).orElse(null);
-        if (address != null) {
-            response.setQuocGia(address.getQuocGia());
-            response.setTinhThanh(address.getTinhThanh());
-            response.setQuanHuyen(address.getQuanHuyen());
-            response.setPhuongXa(address.getPhuongXa());
-            response.setDiaChiChiTiet(address.getDiaChiChiTiet());
-        }
+//        DiaChi address = diaChiRepository.findByIdTaiKhoan(taiKhoan).orElse(null);
+//        if (address != null) {
+//            response.setQuocGia(address.getQuocGia());
+//            response.setTinhThanh(address.getTinhThanh());
+//            response.setQuanHuyen(address.getQuanHuyen());
+//            response.setPhuongXa(address.getPhuongXa());
+//            response.setDiaChiChiTiet(address.getDiaChiChiTiet());
+//        }
 
         return response;
     }

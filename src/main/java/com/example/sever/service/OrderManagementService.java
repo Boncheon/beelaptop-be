@@ -1,13 +1,13 @@
 package com.example.sever.service;
 
-
-
 import com.example.sever.dto.Pos.OrderListDTO;
 import com.example.sever.dto.Pos.PageResult;
 import com.example.sever.entity.Order;
+import com.example.sever.entity.TaiKhoan;
 import com.example.sever.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,48 +20,12 @@ public class OrderManagementService {
 
     private final OrderRepository ordersRepository;
 
-
-//    public PageResult<OrderListDTO> searchOrders(
-//            String keyword,
-//            String loaiDon,
-//            Integer trangThaiDon,
-//            Integer trangThaiThanhToan,
-//            LocalDate fromDate,
-//            LocalDate toDate,
-//            Pageable pageable) {
-//
-//        LocalDateTime fromDateTime =
-//                fromDate != null ? fromDate.atStartOfDay() : null;
-//        LocalDateTime toDateTime =
-//                toDate != null ? toDate.plusDays(1).atStartOfDay() : null;
-//
-//        Page<Order> page = ordersRepository.searchOrders(
-//                normalize(keyword),
-//                normalize(loaiDon),
-//                trangThaiDon,
-//                trangThaiThanhToan,
-//                fromDateTime,
-//                toDateTime,
-//                pageable
-//        );
-//
-//        Page<OrderListDTO> mapped = page.map(this::toDTO);
-//
-//        return PageResult.<OrderListDTO>builder()
-//                .content(mapped.getContent())
-//                .page(mapped.getNumber())
-//                .size(mapped.getSize())
-//                .totalElements(mapped.getTotalElements())
-//                .totalPages(mapped.getTotalPages())
-//                .build();
-//    }
-
     public PageResult<OrderListDTO> searchOrders(
             String keyword,
             String loaiDon,
             Integer trangThaiDon,
             Integer trangThaiThanhToan,
-            List<Integer> trangThaiDonForTaiQuay,    // THAM SỐ MỚI
+            List<Integer> trangThaiDonForTaiQuay, // THAM SỐ MỚI
             LocalDate fromDate,
             LocalDate toDate,
             Pageable pageable) {
@@ -74,7 +38,6 @@ public class OrderManagementService {
                 normalize(loaiDon),
                 trangThaiDon,
                 trangThaiThanhToan,
-                // Nếu có yêu cầu lọc riêng cho TAI_QUAY → ép trạng thái = 2
                 trangThaiDonForTaiQuay,
                 fromDateTime,
                 toDateTime,
@@ -97,11 +60,15 @@ public class OrderManagementService {
     }
 
     private OrderListDTO toDTO(Order o) {
+        // ✅ FIX: idNhanVien có thể null
         String maNhanVien = null;
 
-        if (o.getIdNhanVien().getIdTaiKhoan() != null) {
-            maNhanVien = o.getIdNhanVien().getIdTaiKhoan(); // hoặc getUsername()
-
+        TaiKhoan nv = o.getIdNhanVien();
+        if (nv != null) {
+            // Nếu TaiKhoan của bạn có field String idTaiKhoan (mã nhân viên) thì dùng cái này
+            // Còn nếu không có, đổi sang nv.getId().toString() hoặc nv.getEmail()/nv.getTenDangNhap()
+            maNhanVien = nv.getIdTaiKhoan(); // giữ đúng theo code bạn đang dùng
+            // nếu nv.getIdTaiKhoan() có thể null thì vẫn ok => maNhanVien null
         }
 
         return OrderListDTO.builder()

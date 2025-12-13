@@ -30,10 +30,7 @@ public class HeDieuHanh {
     @Column(name = "ten", length = 100)
     private String ten;
 
-    @Size(max = 100)
-    @Nationalized
-    @Column(name = "phien_ban", length = 100)
-    private String phienBan;
+
 
     @Column(name = "trang_thai")
     private Integer trangThai;

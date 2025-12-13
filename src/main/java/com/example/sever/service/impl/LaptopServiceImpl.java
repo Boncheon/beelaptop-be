@@ -2,14 +2,18 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.LaptopAddRequestDTO;
 import com.example.sever.dto.request.LaptopUpdateRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopProjection;
 import com.example.sever.dto.response.LapTopDisplayReponse;
 import com.example.sever.dto.response.LaptopResponseDTO;
+import com.example.sever.dto.response.Search.BrandSearchResponse;
+import com.example.sever.dto.response.Search.LaptopSearchBrandProjection;
 import com.example.sever.entity.Laptop;
 import com.example.sever.mapper.LapTopMapper;
 import com.example.sever.mapper.LapTopCTMapper;
 import com.example.sever.repository.LapTopRepository;
 import com.example.sever.repository.LaptopChiTietRepository;
 import com.example.sever.repository.SeriRepository;
+import com.example.sever.repository.ThuongHieuRepository;
 import com.example.sever.service.LaptopService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,8 @@ public class LaptopServiceImpl implements LaptopService {
     private final LapTopCTMapper lapTopCTMapper;
     private final LaptopChiTietRepository laptopChiTietRepository;
     private final SeriRepository seriRepository;
+
+    private final ThuongHieuRepository thuongHieuRepository;
 
     /**
      * Lấy danh sách tất cả Laptop base (trang quản trị)
@@ -129,5 +135,24 @@ public class LaptopServiceImpl implements LaptopService {
         return lapTopMapper.getAlldisplayLapTop(lt);
     }
 
+///------------------/////////
+@Override
+public List<CustomerLaptopProjection> getCustomerLaptop() {
+    return laptopRepository.getLaptopsForHome();
+}
 
+    @Override
+    public List<CustomerLaptopProjection> getLatestLaptops() {
+        return laptopRepository.getLatestLaptops();
+    }
+
+    @Override
+    public List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand) {
+        return laptopRepository.findAllByBrandId(idBrand);
+    }
+
+    @Override
+    public List<BrandSearchResponse> getAllBrand() {
+        return thuongHieuRepository.listBrandSearch();
+    }
 }

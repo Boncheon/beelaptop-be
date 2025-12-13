@@ -99,6 +99,22 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
 
 
+    //------------------------------Code huy bán onl-----------/
+
+
+    @Query("SELECT o FROM Order o WHERE o.idTaiKhoan.id = :idTaiKhoan ORDER BY o.id DESC")
+    List<Order> findByIdTaiKhoanOrderByIdDesc(@Param("idTaiKhoan") UUID idTaiKhoan);
+
+    @Query("SELECT o FROM Order o WHERE o.maDonHang = :maDonHang AND o.sdtKhachHang = :sdt")
+    List<Order> findByMaDonHangAndSdtKhachHang(@Param("maDonHang") String maDonHang, @Param("sdt") String sdt);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "UPDATE dbo.Orders SET ngay_tao = GETDATE() WHERE ID = :id", nativeQuery = true)
+    void updateNgayTaoById(@Param("id") UUID id);
+
+
+    //------------------------------Code quý thống kê-----------/
+
     // Doanh số theo tháng của 1 năm (có thêm top 10 laptop của mỗi tháng)
     @Query(value = """
         WITH ThongKeThang AS (
@@ -265,15 +281,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Long countSeriLienKet(@Param("year") int year);
 
     // Debug: Kiểm tra số PhienBan có liên kết
-    @Query(value = """
-        SELECT COUNT(*) 
-        FROM OrderCT oct
-        JOIN [Orders] o ON o.ID = oct.id_order
-        JOIN Seri s ON s.ID = oct.id_seri
-        JOIN PhienBan pb ON pb.ID = s.id_phien_ban
-        WHERE YEAR(o.ngay_tao) = :year
-        """, nativeQuery = true)
-    Long countPhienBanLienKet(@Param("year") int year);
+
 
     // Debug: Kiểm tra số Seri có id_lap_top_ct (đường ngắn)
     @Query(value = """

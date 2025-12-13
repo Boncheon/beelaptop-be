@@ -1,5 +1,6 @@
 package com.example.sever.repository;
 
+import com.example.sever.dto.response.PhieuGiamGiaCustomerProjection;
 import com.example.sever.entity.PhieuGiamGia;
 
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +38,31 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, UUID
     Page<PhieuGiamGia> findAll(Pageable pageable);
 
     boolean existsByIdPhieugiamgia(String idPhieugiamgia);
+
+    //------------------------------Code huy bán onl-----------/
+
+
+
+
+    @Query(value = """
+        SELECT 
+            p.id as id ,
+            p.ID_PhieuGiamGia AS maGiamGia,
+            p.ten AS ten,
+            p.kieu_giam_gia AS kieuGiamGia,
+            p.gia_tri_giam AS giaTriGiam,
+            p.ngay_bat_dau AS ngayBatDau,
+            p.ngay_ket_thuc AS ngayKetThuc,
+            p.gia_tri_min AS giaTriMin,
+            p.gia_tri_max AS giaTriMax
+        FROM dbo.PhieuGiamGia p
+        WHERE p.trang_thai = 1
+          AND p.so_luong > 0
+          AND GETDATE() BETWEEN p.ngay_bat_dau AND p.ngay_ket_thuc
+          AND :tongTien >= p.gia_tri_min
+        ORDER BY p.ngay_ket_thuc ASC
+        """, nativeQuery = true)
+    List<PhieuGiamGiaCustomerProjection> findPhieuGiamGiaPhuHop(@Param("tongTien") BigDecimal tongTien);
 
 
 }

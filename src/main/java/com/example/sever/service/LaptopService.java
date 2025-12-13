@@ -2,11 +2,15 @@ package com.example.sever.service;
 
 import com.example.sever.dto.request.LaptopAddRequestDTO;
 import com.example.sever.dto.request.LaptopUpdateRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopProjection;
 import com.example.sever.dto.response.LapTopDisplayReponse;
 import com.example.sever.dto.response.LaptopResponseDTO;
+import com.example.sever.dto.response.Search.BrandSearchResponse;
+import com.example.sever.dto.response.Search.LaptopSearchBrandProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -33,4 +37,12 @@ public interface LaptopService {
      * Lấy chi tiết Laptop + danh sách các biến thể (LaptopChiTiet)
      */
     LapTopDisplayReponse getDetailedLapTop(UUID id);
+
+
+    //--------/
+
+    List<CustomerLaptopProjection> getCustomerLaptop();
+    List<CustomerLaptopProjection> getLatestLaptops();
+    List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand);
+    List<BrandSearchResponse> getAllBrand();
 }

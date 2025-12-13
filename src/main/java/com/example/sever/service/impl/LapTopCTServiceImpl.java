@@ -3,7 +3,12 @@ package com.example.sever.service.impl;
 import com.example.sever.dto.request.LapTopCTAddRequestDTO;
 import com.example.sever.dto.request.LapTopCTAutoGenRequestDTO;
 import com.example.sever.dto.request.LapTopCTUpdateRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopChiTietProject;
+import com.example.sever.dto.response.CustomerLaptopChiTietResponse;
+import com.example.sever.dto.response.GioHang.ProductCartResponse;
 import com.example.sever.dto.response.LaptopChiTietResponseDTO;
+import com.example.sever.dto.response.ListLaptopCustomerProjection;
+import com.example.sever.dto.response.Search.LaptopSearchResponse;
 import com.example.sever.entity.*;
 import com.example.sever.mapper.LapTopCTMapper;
 import com.example.sever.repository.*;
@@ -19,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -36,6 +42,9 @@ public class LapTopCTServiceImpl implements LapTopCTService {
     private final LapTopCTMapper mapper;
     private final LapTopRepository lapTopRepository;
     private final LaptopChiTietRepository laptopChiTietRepository;
+
+    private final AnhRepository anhRepository;
+    private final SeriRepository seriRepository;
 
     // ====================== LIST ======================
     @Override
@@ -193,5 +202,64 @@ public class LapTopCTServiceImpl implements LapTopCTService {
         entity.setNgayCapNhat(Instant.now());
 
         return mapper.toResponse(laptopChiTietRepo.save(entity));
+    }
+
+
+    ///-----------code huy-----------/
+    @Override
+    public List<CustomerLaptopChiTietResponse> getLapTopCustomer(UUID laptopId) {
+        List<CustomerLaptopChiTietProject> projections = laptopChiTietRepository.findLaptopChiTietWithAnhAndVersionsByLaptopId(laptopId);
+
+        List<CustomerLaptopChiTietResponse> responses = new ArrayList<>();
+        for (CustomerLaptopChiTietProject projection : projections) {
+            List<String> images = anhRepository.findAllImgUrlByLaptopChiTietId(projection.getCtId());
+            if (images == null || images.isEmpty()) {
+                images = new ArrayList<>();
+            }
+
+            Optional<Integer> trangThaiSeriOpt = seriRepository.findTrangThaiSeriByLaptopChiTietId(projection.getCtId());
+            Integer trangThaiSeri = trangThaiSeriOpt.orElse(0);
+
+            CustomerLaptopChiTietResponse response = new CustomerLaptopChiTietResponse();
+            response.setCtId(projection.getCtId());
+            response.setLaptopId(projection.getLaptopId());
+            response.setProductName(projection.getProductName());
+            response.setPrice(projection.getPrice());
+            response.setDisplay(projection.getDisplay());
+            response.setResolution(projection.getResolution());
+            response.setRam(projection.getRam());
+            response.setSsd(projection.getSsd());
+            response.setCpu(projection.getCpu());
+            response.setCard(projection.getCard());
+            response.setColor(projection.getColor());
+            response.setImages(images);
+            response.setDescription(projection.getDescription());
+            response.setTrangThaiSeri(trangThaiSeri);
+
+            responses.add(response);
+        }
+
+        return responses;
+    }
+
+    @Override
+    public String checkQuantityProduct(UUID id, int quantity) {
+        return laptopChiTietRepository.checkTonKho(id , quantity);
+    }
+
+    @Override
+    public List<ListLaptopCustomerProjection> listProductLaptop() {
+        return laptopChiTietRepository.getAllLaptopDetails();
+    }
+
+    @Override
+    public ProductCartResponse getProductForCustomer(UUID id) {
+        return laptopChiTietRepository.getLaptopDetail(id);
+    }
+
+    @Override
+    public List<LaptopSearchResponse> searchLaptopCustomer(String keyword) {
+        String searchPattern = "%" + keyword.replace(" ", "%") + "%";
+        return laptopChiTietRepository.searchLaptopCustomer(searchPattern);
     }
 }

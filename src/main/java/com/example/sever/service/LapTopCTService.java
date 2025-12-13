@@ -3,7 +3,11 @@ package com.example.sever.service;
 import com.example.sever.dto.request.LapTopCTAddRequestDTO;
 import com.example.sever.dto.request.LapTopCTAutoGenRequestDTO;
 import com.example.sever.dto.request.LapTopCTUpdateRequestDTO;
+import com.example.sever.dto.response.CustomerLaptopChiTietResponse;
+import com.example.sever.dto.response.GioHang.ProductCartResponse;
 import com.example.sever.dto.response.LaptopChiTietResponseDTO;
+import com.example.sever.dto.response.ListLaptopCustomerProjection;
+import com.example.sever.dto.response.Search.LaptopSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -43,4 +47,11 @@ public interface LapTopCTService {
     LaptopChiTietResponseDTO updateStatus(UUID id, Integer trangThai);
 
     List<LaptopChiTietResponseDTO> autoGenVariants(LapTopCTAutoGenRequestDTO req);
+
+    List<CustomerLaptopChiTietResponse> getLapTopCustomer(UUID laptopId);
+    String checkQuantityProduct(UUID id , int quantity);
+    List<ListLaptopCustomerProjection> listProductLaptop();
+
+    ProductCartResponse getProductForCustomer(UUID id);
+    List<LaptopSearchResponse> searchLaptopCustomer(String keyword);
 }
