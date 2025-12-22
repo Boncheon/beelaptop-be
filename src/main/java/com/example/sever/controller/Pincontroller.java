@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.PinAddRequestDTO;
 import com.example.sever.dto.request.PinUpdateRequestDTO;
+import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.PinDisplayReponse;
 import com.example.sever.entity.Pin;
 import com.example.sever.service.PinService;
@@ -12,13 +13,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
 @CrossOrigin("*")
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
@@ -30,7 +28,7 @@ public class Pincontroller {
 
     @GetMapping()
     public ResponseEntity<Page<PinDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                       @RequestParam(defaultValue = "4") int size) {
+                                                                       @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
         if (perPage < 0) perPage = 0;
         Pageable pageable = PageRequest.of(perPage, size);
@@ -52,6 +50,15 @@ public class Pincontroller {
         return ApiResponse.<Pin>builder()
                 .message("cap nhap thanh cong")
                 .data(updated)
+                .build();
+    }
+
+    @GetMapping("/detail/{id}")
+    public ApiResponse<PinDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
+        PinDisplayReponse p = pinService.getDetailedPin(id);
+        return ApiResponse.<PinDisplayReponse>builder()
+                .message("Lấy chi tiết Pin thành công")
+                .data(p)
                 .build();
     }
 }

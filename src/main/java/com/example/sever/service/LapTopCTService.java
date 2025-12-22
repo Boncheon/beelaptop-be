@@ -1,32 +1,46 @@
 package com.example.sever.service;
 
 import com.example.sever.dto.request.LapTopCTAddRequestDTO;
+import com.example.sever.dto.request.LapTopCTAutoGenRequestDTO;
 import com.example.sever.dto.request.LapTopCTUpdateRequestDTO;
-import com.example.sever.dto.response.LapTopCTDisplayReponse;
-import com.example.sever.entity.LaptopChiTiet;
+import com.example.sever.dto.response.LaptopChiTietResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface LapTopCTService {
 
     /**
-     * Lấy danh sách các phiên bản để hiển thị, có phân trang.
-     *
-     * @param pageable thông tin phân trang
-     * @return danh sách phiên bản hiển thị
+     * Lấy danh sách biến thể có phân trang.
      */
-    Page<LapTopCTDisplayReponse> getAllLapTopCTforDisplay(Pageable pageable);
+    Page<LaptopChiTietResponseDTO> getAll(Pageable pageable);
 
     /**
-     * Thêm mới một phiên bản sản phẩm.
-     *
-     * @param adddto DTO chứa thông tin phiên bản cần thêm
-     * @return phiên bản sau khi lưu
+     * Lấy tất cả biến thể thuộc 1 Laptop base.
      */
+    List<LaptopChiTietResponseDTO> getByLaptop(UUID idLaptop);
 
-    LapTopCTDisplayReponse addLapTopCT(LapTopCTAddRequestDTO  adddto);
-    LapTopCTDisplayReponse updateLapTopCT(LapTopCTUpdateRequestDTO dto);
-    LapTopCTDisplayReponse getById (UUID id);
+    /**
+     * Lấy chi tiết một biến thể.
+     */
+    LaptopChiTietResponseDTO getById(UUID id);
+
+    /**
+     * Thêm biến thể cho laptop.
+     */
+    LaptopChiTietResponseDTO add(UUID idLaptop, LapTopCTAddRequestDTO dto);
+
+    /**
+     * Sửa biến thể (update cấu hình, giá, màu sắc…).
+     */
+    LaptopChiTietResponseDTO update(UUID id, LapTopCTUpdateRequestDTO dto);
+
+    /**
+     * Chỉ thay đổi trạng thái biến thể (1 = hoạt động, 0 = ngừng).
+     */
+    LaptopChiTietResponseDTO updateStatus(UUID id, Integer trangThai);
+
+    List<LaptopChiTietResponseDTO> autoGenVariants(LapTopCTAutoGenRequestDTO req);
 }

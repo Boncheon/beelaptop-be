@@ -1,10 +1,8 @@
 package com.example.sever.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import jakarta.persistence.Column;
+import lombok.*;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -12,13 +10,30 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LapTopDisplayReponse {
-     private UUID id;
-     private String idLaptop;
-     private String tenSanPham;
-//     private UUID idDanhMuc;
-//     private UUID idThuongHieu;
-     private String moTa;
-     private String nguoiTao;
-     private Long soLuongTon; // tổng số Seri thuộc các phiên bản của laptop
 
+     private UUID id;          // ID laptop
+     private String idLaptop;  // Mã SKU
+
+     private String tenSanPham;
+     private String moTa;
+
+     // ===== ID FK (để FE bind form sửa) =====
+     private UUID idThuongHieu;
+     private UUID idManHinh;
+     private UUID idPin;
+     private UUID idKichThuoc;
+     private UUID idHeDieuHanh;
+
+     // ===== Tên hiển thị =====
+     private String tenThuongHieu;
+     private String tenManHinh;
+     private String tenPin;
+     private String tenKichThuoc;
+     private String tenHeDieuHanh;
+
+     private Instant ngayTao;
+     private Instant ngaySua;
+     private Long soLuongBienThe;
+     private Long tongSoLuongSeri;
+     private Integer trangThai;
 }

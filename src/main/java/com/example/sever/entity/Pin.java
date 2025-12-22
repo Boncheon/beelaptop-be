@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +33,12 @@ public class Pin {
     @Column(name = "dung_luong", length = 50)
     private String dungLuong;
 
-    @OneToMany(mappedBy = "idPin")
-    private Set<LaptopChiTiet> laptopChiTiets = new LinkedHashSet<>();
+    @Column(name = "trang_thai")
+    private Integer trangThai;
 
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 }

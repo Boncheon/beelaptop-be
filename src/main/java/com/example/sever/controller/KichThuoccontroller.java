@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.KichThuocAddRequestDTO;
 import com.example.sever.dto.request.KichThuocUpdateRequestDTO;
+import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.KichThuocDisplayReponse;
 import com.example.sever.entity.KichThuoc;
 import com.example.sever.service.KichThuocService;
@@ -12,13 +13,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
@@ -31,7 +28,7 @@ public class KichThuoccontroller {
 
     @GetMapping()
     public ResponseEntity<Page<KichThuocDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                             @RequestParam(defaultValue = "4") int size) {
+                                                                             @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
         if (perPage < 0) perPage = 0;
         Pageable pageable = PageRequest.of(perPage, size);
@@ -55,4 +52,13 @@ public class KichThuoccontroller {
                 .data(updated)
                 .build();
     }
+    @GetMapping("/detail/{id}")
+    public ApiResponse<KichThuocDisplayReponse> getKichThuocById(@PathVariable("id") UUID id) {
+        KichThuocDisplayReponse kt = kichthuocService.getDetailedKichThuoc(id);
+        return ApiResponse.<KichThuocDisplayReponse>builder()
+                .message("Lấy chi tiết KT thành công")
+                .data(kt)
+                .build();
+    }
+
 }

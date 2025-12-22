@@ -26,6 +26,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
@@ -44,6 +46,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     JwtUtil jwtUtil;
     MailService mailService;
     PasswordEncoder passwordEncoder;
+    UserSessionTracker sessionTracker;
 
     private static final String KEY_COOKIE = "ARTICLE_SERVICE";
 
@@ -148,6 +151,10 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             taiKhoanRepository.save(user);
             deleteCookie(response);
             SecurityContextHolder.clearContext();
+            
+            // ✅ Track user logout
+            sessionTracker.trackLogout(user.getId().toString());
+            
             log.info("User {} logged out successfully", username);
         } else {
             log.error("Token expired for user: {}", username);
@@ -234,6 +241,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
         log.info("Password reset successfully for user: {}", user.getSoDienThoai());
     }
 
+
     private Cookie setCookie(String accessToken, String refreshToken) {
         Map<String, String> tokenData = new HashMap<>();
         tokenData.put("accessToken", accessToken);
@@ -248,14 +256,19 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             throw new AppException(ErrorCode.JSON_PROCESSING_ERROR, "Only JPEG and PNG images are allowed");
         }
 
-        String formattedJsonData = jsonData.replace("\"", "%22").replace(",", "%2C");
+        String formattedJsonData = jsonData
+                .replace("\"", "%22")
+                .replace(",", "%2C");
 
         Cookie cookie = new Cookie(KEY_COOKIE, formattedJsonData);
         cookie.setHttpOnly(true);
         cookie.setMaxAge(jwtUtil.getRefreshableDuration().intValue() / 1000);
         cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setDomain("localhost");
+
+        // ✅ LOCALHOST: KHÔNG secure, KHÔNG domain
+        cookie.setSecure(false);
+        // cookie.setDomain("localhost");
+
         log.debug("Cookie set: {}", formattedJsonData);
         return cookie;
     }
@@ -265,8 +278,10 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         cookie.setPath("/");
-        cookie.setSecure(true);
-        cookie.setDomain("localhost");
+
+        cookie.setSecure(false);
+        // cookie.setDomain("localhost");
+
         response.addCookie(cookie);
         log.debug("Cookie deleted");
     }

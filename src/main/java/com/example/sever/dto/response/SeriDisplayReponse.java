@@ -19,10 +19,10 @@ public class SeriDisplayReponse {
 
      private String idSeri;
 
-     private UUID idPhienBan;
-
-     private BigDecimal giaGoc;
-
-     private String nguonSeri;
+//     private UUID idPhienBan;
+//
+//     private BigDecimal giaGoc;
+//
+//     private String nguonSeri;
      private Integer trangThai;
 }

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -34,5 +35,13 @@ public class HeDieuHanh {
     @Column(name = "phien_ban", length = 100)
     private String phienBan;
 
+    @Column(name = "trang_thai")
+    private Integer trangThai;
+
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 
 }

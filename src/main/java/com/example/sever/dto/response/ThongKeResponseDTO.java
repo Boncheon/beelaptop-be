@@ -18,4 +18,3 @@ public class ThongKeResponseDTO {
     private List<TopLaptopBanChayResponseDTO> topLaptop2;  // Top 10 laptop của năm/tháng/ngày 2
 }
 
-

@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Nationalized;
 
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -21,9 +22,9 @@ import java.util.UUID;
 @Table(name = "ThuongHieu", schema = "dbo")
 public class ThuongHieu {
     @Id
-    @ColumnDefault("newid()")
-    @Column(name = "ID", nullable = false)
-    private UUID id;
+    @Column(name = "ID", nullable = false, updatable = false)
+    private UUID id = UUID.randomUUID();
+
 
     @Size(max = 255)
     @Nationalized
@@ -35,7 +36,12 @@ public class ThuongHieu {
     @Column(name = "mo_ta", length = 500)
     private String moTa;
 
-//    @OneToMany(mappedBy = "idThuonghieu")
-//    private Set<Laptop> laptops = new LinkedHashSet<>();
+    @Column(name = "trang_thai")
+    private Integer trangThai;
 
+    @Column(name = "ngay_tao")
+    private Instant ngayTao;
+
+    @Column(name = "ngay_sua")
+    private Instant ngaySua;
 }

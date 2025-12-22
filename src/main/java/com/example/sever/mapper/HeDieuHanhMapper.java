@@ -6,13 +6,24 @@ import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.entity.HeDieuHanh;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface HeDieuHanhMapper {
 
+    // Add
     HeDieuHanh toHeDieuHanh(HeDieuHanhAddRequestDTO request);
 
+    // Detail
+    HeDieuHanhDisplayReponse toHeDieuHanhDisplayReponse(HeDieuHanh hedieuhanh);
+
+    // List
     HeDieuHanhDisplayReponse getAlldisplayHeDieuHanh(HeDieuHanh hedieuhanh);
 
-    void updateHeDieuHanh(@MappingTarget HeDieuHanh hedieuhanh, HeDieuHanhUpdateRequestDTO request);
+    // Update (ignore field = null, giữ nguyên giá trị cũ)
+    void updateHeDieuHanh(@MappingTarget HeDieuHanh hedieuhanh,
+                          HeDieuHanhUpdateRequestDTO request);
 }

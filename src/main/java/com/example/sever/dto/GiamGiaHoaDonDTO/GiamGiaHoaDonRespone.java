@@ -18,7 +18,7 @@ public class GiamGiaHoaDonRespone {
 
     private String idGiamgiahoadon;
 
-    private String tenPhieu;
+
 
     private String idPhieugiamgia;
 

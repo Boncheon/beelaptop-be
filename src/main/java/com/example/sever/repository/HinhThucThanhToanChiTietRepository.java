@@ -1,0 +1,26 @@
+// com.example.sever.repository.HinhThucThanhToanChiTietRepository
+package com.example.sever.repository;
+
+import com.example.sever.entity.HinhThucThanhToanChiTiet;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+@Repository
+public interface HinhThucThanhToanChiTietRepository
+        extends JpaRepository<HinhThucThanhToanChiTiet, UUID> {
+
+    List<HinhThucThanhToanChiTiet> findByIdOrder_Id(UUID orderId);
+
+    @Query("""
+           SELECT COALESCE(SUM(h.soTienThanhToan), 0)
+           FROM HinhThucThanhToanChiTiet h
+           WHERE h.idOrder.id = :orderId
+           """)
+    BigDecimal sumSoTienByOrder(@Param("orderId") UUID orderId);
+}

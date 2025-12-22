@@ -19,4 +19,5 @@ public class ManHinhAddRequestDTO {
      private Integer tanSoQuet;
 
      private Double kichThuoc;
+     private Integer trangThai;
 }

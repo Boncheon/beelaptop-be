@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -46,18 +47,33 @@ public class CpuServiceImpl implements CpuService {
     @Override
     public Cpu addCpu(CpuAddRequestDTO adddto) {
         Cpu cpu = cpuMapper.toCpu(adddto);
+
+        // mặc định trạng thái nếu null
+        if (cpu.getTrangThai() == null) {
+            cpu.setTrangThai(1);   // 1 = hoạt động
+        }
+
+        Instant now = Instant.now();
+        cpu.setNgayTao(now);
+        cpu.setNgaySua(now);
+
         return cpuRepository.save(cpu);
     }
 
     @Override
     public Cpu updateCpu(CpuUpdateRequestDTO updatedto) {
-        Cpu  existing = cpuRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updatedto.getId()));
+        Cpu existing = cpuRepository.findById(updatedto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy CPU với ID: " + updatedto.getId())
+                );
 
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
+        // map dữ liệu mới
         cpuMapper.updateCpu(existing, updatedto);
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // 👇 ép lại trạng thái cho chắc chắn
+        existing.setTrangThai(updatedto.getTrangThai());
+
+        existing.setNgaySua(Instant.now());
         return cpuRepository.save(existing);
     }
 

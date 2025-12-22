@@ -79,7 +79,7 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
         phieuGiamGia.setNgayBatDau(phieuGiamGiaDto.getNgayBatDau());
         phieuGiamGia.setNgayKetThuc(phieuGiamGiaDto.getNgayKetThuc());
         phieuGiamGia.setGiaTriMin(phieuGiamGiaDto.getGiaTriMin());
-        phieuGiamGia.setGiaTriMax(phieuGiamGiaDto.getGiaTriMax());
+//        phieuGiamGia.setGiaTriMax(phieuGiamGiaDto.getGiaTriMax());
         phieuGiamGia.setMoTa(phieuGiamGiaDto.getMoTa());
 
         if (phieuGiamGiaDto.getTrangThai() != null) {
@@ -111,24 +111,29 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
     }
 
     @Override
-    public List<PhieuGiamGiaDto> filterVoucher(String keyword, LocalDate startDate, LocalDate endDate, Integer trangThai, String sortBy) {
+    public List<PhieuGiamGiaDto> filterVoucher(
+            String keyword,
+            LocalDate startDate,
+            LocalDate endDate,
+            Integer trangThai,
+            String sortBy
+    ) {
 
         return phieuGiamGiaRepo.findAll().stream()
-                .filter(v -> keyword == null || v.getIdPhieugiamgia().toLowerCase().contains(keyword.toLowerCase()) || v.getTen().toLowerCase().contains(keyword.toLowerCase()))
+                .filter(v -> keyword == null
+                        || v.getIdPhieugiamgia().toLowerCase().contains(keyword.toLowerCase())
+                        || v.getTen().toLowerCase().contains(keyword.toLowerCase()))
                 .filter(v -> startDate == null || !v.getNgayBatDau().isBefore(startDate))
                 .filter(v -> endDate == null || !v.getNgayKetThuc().isAfter(endDate))
                 .filter(v -> trangThai == null || v.getTrangThai().equals(trangThai))
                 .sorted(getComparator(sortBy))
                 .map(PhieuGiamGiaMapper::mapTopVoucher)
                 .collect(Collectors.toList());
-
-
     }
 
 
 
 
-    // test
 
 
     @Override
@@ -137,7 +142,7 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
         return phieuGiamGiaRepo.findAllValidCoupons(today).stream()
                 .filter(p -> p.getGiaTriMin() != null && total.compareTo(p.getGiaTriMin()) >= 0)
-                .filter(p -> p.getGiaTriMax() != null && total.compareTo(p.getGiaTriMax()) <= 0)
+//                .filter(p -> p.getGiaTriMax() != null && total.compareTo(p.getGiaTriMax()) <= 0)
                 .max(Comparator.comparing(p -> calculateDiscount(p, total)))
                 .orElse(null);
     }
@@ -159,10 +164,10 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
             discount = total.multiply(coupon.getGiaTriGiam())
                     .divide(BigDecimal.valueOf(100));
 
-            if (coupon.getGiaTriMax() != null &&
-                    discount.compareTo(coupon.getGiaTriMax()) > 0) {
-                discount = coupon.getGiaTriMax();
-            }
+//            if (coupon.getGiaTriMax() != null &&
+//                    discount.compareTo(coupon.getGiaTriMax()) > 0) {
+//                discount = coupon.getGiaTriMax();
+//            }
 
         } else if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_CO_DINH) {
             discount = coupon.getGiaTriGiam();
@@ -208,9 +213,7 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
         capNhatTrangThaiTuDong();
 
-        // Đảm bảo page không âm
-        int validPage = Math.max(page, 0);
-        Pageable pageable = PageRequest.of(validPage, size, Sort.by("ngayBatDau").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayBatDau").descending());
         Page<PhieuGiamGia> entityPage = phieuGiamGiaRepo.findAll(pageable);
         return entityPage.map(PhieuGiamGiaMapper::mapTopVoucher);
 

@@ -15,6 +15,7 @@ public class AnhDisplayReponse {
 
      private UUID id;
      private String idAnh;
+     private UUID idLaptopChiTiet;
      private String imgURL;
 
 

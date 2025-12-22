@@ -9,16 +9,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface SeriMapper {
 
+    SeriDisplayReponse toResponse(Seri entity);
 
-    Seri toSeri(SeriAddRequestDTO request);
+    List<SeriDisplayReponse> toResponseList(List<Seri> entities);
 
-    @Mapping(target = "idPhienBan", source = "phienBan.id")// Ngăn MapStruct tự map object phienBan
-    SeriDisplayReponse getAlldisplaySeri(Seri seri);
-
-    void updateSeri(@MappingTarget Seri seri, SeriUpdateRequestDTO request);
-
-    void updateStatusSeri(@MappingTarget Seri seri, StatusRequestDTO request);
 }

@@ -28,7 +28,6 @@ public class PhieuGiamGiaController {
     private PhieuGiamGiaService phieuGiamGiaService;
 
 
-
     @GetMapping
     public ResponseEntity<List<PhieuGiamGiaDto>> getAll(){
 
@@ -82,7 +81,7 @@ public class PhieuGiamGiaController {
 
         List<PhieuGiamGiaDto> rs = phieuGiamGiaService.searchVoucherByIdOrTen(keyword);
         return ResponseEntity.ok(rs);
-
+        
     }
 
 

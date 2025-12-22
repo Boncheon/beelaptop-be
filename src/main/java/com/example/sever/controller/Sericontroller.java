@@ -3,92 +3,111 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.SeriAddRequestDTO;
 import com.example.sever.dto.request.SeriUpdateRequestDTO;
-import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.response.SeriDisplayReponse;
-import com.example.sever.entity.Seri;
 import com.example.sever.service.SeriService;
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
-
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/seri")
 @AllArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class Sericontroller {
 
-    SeriService seriService;
+    private final SeriService seriService;
 
-    @GetMapping()
-    public ResponseEntity<Page<SeriDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                        @RequestParam(defaultValue = "20") int size) {
-        int perPage = page - 1;
-        if (perPage < 0) perPage = 0;
-        Pageable pageable = PageRequest.of(perPage, size);
-        Page<SeriDisplayReponse> seriPage = seriService.getAllSeriforDisplay(pageable);
-        return ResponseEntity.ok(seriPage);
+    /**
+     * 📌 Lấy danh sách Seri theo biến thể LaptopChiTiet
+     */
+    @GetMapping("/by-laptop-ct/{idLaptopCt}")
+    public ResponseEntity<ApiResponse<List<SeriDisplayReponse>>> getByLaptopCt(
+            @PathVariable UUID idLaptopCt) {
+
+        List<SeriDisplayReponse> data = seriService.getByLaptopCt(idLaptopCt);
+
+        return ResponseEntity.ok(
+                ApiResponse.<List<SeriDisplayReponse>>builder()
+                        .message("Lấy danh sách seri thành công")
+                        .data(data)
+                        .build()
+        );
     }
+
+    /**
+     * 📌 Thêm nhiều Seri cho một biến thể LaptopChiTiet
+     * Body: SeriAddRequestDTO { idLaptopCt, list[ { idSeri, trangThai }, ... ] }
+     */
+    @PostMapping("/them-list")
+    public ResponseEntity<ApiResponse<Void>> addListSeri(
+            @RequestBody SeriAddRequestDTO dto) {
+
+        seriService.addListSeri(dto);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .message("Thêm seri thành công")
+                        .build()
+        );
+    }
+
+    /**
+     * 📌 Cập nhật 1 Seri
+     */
+    @PutMapping("/update")
+    public ResponseEntity<ApiResponse<Void>> update(@RequestBody SeriUpdateRequestDTO dto) {
+        seriService.updateSeri(dto);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .message("Cập nhật seri thành công")
+                        .build()
+        );
+    }
+
+    /**
+     * 📌 Lấy toàn bộ Seri trong hệ thống
+     */
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<SeriDisplayReponse>>> getAll() {
+        List<SeriDisplayReponse> data = seriService.getAll();
+        return ResponseEntity.ok(
+                ApiResponse.<List<SeriDisplayReponse>>builder()
+                        .message("Lấy danh sách tất cả seri thành công")
+                        .data(data)
+                        .build()
+        );
+    }
+
+    /**
+     * 📌 Lấy chi tiết 1 Seri theo id
+     */
     @GetMapping("/detail/{id}")
-    public ApiResponse<SeriDisplayReponse> getSeriById(@PathVariable("id") UUID id) {
-        SeriDisplayReponse seri = seriService.getDetailedSeri(id);
-        return ApiResponse.<SeriDisplayReponse>builder()
-                .message("Lấy chi tiết CPU thành công")
-                .data(seri)
-                .build();
+    public ResponseEntity<ApiResponse<SeriDisplayReponse>> getDetail(@PathVariable UUID id) {
+        SeriDisplayReponse data = seriService.getDetail(id);
+        return ResponseEntity.ok(
+                ApiResponse.<SeriDisplayReponse>builder()
+                        .message("Lấy chi tiết seri thành công")
+                        .data(data)
+                        .build()
+        );
     }
-    @PostMapping("/them-seri")
-    public ApiResponse<SeriDisplayReponse> addSeri(@RequestBody SeriAddRequestDTO seriAddRequestDTO) {
-        SeriDisplayReponse add = seriService.addSeri(seriAddRequestDTO);
-        return ApiResponse.<SeriDisplayReponse>builder()
-                .message("them thanh cong")
-                .data(add)
-                .build();
+
+    @GetMapping("/by-id-seri/{idSeri}")
+    public ResponseEntity<ApiResponse<SeriDisplayReponse>> findByIdSeri(
+            @PathVariable String idSeri) {
+
+        SeriDisplayReponse data = seriService.findByIdSeri(idSeri);
+
+        return ResponseEntity.ok(
+                ApiResponse.<SeriDisplayReponse>builder()
+                        .message("Tìm seri thành công")
+                        .data(data)
+                        .build()
+        );
     }
-    @PostMapping("/sua-seri")
-    public ApiResponse<Seri> updateSeri(@RequestBody SeriUpdateRequestDTO seriUpdateRequestDTO) {
-//        seriUpdateRequestDTO.setIdSeri(id.toString());
-        Seri  updated = seriService.updateSeri(seriUpdateRequestDTO);
-        return ApiResponse.<Seri>builder()
-                .message("cap nhap thanh cong")
-                .data(updated)
-                .build();
-    }
-    @PostMapping("/status")
-    public ApiResponse<Seri> Status(@RequestBody StatusRequestDTO statusRequestDTO) {
-        Seri updatedStatus = seriService.updateStatus(statusRequestDTO);
-        return ApiResponse.<Seri>builder()
-                .message("thay doi trang thai thanh cong")
-                .data(updatedStatus)
-                .build();
-    }
-//    @GetMapping("/filter")
-//    public ResponseEntity<ApiResponse<Page<SeriDisplayReponse>>> filterSeri(
-//            @RequestParam(required = false) String keyword,
-//            @RequestParam(required = false) Integer trangThai,
-//            Pageable pageable) {
-//
-//        Page<SeriDisplayReponse> result = seriService.getSeriByFilter(trangThai,keyword, pageable);
-//
-//        return ResponseEntity.ok(
-//                ApiResponse.<Page<SeriDisplayReponse>>builder()
-//                        .message("Lọc thành công")
-//                        .data(result)
-//                        .build()
-//        );
-//    }
 }

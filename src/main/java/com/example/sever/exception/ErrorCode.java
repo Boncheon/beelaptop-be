@@ -31,6 +31,7 @@ public enum ErrorCode {
     SO_DIEN_THOAI_EXISTED(409, "Số điện thoại đã được sử dụng.", HttpStatus.CONFLICT),
     INVALID_GOOGLE_TOKEN(400, "Token Google không hợp lệ.", HttpStatus.BAD_REQUEST),
     IMAGE_UPLOAD_FAILED(1010, "Load ảnh thất bại", HttpStatus.MULTI_STATUS);
+
     final int code;
     final String message;
     final HttpStatus status;

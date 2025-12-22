@@ -7,8 +7,11 @@ import com.example.sever.entity.HeDieuHanh;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface HeDieuHanhService {
     Page<HeDieuHanhDisplayReponse> getAllHeDieuHanhforDisplay(Pageable pageable);
     HeDieuHanh addHeDieuHanh(HeDieuHanhAddRequestDTO adddto);
     HeDieuHanh updateHeDieuHanh(HeDieuHanhUpdateRequestDTO updatedto);
+    HeDieuHanhDisplayReponse getDetailedHeDieuHanh(UUID id);
 }

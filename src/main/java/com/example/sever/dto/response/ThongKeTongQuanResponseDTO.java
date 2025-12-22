@@ -15,4 +15,3 @@ public class ThongKeTongQuanResponseDTO {
     private Long tongKhachHang;
     private BigDecimal tangTruong; // phần trăm
 }
-

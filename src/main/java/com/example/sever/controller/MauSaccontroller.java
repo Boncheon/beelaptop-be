@@ -35,7 +35,7 @@ public class MauSaccontroller {
 
     @GetMapping()
     public ResponseEntity<Page<MauSacDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                          @RequestParam(defaultValue = "4") int size) {
+                                                                          @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
         if (perPage < 0) perPage = 0;
         Pageable pageable = PageRequest.of(perPage, size);
@@ -72,11 +72,6 @@ public class MauSaccontroller {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
             Pageable pageable) {
-
-        // Đảm bảo page không âm
-        if (pageable.getPageNumber() < 0) {
-            pageable = PageRequest.of(0, pageable.getPageSize(), pageable.getSort());
-        }
 
         Page<MauSacDisplayReponse> result = mausacService.getMauSacByFilter(trangThai,keyword, pageable);
 

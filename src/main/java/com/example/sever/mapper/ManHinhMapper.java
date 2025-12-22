@@ -6,13 +6,24 @@ import com.example.sever.dto.response.ManHinhDisplayReponse;
 import com.example.sever.entity.ManHinh;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface ManHinhMapper {
 
+    // Add
     ManHinh toManHinh(ManHinhAddRequestDTO request);
 
-    ManHinhDisplayReponse getAlldisplayManHinh(ManHinh cpu);
+    // List
+    ManHinhDisplayReponse getAlldisplayManHinh(ManHinh manHinh);
 
-    void updateManHinh(@MappingTarget ManHinh cpu, ManHinhUpdateRequestDTO request);
+    // Detail (nếu bạn dùng riêng cho API chi tiết)
+    ManHinhDisplayReponse toManHinhDisplayReponse(ManHinh manHinh);
+
+    // Update (ignore field = null, giữ nguyên giá trị cũ)
+    void updateManHinh(@MappingTarget ManHinh manHinh,
+                       ManHinhUpdateRequestDTO request);
 }

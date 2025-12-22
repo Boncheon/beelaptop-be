@@ -1,6 +1,5 @@
 package com.example.sever.dto.request;
 
-import com.example.sever.entity.PhienBan;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,10 +18,10 @@ public class SeriUpdateRequestDTO {
 
      private String idSeri;
 
-     private PhienBan idPhienBan;
+//     private PhienBan idPhienBan;
+//private BigDecimal giaGoc;
+//
+//     private String nguonSeri;
 
-     private BigDecimal giaGoc;
-
-     private String nguonSeri;
      private Integer trangThai;
 }

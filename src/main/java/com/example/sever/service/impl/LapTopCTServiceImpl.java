@@ -1,133 +1,197 @@
 package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.LapTopCTAddRequestDTO;
+import com.example.sever.dto.request.LapTopCTAutoGenRequestDTO;
 import com.example.sever.dto.request.LapTopCTUpdateRequestDTO;
-import com.example.sever.dto.response.LapTopCTDisplayReponse;
-import com.example.sever.entity.Cpu;
-import com.example.sever.entity.DoHoa;
-import com.example.sever.entity.HeDieuHanh;
-import com.example.sever.entity.KichThuoc;
-import com.example.sever.entity.LaptopChiTiet;
-import com.example.sever.entity.ManHinh;
-import com.example.sever.entity.MauSac;
-import com.example.sever.entity.Pin;
-import com.example.sever.entity.Ram;
-import com.example.sever.entity.Rom;
+import com.example.sever.dto.response.LaptopChiTietResponseDTO;
+import com.example.sever.entity.*;
 import com.example.sever.mapper.LapTopCTMapper;
-import com.example.sever.repository.HeDieuHanhRepository;
-import com.example.sever.repository.KichThuocRepository;
-import com.example.sever.repository.LaptopChiTietRepository;
-import com.example.sever.repository.ManHinhRepository;
-import com.example.sever.repository.PinRepository;
+import com.example.sever.repository.*;
+
+
 import com.example.sever.service.LapTopCTService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class LapTopCTServiceImpl implements LapTopCTService {
 
+    private final LaptopChiTietRepository laptopChiTietRepo;
+
+    private final RamRepository ramRepo;
+    private final RomRepository ssdRepo;
+    private final CpuRepository cpuRepo;
+    private final DoHoaRepository doHoaRepo;
+    private final MauSacRepository mauSacRepo;
+
+    private final LapTopCTMapper mapper;
+    private final LapTopRepository lapTopRepository;
     private final LaptopChiTietRepository laptopChiTietRepository;
-    private final ManHinhRepository manHinhRepository;
-    private final PinRepository pinRepository;
-    private final KichThuocRepository kichThuocRepository;
-    private final HeDieuHanhRepository heDieuHanhRepository;
-    private final LapTopCTMapper lapTopCTMapper;
 
+    // ====================== LIST ======================
     @Override
-    public Page<LapTopCTDisplayReponse> getAllLapTopCTforDisplay(Pageable pageable) {
-        Page<LaptopChiTiet> phienBanPage = laptopChiTietRepository.findAll(pageable);
-        List<LapTopCTDisplayReponse> phienBanDisplayResponses = phienBanPage.getContent()
-                .stream()
-                .map(lapTopCTMapper::getAlldisplayLapTopCT)
-                .collect(Collectors.toList());
+    public Page<LaptopChiTietResponseDTO> getAll(Pageable pageable) {
+        return laptopChiTietRepository.findAllWithSeri(pageable);
+    }
 
-        return new PageImpl<>(phienBanDisplayResponses, pageable, phienBanPage.getTotalElements());
+    // ====================== LIST BY LAPTOP ======================
+    @Override
+    public List<LaptopChiTietResponseDTO> getByLaptop(UUID idLaptop) {
+        return laptopChiTietRepository.findDtoByLaptopWithSeri(idLaptop);
+    }
+
+    // ====================== GET DETAIL ======================
+    @Override
+    public LaptopChiTietResponseDTO getById(UUID id) {
+        LaptopChiTiet entity = laptopChiTietRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể laptop"));
+
+        return mapper.toResponse(entity);
+    }
+
+    // ====================== ADD ======================
+    @Override
+    public LaptopChiTietResponseDTO add(UUID idLaptop, LapTopCTAddRequestDTO dto) {
+
+        Laptop laptop = lapTopRepository.findById(idLaptop)
+                .orElseThrow(() -> new RuntimeException("Laptop không tồn tại"));
+
+        LaptopChiTiet entity = mapper.toEntity(dto);
+        entity.setIdLaptop(laptop);
+        entity.setNgayTao(Instant.now());
+        entity.setNgayCapNhat(Instant.now());
+
+        LaptopChiTiet saved = laptopChiTietRepo.save(entity);
+        return mapper.toResponse(saved);
     }
 
     @Override
-    public LapTopCTDisplayReponse addLapTopCT(LapTopCTAddRequestDTO dto) {
-        LaptopChiTiet ltct = new LaptopChiTiet();
-        ltct.setId(UUID.randomUUID());
-        ltct.setIdLaptopChiTiet(dto.getIdLaptopChiTiet());
-        ltct.setMoTa(dto.getMoTa());
-        ltct.setNgayTao(LocalDateTime.now());
-        ltct.setNgayCapNhat(LocalDateTime.now());
-        ltct.setNguoiTao(dto.getNguoiTao());
-        ltct.setGhiChu(dto.getGhiChu());
-        ltct.setTrangThai(dto.getTrangThai());
-        ltct.setMoTa(dto.getMoTa());
+    public List<LaptopChiTietResponseDTO> autoGenVariants(LapTopCTAutoGenRequestDTO req) {
 
-        // Lấy entity liên kết từ DB bằng id
-        ManHinh manHinh = manHinhRepository.findById(dto.getIdManHinh())
-                .orElseThrow(() -> new RuntimeException("ManHinh không tồn tại"));
-        Pin pin = pinRepository.findById(dto.getIdPin())
-                .orElseThrow(() -> new RuntimeException("ROM không tồn tại"));
-        KichThuoc kichThuoc = kichThuocRepository.findById(dto.getIdKichThuoc())
-                .orElseThrow(() -> new RuntimeException("CPU không tồn tại"));
-        HeDieuHanh heDieuHanh = heDieuHanhRepository.findById(dto.getIdHeDieuHanh())
-                .orElseThrow(() -> new RuntimeException("Đồ họa không tồn tại"));
-        
+        if (req.getIdLaptop() == null) {
+            throw new IllegalArgumentException("idLaptop không được null");
+        }
+        if (isEmpty(req.getIdRams()) ||
+                isEmpty(req.getIdSsds()) ||
+                isEmpty(req.getIdCpus()) ||
+                isEmpty(req.getIdDohoas()) ||
+                isEmpty(req.getIdMauSacs())) {
 
-        // Gán vào phiên bản
-        ltct.setIdManHinh(manHinh);
-        ltct.setIdPin(pin);
-        ltct.setIdKichThuoc(kichThuoc);
-        ltct.setIdHeDieuHanh(heDieuHanh);
+            throw new IllegalArgumentException(
+                    "Danh sách RAM/SSD/CPU/Đồ hoạ/Màu sắc không được rỗng"
+            );
+        }
 
-        // Lưu lại
-        LaptopChiTiet saved = laptopChiTietRepository.save(ltct);
-        return lapTopCTMapper.getAlldisplayLapTopCT(saved);
+        Laptop laptop = lapTopRepository.findById(req.getIdLaptop())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Laptop cha"));
+
+        List<LaptopChiTiet> entities = new ArrayList<>();
+
+        // prefix dùng để nhìn cho dễ, nếu không truyền thì tự tạo
+        String baseCode = (req.getIdLaptopCT() != null && !req.getIdLaptopCT().isBlank())
+                ? req.getIdLaptopCT()
+                : "LAP-" + req.getIdLaptop().toString().substring(0, 8);
+
+        for (UUID ramId : req.getIdRams()) {
+            for (UUID ssdId : req.getIdSsds()) {
+                for (UUID cpuId : req.getIdCpus()) {
+                    for (UUID vgaId : req.getIdDohoas()) {
+                        for (UUID colorId : req.getIdMauSacs()) {
+
+                            // 🔍 1) CHECK TRÙNG BIẾN THỂ
+                            boolean existed = laptopChiTietRepo.existsVariant(
+                                    laptop.getId(),
+                                    ramId,
+                                    ssdId,
+                                    cpuId,
+                                    vgaId,
+                                    colorId
+                            );
+                            if (existed) {
+                                // đã có biến thể này rồi => bỏ qua, không tạo nữa
+                                continue;
+                            }
+
+                            // 🔥 2) Sinh mã biến thể mới
+                            String variantCode = baseCode + "-" +
+                                    UUID.randomUUID().toString().substring(0, 8);
+
+                            LapTopCTAddRequestDTO dto = LapTopCTAddRequestDTO.builder()
+                                    .idLaptopCT(variantCode)
+                                    .idRam(ramId)
+                                    .idSsd(ssdId)
+                                    .idCpu(cpuId)
+                                    .idDohoa(vgaId)
+                                    .idMauSac(colorId)
+                                    .giaBan(req.getGiaBan())
+                                    .moTa(req.getMoTa())
+                                    .trangThai(req.getTrangThai())
+                                    .ghiChu(req.getGhiChu())
+                                    .build();
+
+                            LaptopChiTiet entity = mapper.toEntity(dto);
+                            entity.setIdLaptop(laptop);
+                            entity.setNgayTao(Instant.now());
+                            entity.setNgayCapNhat(Instant.now());
+
+                            entities.add(entity);
+                        }
+                    }
+                }
+            }
+        }
+
+        // nếu tất cả tổ hợp đều trùng thì trả về list rỗng
+        if (entities.isEmpty()) {
+            return List.of();
+        }
+
+        List<LaptopChiTiet> saved = laptopChiTietRepo.saveAll(entities);
+
+        // Nếu bạn muốn luôn có soLuongSeri = 0 khi mới tạo
+        return saved.stream()
+                .map(e -> new LaptopChiTietResponseDTO(e, 0L))
+                .toList();
     }
 
-    @Override
-    public LapTopCTDisplayReponse updateLapTopCT(LapTopCTUpdateRequestDTO dto) {
-        LaptopChiTiet ltct = laptopChiTietRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy  lap top chi tiet"));
-
-        ltct.setIdLaptopChiTiet(dto.getIdLaptopChiTiet());
-        ltct.setMoTa(dto.getMoTa());
-        ltct.setNgayCapNhat(LocalDateTime.now());
-        ltct.setNguoiTao(dto.getNguoiTao());
-        ltct.setGhiChu(dto.getGhiChu());
-        ltct.setTrangThai(dto.getTrangThai());
-        ltct.setMoTa(dto.getMoTa());
-
-        // Lấy entity liên kết từ DB bằng id
-        ManHinh manHinh = manHinhRepository.findById(dto.getIdManHinh())
-                .orElseThrow(() -> new RuntimeException("ManHinh không tồn tại"));
-        Pin pin = pinRepository.findById(dto.getIdPin())
-                .orElseThrow(() -> new RuntimeException("ROM không tồn tại"));
-        KichThuoc kichThuoc = kichThuocRepository.findById(dto.getIdKichThuoc())
-                .orElseThrow(() -> new RuntimeException("CPU không tồn tại"));
-        HeDieuHanh heDieuHanh = heDieuHanhRepository.findById(dto.getIdHeDieuHanh())
-                .orElseThrow(() -> new RuntimeException("Đồ họa không tồn tại"));
-
-
-        // Gán vào phiên bản
-        ltct.setIdManHinh(manHinh);
-        ltct.setIdPin(pin);
-        ltct.setIdKichThuoc(kichThuoc);
-        ltct.setIdHeDieuHanh(heDieuHanh);
-
-        // Lưu lại
-        LaptopChiTiet saved = laptopChiTietRepository.save(ltct);
-        return lapTopCTMapper.getAlldisplayLapTopCT(saved);
+    private boolean isEmpty(List<?> list) {
+        return list == null || list.isEmpty();
     }
 
+    // ====================== UPDATE ======================
     @Override
-    public LapTopCTDisplayReponse getById(UUID id) {
-        LaptopChiTiet entity = laptopChiTietRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy LaptopChiTiet với ID: " + id));
+    public LaptopChiTietResponseDTO update(UUID id, LapTopCTUpdateRequestDTO dto) {
 
-        return lapTopCTMapper.getAlldisplayLapTopCT(entity);
+        LaptopChiTiet entity = laptopChiTietRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể laptop"));
+
+        // MapStruct tự xử lý field nào null thì bỏ qua
+        mapper.updateEntity(entity, dto);
+        entity.setNgayCapNhat(Instant.now());
+
+        LaptopChiTiet saved = laptopChiTietRepo.save(entity);
+        return mapper.toResponse(saved);
+    }
+
+    // ====================== UPDATE STATUS ======================
+    @Override
+    public LaptopChiTietResponseDTO updateStatus(UUID id, Integer trangThai) {
+
+        LaptopChiTiet entity = laptopChiTietRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể laptop"));
+
+        entity.setTrangThai(trangThai);
+        entity.setNgayCapNhat(Instant.now());
+
+        return mapper.toResponse(laptopChiTietRepo.save(entity));
     }
 }

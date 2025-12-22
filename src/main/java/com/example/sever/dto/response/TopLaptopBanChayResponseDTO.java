@@ -12,6 +12,6 @@ import java.util.UUID;
 public class TopLaptopBanChayResponseDTO {
     private UUID idLaptop;
     private String tenSanPham;
+    private String hinhAnh;  // URL hình ảnh sản phẩm
     private Long soLuongBan;
 }
-

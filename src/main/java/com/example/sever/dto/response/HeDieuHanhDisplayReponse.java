@@ -23,4 +23,5 @@ public class HeDieuHanhDisplayReponse {
 
      private String phienBan;
 
+     private Integer trangThai;
 }

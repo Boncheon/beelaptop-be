@@ -17,7 +17,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,20 +41,45 @@ public class DoHoaServiceImpl implements DoHoaService {
 
     @Override
     public DoHoa addDohoa(DoHoaAddRequestDTO addrequestDTO) {
+        // map từ DTO -> entity
         DoHoa doHoa = doHoaMapper.toDoHoa(addrequestDTO);
+
+        // set mặc định trạng thái nếu null
+        if (doHoa.getTrangThai() == null) {
+            doHoa.setTrangThai(1); // 1 = Kinh doanh (active)
+        }
+
+        // set thời gian tạo & sửa
+        Instant now = Instant.now();          // nếu field là Instant
+        doHoa.setNgayTao(now);
+        doHoa.setNgaySua(now);
+
+        // lưu DB
         return doHoaRepository.save(doHoa);
+
     }
 
     @Override
-    public DoHoa updateDohoa(DoHoaUpdateRequestDTO updateRequestDTO) {
-        // 1. Lấy bản ghi hiện có từ DB
-        DoHoa existing = doHoaRepository.findById(updateRequestDTO.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Đồ Họa với ID: " + updateRequestDTO.getId()));
+    @Transactional
+    public DoHoa updateDohoa(DoHoaUpdateRequestDTO dto) {
 
-        // 2. Cập nhật dữ liệu từ DTO vào entity cũ
-        doHoaMapper.updateDoHoa(existing, updateRequestDTO);
+        // 1. Lấy entity cũ
+        DoHoa existing = doHoaRepository.findById(dto.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Không tìm thấy Đồ Họa với ID: " + dto.getId()));
 
-        // 3. Lưu lại bản ghi đã cập nhật
+        // 2. Map các field từ DTO -> entity (trừ id)
+        doHoaMapper.updateDoHoa(existing, dto);
+
+        // 3. Ép set lại trạng thái (đảm bảo chắc chắn)
+        if (dto.getTrangThai() != null) {
+            existing.setTrangThai(dto.getTrangThai());
+        }
+
+        // 4. Cập nhật ngày sửa nếu bạn có cột này
+        existing.setNgaySua(Instant.now());
+
+        // 5. Lưu lại
         return doHoaRepository.save(existing);
     }
 

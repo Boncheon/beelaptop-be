@@ -3,10 +3,7 @@ package com.example.sever.dto;
 import com.example.sever.common.Meta;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.*;
 
-import com.example.sever.dto.response.PhienBanDisplayReponse;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +27,8 @@ public class ApiResponse<T> {
     String message;
     T data;
     Meta meta;
+
+
 }
 
 

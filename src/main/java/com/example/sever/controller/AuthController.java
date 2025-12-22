@@ -86,10 +86,21 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(@CookieValue(name = "ARTICLE_SERVICE") String cookieValue, HttpServletResponse response)
-            throws ParseException, JsonProcessingException {
+    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(
+            @CookieValue(name = "ARTICLE_SERVICE", required = false) String cookieValue,
+            HttpServletResponse response
+    ) throws ParseException, JsonProcessingException {
+
+        if (cookieValue == null || cookieValue.isBlank()) {
+            log.error("Refresh token attempt without ARTICLE_SERVICE cookie");
+            throw new AppException(ErrorCode.REFRESH_TOKEN_INVALID, "Only JPEG and PNG images are allowed");
+        }
+
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> tokenData = objectMapper.readValue(cookieValue.replace("%22", "\"").replace("%2C", ","), Map.class);
+        Map<String, String> tokenData = objectMapper.readValue(
+                cookieValue.replace("%22", "\"").replace("%2C", ","),
+                Map.class
+        );
         String refreshToken = tokenData.get("refreshToken");
 
         log.info("Refresh token attempt with cookie: {}", cookieValue);
@@ -99,7 +110,6 @@ public class AuthController {
                 .data(data)
                 .build());
     }
-
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
         log.info("Forgot password request for email: {}", request.getEmail());
@@ -127,7 +137,6 @@ public class AuthController {
                 .data(user)
                 .build());
     }
-
     @GetMapping("/google/callback")
     public ResponseEntity<ApiResponse<LoginResponse>> googleCallback(
             Authentication authentication,

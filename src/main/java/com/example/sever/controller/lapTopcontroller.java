@@ -2,60 +2,98 @@ package com.example.sever.controller;
 
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.LaptopAddRequestDTO;
-import com.example.sever.dto.request.RomAddRequestDTO;
-import com.example.sever.dto.request.SanPhamFullCreateDTO;
-import com.example.sever.dto.response.LapTopCTDisplayReponse;
+import com.example.sever.dto.request.LaptopUpdateRequestDTO;
 import com.example.sever.dto.response.LapTopDisplayReponse;
-import com.example.sever.dto.response.LaptopDisplayResponseDTO;
-import com.example.sever.dto.response.RomDisplayReponse;
-import com.example.sever.entity.Laptop;
-import com.example.sever.entity.Rom;
+import com.example.sever.dto.response.LaptopResponseDTO;
 import com.example.sever.service.LaptopService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
+
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/laptop")
-public class lapTopcontroller {
+@PreAuthorize("hasRole('ADMIN')")
+@RequiredArgsConstructor
+public class LaptopController {
 
+    private final LaptopService laptopService;
 
-    @Autowired
-    private LaptopService laptopService;
+    /**
+     * 📄 Lấy danh sách Laptop (Base) có phân trang
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<LapTopDisplayReponse>>> getAllLaptopForDisplay(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-    //lấy tất cả laptop và phân trang
+        int currentPage = Math.max(page - 1, 0);
+        Pageable pageable = PageRequest.of(currentPage, size);
 
-    @GetMapping()
-    public ResponseEntity<Page<LapTopDisplayReponse>> getAlllapTopforDisplay(@RequestParam(defaultValue = "1") int page,
-                                                                             @RequestParam(defaultValue = "20") int size) {
-        int perPage = page - 1;
-        if (perPage < 0) perPage = 0;
-        Pageable pageable = PageRequest.of(perPage, size);
-        Page<LapTopDisplayReponse> laptopPage = laptopService.getAllLapTopforDisplay(pageable);
-        return ResponseEntity.ok(laptopPage);
+        Page<LapTopDisplayReponse> laptopPage = laptopService.getAllLapTopForDisplay(pageable);
+
+        return ResponseEntity.ok(
+                ApiResponse.<Page<LapTopDisplayReponse>>builder()
+                        .message("Lấy danh sách Laptop thành công")
+                        .data(laptopPage)
+                        .build()
+        );
     }
 
-    @PostMapping("/them-full")
-    public ResponseEntity<UUID> createFullLaptop(@RequestBody SanPhamFullCreateDTO dto) {
-        UUID id = laptopService.createSanPhamHoanChinh(dto);
-        return ResponseEntity.ok(id);
+    /**
+     * ➕ Thêm mới Laptop (Base)
+     */
+    @PostMapping("/them-laptop")
+    public ResponseEntity<ApiResponse<LaptopResponseDTO>> addLaptop(@RequestBody LaptopAddRequestDTO dto) {
+        LaptopResponseDTO response = laptopService.addLaptop(dto);
+        return ResponseEntity.ok(
+                ApiResponse.<LaptopResponseDTO>builder()
+                        .message("Thêm Laptop thành công")
+                        .data(response)
+                        .build()
+        );
     }
 
-    @GetMapping("/{idLaptop}")
-    public ResponseEntity<List<LapTopCTDisplayReponse>> getLaptopDetail(@PathVariable UUID idLaptop) {
-        List<LapTopCTDisplayReponse> response = laptopService.getDetailedLapTop(idLaptop);
-        return ResponseEntity.ok(response);
+    /**
+     * ✏️ Cập nhật Laptop (Base)
+     */
+    @PostMapping("/sua-laptop/{id}")
+    public ResponseEntity<ApiResponse<LaptopResponseDTO>> updateLaptop(
+            @PathVariable("id") UUID id,
+            @RequestBody LaptopUpdateRequestDTO dto
+    ) {
+        LaptopResponseDTO response = laptopService.updateLaptop(id, dto);
+        return ResponseEntity.ok(
+                ApiResponse.<LaptopResponseDTO>builder()
+                        .message("Cập nhật Laptop thành công")
+                        .data(response)
+                        .build()
+        );
+    }
+    /**
+     * 🔍 Xem chi tiết Laptop + danh sách LaptopChiTiet (bước 2)
+     */
+    @GetMapping("/detail/{id}")
+    public ApiResponse<LapTopDisplayReponse> getLaTopById(@PathVariable("id") UUID id) {
+        LapTopDisplayReponse lt = laptopService.getDetailedLapTop(id);
+        return ApiResponse.<LapTopDisplayReponse>builder()
+                .message("Lấy chi tiết LT thành công")
+                .data(lt)
+                .build();
     }
 
+//    @PostMapping("/sua-he-dieu-hanh")
+//    public ApiResponse<LaptopResponseDTO> updateLaptop(@RequestBody LaptopAddRequestDTO dto) {
+//        LaptopResponseDTO  updated = laptopService.updateLaptop(dto);
+//        return ApiResponse.<LaptopResponseDTO>builder()
+//                .message("cap nhap thanh cong")
+//                .data(updated)
+//                .build();
+//    }
 }

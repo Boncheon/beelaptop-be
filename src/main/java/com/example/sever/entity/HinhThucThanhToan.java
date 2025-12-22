@@ -28,7 +28,7 @@ public class HinhThucThanhToan {
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "ID_HinhThucThanhToan", length = 20)
+    @Column(name = "id_thanh_toan", length = 20)
     private String idHinhthucthanhtoan;
 
     @Size(max = 100)
@@ -41,7 +41,5 @@ public class HinhThucThanhToan {
     @Column(name = "ghi_chu", length = 500)
     private String ghiChu;
 
-    @OneToMany(mappedBy = "idHinhThucThanhToan")
-    private Set<HinhThucThanhToanChiTiet> hinhThucThanhToanChiTiets = new LinkedHashSet<>();
 
 }

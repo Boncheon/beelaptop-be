@@ -18,4 +18,5 @@ public class PinUpdateRequestDTO {
      private String idPin;
 
      private String dungLuong;
+    private Integer trangThai;
 }

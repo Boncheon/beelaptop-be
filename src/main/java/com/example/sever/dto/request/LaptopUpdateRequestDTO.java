@@ -1,9 +1,14 @@
 package com.example.sever.dto.request;
 
+import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -11,10 +16,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 
 public class LaptopUpdateRequestDTO {
+    @NotBlank
+    @Size(max = 255)
     private String tenSanPham;
-//    private UUID idDanhMuc;
-//    private UUID idThuongHieu;
+
+    @Size(max = 500)
     private String moTa;
-    private String nguoiTao;
+
+    private UUID idThuongHieu;
+    private UUID idManHinh;
+    private UUID idKichThuoc;
+    private UUID idHeDieuHanh;
+    private UUID idPin;
     private Integer trangThai;
 }

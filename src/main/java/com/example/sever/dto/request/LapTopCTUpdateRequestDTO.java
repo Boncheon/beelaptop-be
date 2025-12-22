@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -13,16 +15,20 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LapTopCTUpdateRequestDTO {
-     private UUID id;
-     private String idLaptopChiTiet;
-     //     private Laptop idLapTop;
-     private UUID idManHinh;
-     private UUID idPin;
-     private UUID idKichThuoc;
-     private UUID idHeDieuHanh;
+     private UUID id;   // ID biến thể – bắt buộc phải có
+     private String idLaptopCT;
+     private UUID idRam;
+     private UUID idSsd;
+     private UUID idCpu;
+     private UUID idDohoa;
+     private UUID idMauSac;
+
+     private BigDecimal giaBan;
+
+     @Size(max = 500)
      private String moTa;
-     private LocalDateTime ngayCapNhat;
-     private String nguoiTao;
-     private String ghiChu;
+
      private Integer trangThai;
+
+     private String ghiChu;
 }
