@@ -61,6 +61,36 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
     int countSeriByLaptopChiTietId(@Param("laptopChiTietId") UUID laptopChiTietId);
 
     @Query(value = """
+    SELECT s.trang_thai
+    FROM Seri s
+    WHERE s.id_lap_top_ct = :laptopChiTietId
+""", nativeQuery = true)
+    List<Integer> findAllTrangThaiSeri(@Param("laptopChiTietId") UUID laptopChiTietId);
+
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = "UPDATE dbo.Seri SET trang_thai = :trangThai WHERE ID = :id", nativeQuery = true)
+    void updateTrangThaiSeri(@Param("id") UUID id, @Param("trangThai") Integer trangThai);
+
+    @Query(value = """
+        SELECT CAST(s.ID AS VARCHAR(36))
+        FROM dbo.Seri s
+        WHERE s.id_lap_top_ct = :laptopChiTietId
+        AND s.trang_thai = 1
+        ORDER BY s.ID
+        """, nativeQuery = true)
+    List<String> findSeriIdsByLaptopChiTietId(@Param("laptopChiTietId") UUID laptopChiTietId);
+    
+    @Query(value = """
+        SELECT COUNT(*)
+        FROM dbo.Seri s
+        WHERE s.id_lap_top_ct = :laptopChiTietId
+        AND s.trang_thai = 1
+        """, nativeQuery = true)
+    int countSeriByLaptopChiTietId(@Param("laptopChiTietId") UUID laptopChiTietId);
+
+    @Query(value = """
         SELECT TOP 1 s.trang_thai
         FROM dbo.Seri s
         WHERE s.id_lap_top_ct = :laptopChiTietId

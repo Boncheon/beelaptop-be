@@ -209,6 +209,9 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             orderCT.setGiaBan(giaBan);
 
             orderCTRepo.save(orderCT);
+
+            seriRepo.updateTrangThaiSeri(seriId , 2);
+
         }
 
         if (phieuGiamGia != null && soTienGiam.compareTo(BigDecimal.ZERO) > 0) {

@@ -42,6 +42,10 @@ public class CustomerLaptopController {
 
     @GetMapping("/{laptopId}/details")
     public ResponseEntity<List<CustomerLaptopChiTietResponse>> getLaptopDetails(@PathVariable UUID laptopId) {
+
+
+        System.out.println("Check sound");
+
         List<CustomerLaptopChiTietResponse> details = lapTopCTService.getLapTopCustomer(laptopId);
         if (details.isEmpty()) {
             return ResponseEntity.notFound().build();

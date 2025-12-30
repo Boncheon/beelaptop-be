@@ -140,17 +140,33 @@ public class LapTopCTServiceImpl implements LapTopCTService {
     @Override
     public List<CustomerLaptopChiTietResponse> getLapTopCustomer(UUID laptopId) {
         List<CustomerLaptopChiTietProject> projections = laptopChiTietRepository.findLaptopChiTietWithAnhAndVersionsByLaptopId(laptopId);
-        
+
         List<CustomerLaptopChiTietResponse> responses = new ArrayList<>();
         for (CustomerLaptopChiTietProject projection : projections) {
             List<String> images = anhRepository.findAllImgUrlByLaptopChiTietId(projection.getCtId());
             if (images == null || images.isEmpty()) {
                 images = new ArrayList<>();
             }
+
             
             Optional<Integer> trangThaiSeriOpt = seriRepository.findTrangThaiSeriByLaptopChiTietId(projection.getCtId());
             Integer trangThaiSeri = trangThaiSeriOpt.orElse(0);
             
+
+            System.out.println("Check laptop id" + laptopId);
+            List<Integer> trangThaiList =
+                    seriRepository.findAllTrangThaiSeri(projection.getCtId());
+
+            int trangThaiSeri;
+
+            if (trangThaiList.contains(1)) {
+                trangThaiSeri = 1;
+            } else {
+                trangThaiSeri = 2; // gồm cả case list rỗng
+            }
+
+
+
             CustomerLaptopChiTietResponse response = new CustomerLaptopChiTietResponse();
             response.setCtId(projection.getCtId());
             response.setLaptopId(projection.getLaptopId());
