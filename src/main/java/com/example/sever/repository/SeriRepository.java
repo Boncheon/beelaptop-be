@@ -4,6 +4,7 @@ import com.example.sever.dto.response.SeriDisplayReponse;
 import com.example.sever.entity.Seri;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -90,4 +91,21 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
     WHERE s.id_lap_top_ct = :laptopChiTietId
 """, nativeQuery = true)
     List<Integer> findAllTrangThaiSeri(@Param("laptopChiTietId") UUID laptopChiTietId);
+
+// update code huy ngày 05.01
+    @Query(
+            value = "SELECT SUM(trang_thai) " +
+                    "FROM Seri " +
+                    "WHERE id_lap_top_ct = :id " +
+                    "AND trang_thai = 1",
+            nativeQuery = true
+    )
+    Integer sumTrangThai(@Param("id") UUID id);
+//    update code huy ngày 05.01
+    @Query(value = "SELECT id FROM Seri WHERE id_lap_top_ct = :laptopChiTietId AND trang_thai = 1 ORDER BY id", nativeQuery = true)
+    List<String> findSeriIdsByLaptopChiTietIdAndTrangThai(@Param("laptopChiTietId") String laptopChiTietId);
+    //    update code huy ngày 05.01
+    @Modifying
+    @Query(value = "UPDATE Seri SET trang_thai = :trangThai WHERE id = :seriId", nativeQuery = true)
+    void updateTrangThaiSeri(@Param("seriId") String seriId, @Param("trangThai") Integer trangThai);
 }

@@ -155,4 +155,10 @@ public List<CustomerLaptopProjection> getCustomerLaptop() {
     public List<BrandSearchResponse> getAllBrand() {
         return thuongHieuRepository.listBrandSearch();
     }
+
+    //Update code huy 05.01
+    @Override
+    public Integer getAllStatusIs1Laptop(UUID idLaptopChiTiet) {
+        return seriRepository.sumTrangThai(idLaptopChiTiet);
+    }
 }
