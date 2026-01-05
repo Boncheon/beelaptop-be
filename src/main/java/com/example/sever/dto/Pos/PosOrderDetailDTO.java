@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,37 +16,54 @@ public class PosOrderDetailDTO {
     private UUID id;
     private String idOrder;      // cột id_order (code nội bộ)
     private String maDonHang;    // cột ma_don_hang (code hiển thị)
-    private String loaiDon;      // "TAI_QUAY" / "ONLINE"...
+    private String loaiDon;      // "TAI_QUAY" / "GIAO_HANG"...
 
-    // --- Khách hàng ---
+    // --- Khách hàng (snapshot trong Orders) ---
     private String tenKhachHang;
     private String sdtKhachHang;
-    private String emailKhachHang;   // 🔥 thêm
+    private String emailKhachHang;
 
-    // --- Thông tin giao hàng (dùng để hiển thị ô xám) ---
-    private String tenNguoiNhan;     // 🔥 thêm
-    private String sdtNguoiNhan;     // 🔥 thêm
+    // --- Thông tin giao hàng (ô xám hiển thị) ---
+    private String tenNguoiNhan;
+    private String sdtNguoiNhan;
+    private String diaChiGiaoHang;
+
+    // --- ✅ ĐỊA CHỈ CHI TIẾT ĐỂ ĐỔ LÊN FORM + GHN ---
+    private UUID idDiaChi;
+
+    private String quocGia;
+    private String tinhThanh;
+    private String quanHuyen;
+    private String phuongXa;
+    private String diaChiChiTiet;
+
+    private Integer provinceId;
+    private Integer districtId;
+    private String wardCode;
 
     // --- Giá trị đơn ---
     private BigDecimal giaTriChuaGiam;
     private BigDecimal giaTriGiamGia;
     private BigDecimal tongTienThuHo;
+    private BigDecimal phiVanChuyen;
 
-    private Integer trangThai;          // 0 = draft, 1 = đang xử lý, 2 = đã hoàn thành ...
-    private UUID idNhanVien;            // ID trong bảng TaiKhoan
-    private String maNhanVien;          // ví dụ: NV001 (idTaiKhoan)
+    private Integer trangThai;
+    private UUID idNhanVien;
+    private String maNhanVien;
     private Integer trangThaiThanhToan;
 
-    // --- Nhân viên tạo đơn (để hiện trong card Thông tin nhân viên) ---
-    private String tenNhanVien;         // 🔥 thêm
-    private String sdtNhanVien;         // 🔥 thêm
-    private String emailNhanVien;       // 🔥 thêm
+    // --- Nhân viên tạo đơn ---
+    private String tenNhanVien;
+    private String sdtNhanVien;
+    private String emailNhanVien;
 
     private Instant ngayTao;
     private Instant ngayCapNhat;
 
     // Chi tiết
-    private List<PosOrderItemDTO> items;       // danh sách seri trong đơn
-    private List<PosPaymentDTO> payments;      // các khoản thanh toán
-    private List<PosVoucherDTO> vouchers;      // các voucher áp dụng
+    private List<PosOrderItemDTO> items;
+    private List<PosPaymentDTO> payments;
+    private List<PosVoucherDTO> vouchers;
+
+    private String ghiChu;
 }

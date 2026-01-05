@@ -117,25 +117,30 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
 
     @Override
     public DiaChiResponse createAddressCustomer(DiaChiCreateRequest request) {
-        // Lấy tài khoản từ database
         int number = (int)(Math.random() * 900) + 100;
+
         TaiKhoan taiKhoan = taikhoanRepository.findById(request.getIdTaiKhoan())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản!"));
 
         DiaChi diaChi = new DiaChi();
-
         diaChi.setId(UUID.randomUUID());
         diaChi.setIdDiaChi("DC" + number);
         diaChi.setIdTaiKhoan(taiKhoan);
+
         diaChi.setQuocGia("VietNam");
         diaChi.setTinhThanh(request.getTinhThanh());
         diaChi.setQuanHuyen(request.getQuanHuyen());
         diaChi.setPhuongXa(request.getPhuongXa());
         diaChi.setDiaChiChiTiet(request.getDiaChiChiTiet());
+
         diaChi.setHoTen(request.getHoTen());
         diaChi.setSoDienThoai(request.getSoDienThoai());
 
-        // Khi thêm mới chưa phải mặc định
+        // ✅ 3 field GHN
+        diaChi.setProvinceId(request.getProvinceId());
+        diaChi.setDistrictId(request.getDistrictId());
+        diaChi.setWardCode(request.getWardCode());
+
         diaChi.setMacDinh(false);
 
         DiaChi saved = diaChiRepository.save(diaChi);
@@ -143,27 +148,19 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         return new DiaChiResponse(
                 saved.getId(),
                 saved.getIdDiaChi(),
-                saved.getIdTaiKhoan().getId(),  // Trả về UUID của tài khoản
+                saved.getIdTaiKhoan().getId(),
                 saved.getQuocGia(),
                 saved.getTinhThanh(),
                 saved.getQuanHuyen(),
                 saved.getPhuongXa(),
                 saved.getDiaChiChiTiet(),
-                saved.getMacDinh() ,
-                saved.getHoTen() ,
-                saved.getSoDienThoai()
+                saved.getMacDinh(),
+                saved.getHoTen(),
+                saved.getSoDienThoai(),
+                saved.getProvinceId(),
+                saved.getDistrictId(),
+                saved.getWardCode()
         );
-    }
-
-
-
-    @Override
-    @Transactional
-    public void deleteAddressCustomer(UUID id) {
-        DiaChi diaChi = diaChiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
-
-        diaChiRepository.delete(diaChi);
     }
 
     @Override
@@ -177,8 +174,15 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         diaChi.setQuanHuyen(request.getQuanHuyen());
         diaChi.setPhuongXa(request.getPhuongXa());
         diaChi.setDiaChiChiTiet(request.getDiaChiChiTiet());
+
         diaChi.setHoTen(request.getHoTen());
         diaChi.setSoDienThoai(request.getSoDienThoai());
+
+        // ✅ 3 field GHN
+        diaChi.setProvinceId(request.getProvinceId());
+        diaChi.setDistrictId(request.getDistrictId());
+        diaChi.setWardCode(request.getWardCode());
+
         DiaChi saved = diaChiRepository.save(diaChi);
 
         return new DiaChiResponse(
@@ -188,10 +192,14 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
                 saved.getQuocGia(),
                 saved.getTinhThanh(),
                 saved.getQuanHuyen(),
-                saved.getPhuongXa(),saved.getDiaChiChiTiet(),
-                saved.getMacDinh() ,
-                saved.getHoTen() ,
-                saved.getSoDienThoai()
+                saved.getPhuongXa(),
+                saved.getDiaChiChiTiet(),
+                saved.getMacDinh(),
+                saved.getHoTen(),
+                saved.getSoDienThoai(),
+                saved.getProvinceId(),
+                saved.getDistrictId(),
+                saved.getWardCode()
         );
     }
 
@@ -202,7 +210,6 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
 
         UUID idTaiKhoan = diaChi.getIdTaiKhoan().getId();
 
-        // Bỏ mặc định tất cả địa chỉ của user này
         diaChiRepository.clearDefault(idTaiKhoan);
 
         diaChi.setMacDinh(true);
@@ -217,11 +224,24 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
                 saved.getQuanHuyen(),
                 saved.getPhuongXa(),
                 saved.getDiaChiChiTiet(),
-                true ,
-                saved.getHoTen() ,
-                saved.getSoDienThoai()
+                true,
+                saved.getHoTen(),
+                saved.getSoDienThoai(),
+                saved.getProvinceId(),
+                saved.getDistrictId(),
+                saved.getWardCode()
         );
     }
+
+    @Override
+    @Transactional
+    public void deleteAddressCustomer(UUID id) {
+        DiaChi diaChi = diaChiRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
+
+        diaChiRepository.delete(diaChi);
+    }
+
 
     @Override
     @Transactional

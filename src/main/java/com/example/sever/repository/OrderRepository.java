@@ -130,6 +130,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                 MONTH(o.ngay_tao) AS thang,
                 l.ID AS idLaptop,
                 l.ten_san_pham AS tenSanPham,
+                (SELECT TOP 1 a.ImgURL 
+                 FROM Anh a 
+                 WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
                 COUNT(*) AS soLuongBan,
                 ROW_NUMBER() OVER (PARTITION BY MONTH(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
             FROM OrderCT oct
@@ -138,13 +141,14 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
             JOIN Laptop l ON l.ID = lct.id_lap_top
             WHERE YEAR(o.ngay_tao) = :year
-            GROUP BY MONTH(o.ngay_tao), l.ID, l.ten_san_pham
+            GROUP BY MONTH(o.ngay_tao), l.ID, l.ten_san_pham, lct.ID
         )
         SELECT 
             tkt.thang,
             tkt.doanhSo,
             tlt.idLaptop,
             tlt.tenSanPham,
+            tlt.hinhAnh,
             tlt.soLuongBan
         FROM ThongKeThang tkt
         LEFT JOIN TopLaptopThang tlt ON tkt.thang = tlt.thang AND tlt.rn <= 10
@@ -155,41 +159,45 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // Doanh số theo ngày (so sánh 2 tháng) - có thêm top 10 laptop của mỗi ngày
     @Query(value = """
-        WITH ThongKeNgay AS (
-            SELECT 
-                DAY(o.ngay_tao) AS ngay,
-                SUM(o.tong_tien_thu_ho) AS doanhSo
-            FROM [Orders] o
-            WHERE YEAR(o.ngay_tao) = :year
-              AND MONTH(o.ngay_tao) = :month
-            GROUP BY DAY(o.ngay_tao)
-        ),
-        TopLaptopNgay AS (
-            SELECT 
-                DAY(o.ngay_tao) AS ngay,
-                l.ID AS idLaptop,
-                l.ten_san_pham AS tenSanPham,
-                COUNT(*) AS soLuongBan,
-                ROW_NUMBER() OVER (PARTITION BY DAY(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
-            FROM OrderCT oct
-            JOIN [Orders] o ON o.ID = oct.id_order
-            JOIN Seri s ON s.ID = oct.id_seri
-            JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
-            JOIN Laptop l ON l.ID = lct.id_lap_top
-            WHERE YEAR(o.ngay_tao) = :year
-              AND MONTH(o.ngay_tao) = :month
-            GROUP BY DAY(o.ngay_tao), l.ID, l.ten_san_pham
-        )
+    WITH ThongKeNgay AS (
         SELECT 
-            tkn.ngay,
-            tkn.doanhSo,
-            tln.idLaptop,
-            tln.tenSanPham,
-            tln.soLuongBan
-        FROM ThongKeNgay tkn
-        LEFT JOIN TopLaptopNgay tln ON tkn.ngay = tln.ngay AND tln.rn <= 10
-        ORDER BY tkn.ngay, tln.rn
-        """, nativeQuery = true)
+            DAY(o.ngay_tao) AS ngay,
+            SUM(o.tong_tien_thu_ho) AS doanhSo
+        FROM [Orders] o
+        WHERE YEAR(o.ngay_tao) = :year
+          AND MONTH(o.ngay_tao) = :month
+        GROUP BY DAY(o.ngay_tao)
+    ),
+    TopLaptopNgay AS (
+        SELECT 
+            DAY(o.ngay_tao) AS ngay,
+            l.ID AS idLaptop,
+            l.ten_san_pham AS tenSanPham,
+            (SELECT TOP 1 a.ImgURL 
+             FROM Anh a 
+             WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
+            COUNT(*) AS soLuongBan,
+            ROW_NUMBER() OVER (PARTITION BY DAY(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
+        FROM OrderCT oct
+        JOIN [Orders] o ON o.ID = oct.id_order
+        JOIN Seri s ON s.ID = oct.id_seri
+        JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
+        JOIN Laptop l ON l.ID = lct.id_lap_top
+        WHERE YEAR(o.ngay_tao) = :year
+          AND MONTH(o.ngay_tao) = :month
+        GROUP BY DAY(o.ngay_tao), l.ID, l.ten_san_pham, lct.ID
+    )
+    SELECT 
+        tkn.ngay,
+        tkn.doanhSo,
+        tln.idLaptop,
+        tln.tenSanPham,
+        tln.hinhAnh,
+        tln.soLuongBan
+    FROM ThongKeNgay tkn
+    LEFT JOIN TopLaptopNgay tln ON tkn.ngay = tln.ngay AND tln.rn <= 10
+    ORDER BY tkn.ngay, tln.rn
+    """, nativeQuery = true)
     List<Object[]> thongKeTheoThang(
             @Param("year") int year,
             @Param("month") int month
@@ -281,7 +289,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Long countSeriLienKet(@Param("year") int year);
 
     // Debug: Kiểm tra số PhienBan có liên kết
-
+    @Query(value = """
+        SELECT COUNT(*) 
+        FROM OrderCT oct
+        JOIN [Orders] o ON o.ID = oct.id_order
+        JOIN Seri s ON s.ID = oct.id_seri
+        JOIN PhienBan pb ON pb.ID = s.id_phien_ban
+        WHERE YEAR(o.ngay_tao) = :year
+        """, nativeQuery = true)
+    Long countPhienBanLienKet(@Param("year") int year);
 
     // Debug: Kiểm tra số Seri có id_lap_top_ct (đường ngắn)
     @Query(value = """
@@ -328,27 +344,31 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // Top 10 laptop bán chạy nhất theo tháng
     @Query(value = """
-        SELECT TOP 10
-            l.ID AS idLaptop,
-            l.ten_san_pham AS tenSanPham,
-            COUNT(*) AS soLuongBan
-        FROM OrderCT oct
-        JOIN [Orders] o 
-            ON o.ID = oct.id_order    
-        JOIN Seri s 
-            ON s.ID = oct.id_seri      
-        JOIN LaptopChiTiet lct 
-            ON lct.ID = s.id_lap_top_ct
-        JOIN Laptop l 
-            ON l.ID = lct.id_lap_top
-        WHERE YEAR(o.ngay_tao) = :year
-          AND MONTH(o.ngay_tao) = :month
-        GROUP BY 
-            l.ID,
-            l.ten_san_pham
-        ORDER BY 
-            soLuongBan DESC
-        """, nativeQuery = true)
+    SELECT TOP 10
+        l.ID AS idLaptop,
+        l.ten_san_pham AS tenSanPham,
+        (SELECT TOP 1 a.ImgURL 
+         FROM Anh a 
+         WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
+        COUNT(*) AS soLuongBan
+    FROM OrderCT oct
+    JOIN [Orders] o 
+        ON o.ID = oct.id_order    
+    JOIN Seri s 
+        ON s.ID = oct.id_seri      
+    JOIN LaptopChiTiet lct 
+        ON lct.ID = s.id_lap_top_ct
+    JOIN Laptop l 
+        ON l.ID = lct.id_lap_top
+    WHERE YEAR(o.ngay_tao) = :year
+      AND MONTH(o.ngay_tao) = :month
+    GROUP BY 
+        l.ID,
+        l.ten_san_pham,
+        lct.ID
+    ORDER BY 
+        soLuongBan DESC
+    """, nativeQuery = true)
     List<Object[]> topLaptopBanChayNhatTheoThang(@Param("year") int year, @Param("month") int month);
 
     // Top 10 laptop bán chạy nhất theo ngày
@@ -422,4 +442,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         CROSS JOIN KhachToday khT
         """, nativeQuery = true)
     List<Object[]> thongKeTongQuan();
+
+    // Thống kê đơn hàng theo từng trạng thái
+    @Query(value = """
+        SELECT 
+            COALESCE(SUM(CASE WHEN o.trang_thai = 0 THEN 1 ELSE 0 END), 0) AS donHangChoXacNhan,
+            COALESCE(SUM(CASE WHEN o.trang_thai = 1 THEN 1 ELSE 0 END), 0) AS donHangDangXuLy,
+            COALESCE(SUM(CASE WHEN o.trang_thai = 4 THEN 1 ELSE 0 END), 0) AS donHangDangGiao,
+            COALESCE(SUM(CASE WHEN o.trang_thai = 2 THEN 1 ELSE 0 END), 0) AS donHangHoanThanh,
+            COALESCE(SUM(CASE WHEN o.trang_thai = 3 THEN 1 ELSE 0 END), 0) AS donHangDaHuy
+        FROM [Orders] o
+        """, nativeQuery = true)
+    List<Object[]> thongKeDonHangTheoTrangThai();
 }

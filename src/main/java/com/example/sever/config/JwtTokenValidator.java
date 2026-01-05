@@ -5,6 +5,7 @@ import com.example.sever.exception.AppException;
 import com.example.sever.exception.ErrorCode;
 import com.example.sever.service.CustomUserDetailService;
 import com.example.sever.service.TokenProvider;
+import com.example.sever.service.UserSessionTracker;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -35,6 +36,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
 
     TokenProvider tokenProvider;
     CustomUserDetailService customUserDetailService;
+    UserSessionTracker sessionTracker;
 
     static final String COOKIE_NAME = "ARTICLE_SERVICE";
 
@@ -107,6 +109,13 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+            // ✅ Track user activity
+            sessionTracker.trackActivity(
+                    user.getId().toString(),
+                    user.getTen(),
+                    user.getEmail()
+            );
         } catch (ParseException e) {
             log.error("Token parse error: {}", e.getMessage());
             // Không quẳng exception, cho qua để controller / exception handler xử lý tiếp

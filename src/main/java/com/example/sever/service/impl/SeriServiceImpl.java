@@ -26,9 +26,11 @@ public class SeriServiceImpl implements SeriService {
     private final LaptopChiTietRepository laptopChiTietRepository;
     private final SeriMapper seriMapper; // tạm vẫn giữ, nếu không dùng chỗ nào thì có thể xoá sau
 
-    /**
-     * Thêm nhiều seri cho một biến thể LaptopChiTiet
-     */
+
+
+    ///------------------
+
+
     @Override
     @Transactional
     public void addListSeri(SeriAddRequestDTO dto) {
@@ -36,48 +38,74 @@ public class SeriServiceImpl implements SeriService {
         LaptopChiTiet ct = laptopChiTietRepository.findById(dto.getIdLaptopCt())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể LaptopChiTiet"));
 
+        if (dto.getList() == null || dto.getList().isEmpty()) {
+            throw new RuntimeException("Danh sách seri trống hoặc không hợp lệ");
+        }
+
         List<Seri> entities = new ArrayList<>();
 
-        if (dto.getList() != null) {
-            dto.getList().forEach(item -> {   // item = SeriAddRequestDTO.SeriItemDTO
-                if (item == null) return;
+        // gom lỗi để báo lên 1 lần
+        List<String> duplicatedInSystem = new ArrayList<>();
+        List<String> duplicatedInRequest = new ArrayList<>();
+        List<String> seen = new ArrayList<>();
 
-                String seriStr = item.getIdSeri();
-                if (seriStr == null) return;
+        dto.getList().forEach(item -> {
+            if (item == null) return;
 
-                seriStr = seriStr.trim();
-                if (seriStr.isEmpty()) return;
+            String seriStr = item.getIdSeri();
+            if (seriStr == null) return;
 
-                // tránh trùng seri
-                if (seriRepository.existsByIdSeri(seriStr)) return;
+            seriStr = seriStr.trim();
+            if (seriStr.isEmpty()) return;
 
-                // tạo Seri mới
-                Seri seri = new Seri();
-                seri.setIdSeri(seriStr);
-                seri.setIdLapTopCt(ct);
+            // trùng ngay trong request
+            if (seen.contains(seriStr)) {
+                duplicatedInRequest.add(seriStr);
+                return;
+            }
+            seen.add(seriStr);
 
-                // lấy trangThai từ body, nếu null thì default = 1 (ACTIVE)
-                Integer tt = item.getTrangThai();
-                if (tt == null) {
-                    tt = 1;
-                }
-                seri.setTrangThai(tt);
+            // ✅ check tồn tại trong hệ thống -> báo lỗi
+            if (seriRepository.existsByIdSeri(seriStr)) {
+                duplicatedInSystem.add(seriStr);
+                return;
+            }
 
-                entities.add(seri);
-            });
+            Seri seri = new Seri();
+            seri.setIdSeri(seriStr);
+            seri.setIdLapTopCt(ct);
+
+            Integer tt = item.getTrangThai();
+            if (tt == null) tt = 1; // default ACTIVE
+            seri.setTrangThai(tt);
+
+            entities.add(seri);
+        });
+
+        // nếu có trùng -> throw để FE hiển thị
+        if (!duplicatedInRequest.isEmpty() || !duplicatedInSystem.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+
+            if (!duplicatedInRequest.isEmpty()) {
+                sb.append("Seri bị trùng trong danh sách nhập: ")
+                        .append(String.join(", ", duplicatedInRequest));
+            }
+
+            if (!duplicatedInSystem.isEmpty()) {
+                if (sb.length() > 0) sb.append(" | ");
+                sb.append("Seri đã tồn tại trong hệ thống: ")
+                        .append(String.join(", ", duplicatedInSystem));
+            }
+
+            throw new RuntimeException(sb.toString());
         }
 
-        if (!entities.isEmpty()) {
-            seriRepository.saveAll(entities);
+        if (entities.isEmpty()) {
+            throw new RuntimeException("Không có seri hợp lệ để thêm");
         }
 
-        // hiện tại KHÔNG cập nhật soLuongTon vì LaptopChiTiet chưa có field này
-        // nếu sau này bạn thêm cột so_luong_ton:
-        // long soLuong = seriRepository.countByIdLapTopCt_IdAndTrangThai(ct.getId(), 1);
-        // ct.setSoLuongTon((int) soLuong);
-        // laptopChiTietRepository.save(ct);
+        seriRepository.saveAll(entities);
     }
-
 
     /**
      * Lấy toàn bộ seri của một biến thể
@@ -159,5 +187,8 @@ public class SeriServiceImpl implements SeriService {
                 .orElseThrow(() -> new RuntimeException("Seri không tồn tại hoặc không khả dụng"));
         return seriMapper.toResponse(seri);
     }
+
+
+
 
 }

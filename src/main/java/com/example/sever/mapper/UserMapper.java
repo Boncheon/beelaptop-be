@@ -41,15 +41,18 @@ public interface UserMapper {
         response.setCreatedAt(taiKhoan.getCreatedAt());
         response.setUpdatedAt(taiKhoan.getUpdatedAt());
 
-        // Lấy địa chỉ từ DiaChi
-//        DiaChi address = diaChiRepository.findByIdTaiKhoan(taiKhoan).orElse(null);
-//        if (address != null) {
-//            response.setQuocGia(address.getQuocGia());
-//            response.setTinhThanh(address.getTinhThanh());
-//            response.setQuanHuyen(address.getQuanHuyen());
-//            response.setPhuongXa(address.getPhuongXa());
-//            response.setDiaChiChiTiet(address.getDiaChiChiTiet());
-//        }
+        // ⭐ LẤY ĐỊA CHỈ MẶC ĐỊNH ĐỂ TRẢ VỀ TRONG API DETAIL
+        DiaChi defaultAddress = diaChiRepository
+                .findByIdTaiKhoan_IdAndMacDinhTrue(taiKhoan.getId())
+                .orElse(null);
+
+        if (defaultAddress != null) {
+            response.setQuocGia(defaultAddress.getQuocGia());
+            response.setTinhThanh(defaultAddress.getTinhThanh());
+            response.setQuanHuyen(defaultAddress.getQuanHuyen());
+            response.setPhuongXa(defaultAddress.getPhuongXa());
+            response.setDiaChiChiTiet(defaultAddress.getDiaChiChiTiet());
+        }
 
         return response;
     }

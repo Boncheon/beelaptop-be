@@ -45,4 +45,5 @@ public interface LaptopService {
     List<CustomerLaptopProjection> getLatestLaptops();
     List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand);
     List<BrandSearchResponse> getAllBrand();
+
 }

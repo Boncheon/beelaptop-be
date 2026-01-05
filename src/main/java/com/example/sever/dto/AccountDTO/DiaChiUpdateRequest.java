@@ -15,4 +15,8 @@ public class DiaChiUpdateRequest {
     private String diaChiChiTiet;
     private String hoTen;
     private String soDienThoai;
+
+    private Integer provinceId;
+    private Integer districtId;
+    private String wardCode;
 }

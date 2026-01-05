@@ -19,6 +19,7 @@ public class PosOrderItemDTO {
     private UUID laptopId;
 
     private String tenSanPham;   // Laptop.tenSanPham
+    private String anhUrl;
     private String cauHinh;      // Cpu / Ram / Ssd / Vga / Màu...
 
     private BigDecimal giaBan;   // giá bán 1 cái

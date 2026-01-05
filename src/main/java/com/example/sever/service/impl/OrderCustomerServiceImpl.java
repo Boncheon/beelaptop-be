@@ -4,6 +4,7 @@ import com.example.sever.dto.OrderDTO.*;
 import com.example.sever.entity.*;
 import com.example.sever.exception.ResourceNotFoundException;
 import com.example.sever.repository.*;
+import com.example.sever.service.MailService;
 import com.example.sever.service.OrderCustomerService;
 import com.example.sever.service.PhieuGiamGiaService;
 import jakarta.persistence.EntityManager;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -91,23 +94,21 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                 throw new ResourceNotFoundException("LaptopChiTiet không tồn tại: " + laptopChiTietId);
             }
 
-            // Lấy danh sách Seri từ LaptopChiTiet (chỉ lấy 1 seri đầu tiên)
+            // Lấy danh sách Seri khả dụng của LaptopChiTiet (chỉ lấy 1 seri đầu tiên)
             List<String> seriIdStrings = seriRepo.findSeriIdsByLaptopChiTietId(laptopChiTietId);
 
             List<UUID> seriIds = new ArrayList<>();
             for (String seriIdStr : seriIdStrings) {
                 try {
                     seriIds.add(UUID.fromString(seriIdStr));
-                } catch (IllegalArgumentException e) {
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
 
             if (seriIds.isEmpty()) {
-                throw new IllegalArgumentException("Không đủ số lượng cho sản phẩm này");
+                throw new IllegalArgumentException("Không đủ số lượng tồn kho cho sản phẩm này (không tìm thấy Seri khả dụng).");
             }
 
             UUID seriId = seriIds.get(0);
-
             BigDecimal thanhTien = ctRequest.getGiaBan();
             tongTienChuaGiam = tongTienChuaGiam.add(thanhTien);
 
@@ -118,6 +119,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             productList.add(productInfo);
         }
 
+        // Xử lý phiếu giảm giá
         BigDecimal soTienGiam = BigDecimal.ZERO;
         PhieuGiamGia phieuGiamGia = null;
 
@@ -144,21 +146,17 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         BigDecimal phiVanChuyen = request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
         BigDecimal phiDichVuKhac = request.getPhiDichVuKhac() != null ? request.getPhiDichVuKhac() : BigDecimal.ZERO;
         BigDecimal tongTienThuHo = tongTienChuaGiam.subtract(soTienGiam).add(phiVanChuyen).add(phiDichVuKhac);
-        Random rand = new Random();
-        StringBuilder sb = new StringBuilder("OD");
-        for (int i = 0; i < 6; i++) {
-            sb.append(rand.nextInt(10));
-        }
-        StringBuilder mhd = new StringBuilder("MDH");
-        for (int i = 0; i < 6; i++) {
-            mhd.append(rand.nextInt(10));
-        }
+
+        // Tạo mã đơn hàng
+        String idOrder = "OD" + generateRandomCode(6);
+        String maDonHang = "MDH" + generateRandomCode(6);
+
         Order order = new Order();
         order.setId(UUID.randomUUID());
-        order.setIdOrder(sb.toString());
+        order.setIdOrder(idOrder);
         order.setIdTaiKhoan(taiKhoan);
         order.setIdDiaChi(diaChi);
-        order.setMaDonHang(mhd.toString());
+        order.setMaDonHang(maDonHang);
         order.setTenKhachHang(request.getTenKhachHang());
         order.setSdtKhachHang(request.getSdtKhachHang());
         order.setLoaiDon(request.getLoaiDon());
@@ -168,33 +166,29 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         order.setGiaTriGiamGia(soTienGiam);
         order.setTongTienThuHo(tongTienThuHo);
         order.setTrangThai(1);
+        order.setNgayTao(Instant.now());
+
+        // Xử lý ghi chú + địa chỉ đầy đủ
         String ghiChuFinal = request.getGhiChu() != null ? request.getGhiChu().trim() : "";
         if (request.getDiaChiDayDu() != null && !request.getDiaChiDayDu().trim().isEmpty()) {
-            if (!ghiChuFinal.isEmpty()) {
-                ghiChuFinal += " ";
-            }
+            if (!ghiChuFinal.isEmpty()) ghiChuFinal += " ";
             ghiChuFinal += "[DIA_CHI_DAY_DU:" + request.getDiaChiDayDu().trim() + "]";
         }
         order.setGhiChu(ghiChuFinal.isEmpty() ? null : ghiChuFinal);
-        order.setNgayTao(Instant.now());
 
         Order savedOrder = orderRepo.save(order);
         entityManager.flush();
         orderRepo.updateNgayTaoById(savedOrder.getId());
         entityManager.refresh(savedOrder);
 
+        // Tạo OrderCT và cập nhật trạng thái Seri
         for (Map<String, Object> productInfo : productList) {
             UUID seriId = (UUID) productInfo.get("seriId");
             BigDecimal giaBan = (BigDecimal) productInfo.get("giaBan");
 
             OrderCT orderCT = new OrderCT();
             orderCT.setId(UUID.randomUUID());
-
-            StringBuilder sbct = new StringBuilder("ODCT");
-            for (int i = 0; i < 6; i++) {
-                sbct.append(rand.nextInt(10));
-            }
-            orderCT.setIdOrderCt(sbct.toString());
+            orderCT.setIdOrderCt("ODCT" + generateRandomCode(6));
             orderCT.setIdOrder(savedOrder);
 
             Seri seri = new Seri();
@@ -203,15 +197,16 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             orderCT.setGiaBan(giaBan);
 
             orderCTRepo.save(orderCT);
+
+            // Quan trọng: đánh dấu seri đã bán
+            seriRepo.updateTrangThaiSeri(seriId, 2);
         }
 
+        // Lưu phiếu giảm giá đã sử dụng
         if (phieuGiamGia != null && soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
             GiamGiaHoaDon giamGiaHoaDon = new GiamGiaHoaDon();
-            StringBuilder gg = new StringBuilder("GG");
-            for (int i = 0; i < 6; i++) {
-                gg.append(rand.nextInt(10));
-            }
-            giamGiaHoaDon.setIdGiamgiahoadon(gg.toString());
+            giamGiaHoaDon.setId(UUID.randomUUID());
+            giamGiaHoaDon.setIdGiamgiahoadon("GG" + generateRandomCode(6));
             giamGiaHoaDon.setIdOrders(savedOrder);
             giamGiaHoaDon.setIdPhieuGiamGia(phieuGiamGia);
             giamGiaHoaDon.setSoTienTruocGiam(tongTienChuaGiam);
@@ -225,6 +220,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             }
         }
 
+        // Lưu hình thức thanh toán chi tiết
         if (request.getListHinhThucThanhToan() != null && !request.getListHinhThucThanhToan().isEmpty()) {
             for (PaymentCustomerRequest paymentRequest : request.getListHinhThucThanhToan()) {
                 HinhThucThanhToan hinhThucThanhToan = hinhThucThanhToanRepo.findById(paymentRequest.getIdHinhThucThanhToan())
@@ -232,11 +228,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
 
                 HinhThucThanhToanChiTiet paymentDetail = new HinhThucThanhToanChiTiet();
                 paymentDetail.setId(UUID.randomUUID());
-                StringBuilder httt = new StringBuilder("HTTT");
-                for (int i = 0; i < 6; i++) {
-                    httt.append(rand.nextInt(10));
-                }
-                paymentDetail.setIdHinhthucthanhtoanchitiet(httt.toString());
+                paymentDetail.setIdHinhthucthanhtoanchitiet("HTTT" + generateRandomCode(6));
                 paymentDetail.setIdOrder(savedOrder);
                 paymentDetail.setIdHinhThucThanhToan(hinhThucThanhToan);
                 paymentDetail.setSoTienThanhToan(paymentRequest.getSoTien());
@@ -246,43 +238,35 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             }
         }
 
+        // Ghi log hành động tạo đơn
         OrderActionLog actionLog = new OrderActionLog();
         actionLog.setId(UUID.randomUUID());
-        StringBuilder acl = new StringBuilder("ACL");
-        for (int i = 0; i < 6; i++) {
-            acl.append(rand.nextInt(10));
-        }
-        actionLog.setIdOrderacl(acl.toString());
+        actionLog.setIdOrderacl("ACL" + generateRandomCode(6));
         actionLog.setIdOrder(savedOrder);
         actionLog.setIdTaiKhoan(taiKhoan);
-        actionLog.setHanhDong(1); // 1 = Tạo đơn
+        actionLog.setHanhDong(1);
         actionLog.setMoTa("Khách hàng tạo đơn hàng mới: " + savedOrder.getMaDonHang());
-
         orderActionLogRepo.save(actionLog);
 
+        // Xử lý giỏ hàng: giảm số lượng hoặc xóa
         try {
             Optional<GioHang> gioHangOpt = gioHangRepo.findByIdTaiKhoan_Id(request.getIdTaiKhoan());
             if (gioHangOpt.isPresent()) {
                 GioHang gioHang = gioHangOpt.get();
-
                 for (Map<String, Object> productInfo : productList) {
                     UUID laptopChiTietId = (UUID) productInfo.get("laptopChiTietId");
 
-                    Optional<GioHangChiTiet> gioHangChiTietOpt =
-                            gioHangChiTietRepo.findByIdGioHangAndIdSpct_Id(gioHang, laptopChiTietId);
-
+                    Optional<GioHangChiTiet> gioHangChiTietOpt = gioHangChiTietRepo
+                            .findByIdGioHangAndIdSpct_Id(gioHang, laptopChiTietId);
 
                     if (gioHangChiTietOpt.isPresent()) {
                         GioHangChiTiet gioHangChiTiet = gioHangChiTietOpt.get();
-                        Integer soLuongTrongGio = gioHangChiTiet.getSoLuong();
-
-                        if (soLuongTrongGio != null) {
-                            if (soLuongTrongGio <= 1) {
-                                gioHangChiTietRepo.delete(gioHangChiTiet);
-                            } else {
-                                gioHangChiTiet.setSoLuong(soLuongTrongGio - 1);
-                                gioHangChiTietRepo.save(gioHangChiTiet);
-                            }
+                        Integer soLuong = gioHangChiTiet.getSoLuong();
+                        if (soLuong != null && soLuong > 1) {
+                            gioHangChiTiet.setSoLuong(soLuong - 1);
+                            gioHangChiTietRepo.save(gioHangChiTiet);
+                        } else {
+                            gioHangChiTietRepo.delete(gioHangChiTiet);
                         }
                     }
                 }
@@ -291,60 +275,49 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             System.err.println("Lỗi khi xử lý giỏ hàng: " + e.getMessage());
         }
 
+        // Gửi email xác nhận (trừ trường hợp thanh toán VNPay - sẽ gửi sau khi thành công)
         try {
             if (request.getIsVnPay() == null || !request.getIsVnPay()) {
                 if (taiKhoan.getEmail() != null && !taiKhoan.getEmail().trim().isEmpty()) {
-                String diaChiGiaoHangStr;
-                if (request.getDiaChiDayDu() != null && !request.getDiaChiDayDu().trim().isEmpty()) {
-                    diaChiGiaoHangStr = request.getDiaChiDayDu().trim();
-                } else {
-                    String diaChiFromGhiChu = extractDiaChiDayDuFromGhiChu(savedOrder.getGhiChu());
-                    if (diaChiFromGhiChu != null && !diaChiFromGhiChu.isEmpty()) {
-                        diaChiGiaoHangStr = diaChiFromGhiChu;
-                    } else {
-                        diaChiGiaoHangStr = "";
+                    String diaChiGiaoHangStr = request.getDiaChiDayDu() != null && !request.getDiaChiDayDu().trim().isEmpty()
+                            ? request.getDiaChiDayDu().trim()
+                            : Optional.ofNullable(extractDiaChiDayDuFromGhiChu(savedOrder.getGhiChu())).orElse("");
+
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+                    String ngayDatStr = Instant.now().atZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(formatter);
+
+                    List<MailService.OrderEmailProduct> emailProducts = new ArrayList<>();
+                    List<Object[]> productDataList = orderCTRepo.findProductInfoByIdOrder(savedOrder.getId());
+                    for (Object[] row : productDataList) {
+                        String tenSanPham = (String) row[3];
+                        BigDecimal giaBan = (BigDecimal) row[5];
+
+                        MailService.OrderEmailProduct emailProduct = new MailService.OrderEmailProduct();
+                        emailProduct.setTenSanPham(tenSanPham);
+                        emailProduct.setSoLuong(1);
+                        emailProduct.setGiaBan(giaBan);
+                        emailProduct.setThanhTien(giaBan);
+                        emailProducts.add(emailProduct);
                     }
-                }
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-                String ngayDatStr = Instant.now().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).format(formatter);
 
-                List<com.example.sever.service.MailService.OrderEmailProduct> emailProducts = new ArrayList<>();
-                List<Object[]> productDataList = orderCTRepo.findProductInfoByIdOrder(savedOrder.getId());
-                for (Object[] row : productDataList) {
-                    String tenSanPham = (String) row[3];
-                    BigDecimal giaBan = (BigDecimal) row[5];
-                    Integer soLuong = 1;
-                    BigDecimal thanhTien = giaBan; // thanhTien = giaBan (không nhân số lượng)
+                    List<String> hinhThucThanhToanList = hinhThucThanhToanChiTietRepo
+                            .findTenHinhThucThanhToanByIdOrder(savedOrder.getId());
 
-                    com.example.sever.service.MailService.OrderEmailProduct emailProduct =
-                        new com.example.sever.service.MailService.OrderEmailProduct();
-                    emailProduct.setTenSanPham(tenSanPham);
-                    emailProduct.setSoLuong(soLuong);
-                    emailProduct.setGiaBan(giaBan);
-                    emailProduct.setThanhTien(thanhTien);
-                    emailProducts.add(emailProduct);
-                }
-
-                List<String> hinhThucThanhToanList = hinhThucThanhToanChiTietRepo
-                    .findTenHinhThucThanhToanByIdOrder(savedOrder.getId());
-
-                com.example.sever.service.MailService.OrderEmailData emailData =
-                    new com.example.sever.service.MailService.OrderEmailData();
-                emailData.setMaDonHang(savedOrder.getMaDonHang());
-                emailData.setTenKhachHang(savedOrder.getTenKhachHang());
-                emailData.setSdtKhachHang(savedOrder.getSdtKhachHang());
-                emailData.setDiaChiGiaoHang(diaChiGiaoHangStr);
-                emailData.setNgayDat(ngayDatStr);
-                emailData.setLoaiDon(savedOrder.getLoaiDon());
-                emailData.setTenTrangThai(convertTrangThaiToTen(savedOrder.getTrangThai()));
-                emailData.setHinhThucThanhToan(hinhThucThanhToanList);
-                emailData.setDanhSachSanPham(emailProducts);
-                emailData.setTongTienHang(tongTienChuaGiam);
-                emailData.setKhuyenMai(soTienGiam);
-                emailData.setPhiVanChuyen(phiVanChuyen);
-                emailData.setTongThanhToan(tongTienThuHo);
-                String ghiChuOriginal = removeDiaChiDayDuFromGhiChu(savedOrder.getGhiChu());
-                emailData.setGhiChu(ghiChuOriginal);
+                    MailService.OrderEmailData emailData = new MailService.OrderEmailData();
+                    emailData.setMaDonHang(savedOrder.getMaDonHang());
+                    emailData.setTenKhachHang(savedOrder.getTenKhachHang());
+                    emailData.setSdtKhachHang(savedOrder.getSdtKhachHang());
+                    emailData.setDiaChiGiaoHang(diaChiGiaoHangStr);
+                    emailData.setNgayDat(ngayDatStr);
+                    emailData.setLoaiDon(savedOrder.getLoaiDon());
+                    emailData.setTenTrangThai(convertTrangThaiToTen(savedOrder.getTrangThai()));
+                    emailData.setHinhThucThanhToan(hinhThucThanhToanList);
+                    emailData.setDanhSachSanPham(emailProducts);
+                    emailData.setTongTienHang(tongTienChuaGiam);
+                    emailData.setKhuyenMai(soTienGiam);
+                    emailData.setPhiVanChuyen(phiVanChuyen);
+                    emailData.setTongThanhToan(tongTienThuHo);
+                    emailData.setGhiChu(removeDiaChiDayDuFromGhiChu(savedOrder.getGhiChu()));
 
                     mailService.sendOrderConfirmationEmail(taiKhoan.getEmail(), emailData);
                 }
@@ -354,6 +327,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             e.printStackTrace();
         }
 
+        // Response
         OrderCustomerResponse response = new OrderCustomerResponse();
         response.setIdOrder(savedOrder.getId());
         response.setMaDonHang(savedOrder.getMaDonHang());
@@ -365,6 +339,16 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         response.setMessage("Tạo đơn hàng thành công!");
 
         return response;
+    }
+
+    // Helper method để tạo mã ngẫu nhiên (tái sử dụng)
+    private String generateRandomCode(int length) {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(rand.nextInt(10));
+        }
+        return sb.toString();
     }
 
     private String generateMaDonHangCustomer() {

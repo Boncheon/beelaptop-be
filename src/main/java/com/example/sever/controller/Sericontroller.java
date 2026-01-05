@@ -4,11 +4,15 @@ import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.SeriAddRequestDTO;
 import com.example.sever.dto.request.SeriUpdateRequestDTO;
 import com.example.sever.dto.response.SeriDisplayReponse;
+
+import com.example.sever.repository.SeriRepository;
 import com.example.sever.service.SeriService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class Sericontroller {
 
     private final SeriService seriService;
+    private final SeriRepository seriRepository;
 
     /**
      * 📌 Lấy danh sách Seri theo biến thể LaptopChiTiet
@@ -109,5 +114,18 @@ public class Sericontroller {
                         .data(data)
                         .build()
         );
+    }
+    //    @PostMapping(value = "/import-excel/{idLaptopCt}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public SeriImportResultDTO importExcel(
+//            @PathVariable UUID idLaptopCt,
+//            @RequestPart("file") MultipartFile file
+//    ) {
+//        return seriService.importExcel(idLaptopCt, file);
+//    }
+    @GetMapping("/exists")
+    public boolean exists(@RequestParam("idSeri") String idSeri) {
+        String norm = (idSeri == null) ? "" : idSeri.trim().toUpperCase();
+        if (norm.isEmpty()) return false;
+        return seriRepository.existsByIdSeri(norm);
     }
 }

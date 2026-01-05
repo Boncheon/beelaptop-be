@@ -1,5 +1,7 @@
 package com.example.sever.dto.AccountDTO;
 
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,4 +21,12 @@ public class DiaChiCreateRequest {
     private String diaChiChiTiet;
     private String hoTen;
     private String soDienThoai;
+
+    private Integer provinceId;         // ID tỉnh theo GHN
+
+
+    private Integer districtId;         // ID quận/huyện theo GHN (bắt buộc)
+
+
+    private String wardCode;
 }

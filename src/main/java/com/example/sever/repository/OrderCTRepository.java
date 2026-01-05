@@ -13,6 +13,7 @@ import java.util.UUID;
 public interface OrderCTRepository extends JpaRepository<OrderCT, UUID> {
 
     List<OrderCT> findByIdOrder_Id(UUID orderId);
+    Optional<OrderCT> findByIdAndIdOrder_Id(UUID id, UUID orderId);
 
     boolean existsByIdSeri_Id(UUID seriId);
     @Query("SELECT COALESCE(SUM(o.giaBan), 0) FROM OrderCT o WHERE o.idOrder.id = :orderId")

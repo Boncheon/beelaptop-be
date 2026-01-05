@@ -42,5 +42,7 @@ public class UserDetailResponse implements Serializable {
 
     String diaChiChiTiet;
 
-
+    Integer provinceId;
+    Integer districtId;
+    String wardCode;
 }

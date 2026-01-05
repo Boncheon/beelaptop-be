@@ -4,6 +4,8 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.OrderDTO.OrderRespone;
 import com.example.sever.dto.Pos.*;
+
+import com.example.sever.dto.Pos.GHN.PosUpdateShippingRequest;
 import com.example.sever.service.PosOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -113,10 +115,25 @@ public class PosOrderController {
         );
     }
 
+    @PutMapping("/{orderId}/shipping")
+    public ResponseEntity<ApiResponse<PosOrderDetailDTO>> updateShipping(
+            @PathVariable UUID orderId,
+            @RequestBody PosUpdateShippingRequest req) {
+
+        PosOrderDetailDTO dto = posOrderService.updateShipping(orderId, req);
+
+        return ResponseEntity.ok(
+                ApiResponse.<PosOrderDetailDTO>builder()
+                        .message("Cập nhật giao hàng & tính phí GHN thành công")
+                        .data(dto)
+                        .build()
+        );
+    }
+
     // 6. Áp voucher
     @PostMapping("/{orderId}/voucher")
     public ResponseEntity<ApiResponse<OrderRespone>> applyVoucher(
-            @PathVariable("orderId") UUID orderId,
+            @PathVariable UUID orderId,
             @RequestBody PosApplyVoucherRequest request
     ) {
         OrderRespone data = posOrderService.applyVoucher(orderId, request);
@@ -128,6 +145,17 @@ public class PosOrderController {
                 .build();
 
         return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/{orderId}/voucher")
+    public ResponseEntity<ApiResponse<Void>> clearVoucher(@PathVariable UUID orderId) {
+        posOrderService.clearVoucher(orderId);
+        return ResponseEntity.ok(
+                ApiResponse.<Void>builder()
+                        .code(200)
+                        .message("Đã bỏ voucher khỏi đơn")
+                        .build()
+        );
     }
 
 

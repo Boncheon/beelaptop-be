@@ -21,35 +21,47 @@ public interface DiaChiRepository extends JpaRepository<DiaChi, UUID> {
     @Query("SELECT MAX(CAST(SUBSTRING(d.idDiaChi, 3) AS int)) FROM DiaChi d WHERE d.idDiaChi LIKE 'DC%'")
     Integer findMaxDiaChiCode();
 
-
-
     @Query(value = """
-                SELECT 
-                    d.ID AS id,
-                    d.id_dia_chi AS idDiaChi,
-                    d.id_tai_khoan AS idTaiKhoan,
-                    d.quoc_gia AS quocGia,
-                    d.tinh_thanh AS tinhThanh,
-                    d.quan_huyen AS quanHuyen,
-                    d.phuong_xa AS phuongXa,
-                    d.dia_chi_chi_tiet AS diaChiChiTiet,
-                    d.mac_dinh AS macDinh ,
-                    d.ho_ten AS hoTen , 
-                    d.so_dien_thoai as soDienThoai
-                FROM DiaChi d
-                WHERE d.id_tai_khoan = :idTaiKhoan
-                ORDER BY d.mac_dinh DESC
-            """, nativeQuery = true)
+    SELECT 
+        d.ID AS id,
+        d.id_dia_chi AS idDiaChi,
+        d.id_tai_khoan AS idTaiKhoan,
+        d.quoc_gia AS quocGia,
+        d.tinh_thanh AS tinhThanh,
+        d.quan_huyen AS quanHuyen,
+        d.phuong_xa AS phuongXa,
+        d.dia_chi_chi_tiet AS diaChiChiTiet,
+        d.mac_dinh AS macDinh,
+        d.ho_ten AS hoTen,
+        d.so_dien_thoai AS soDienThoai,
+        d.province_id AS provinceId,
+        d.district_id AS districtId,
+        d.ward_code AS wardCode
+    FROM DiaChi d
+    WHERE d.id_tai_khoan = :idTaiKhoan
+    ORDER BY d.mac_dinh DESC
+    """, nativeQuery = true)
     List<DiaChiProjection> findAllByTaiKhoanProjection(@Param("idTaiKhoan") UUID idTaiKhoan);
 
     @Modifying
     @Transactional
     @Query(value = """
-                UPDATE DiaChi
-                SET mac_dinh = 0
-                WHERE id_tai_khoan = :idTaiKhoan
-            """, nativeQuery = true)
-    void clearDefault(UUID idTaiKhoan);
+    UPDATE DiaChi
+    SET mac_dinh = 0
+    WHERE id_tai_khoan = :idTaiKhoan
+""", nativeQuery = true)
+    void clearDefault(@Param("idTaiKhoan") UUID idTaiKhoan);
 
     void deleteById(UUID id);
+
+    // ⭐ METHOD MỚI: TÌM TẤT CẢ ĐỊA CHỈ THEO UUID TÀI KHOẢN (AN TOÀN, KHÔNG LỖI)
+    @Query("SELECT d FROM DiaChi d WHERE d.idTaiKhoan.id = :taiKhoanId")
+    List<DiaChi> findAllByTaiKhoanId(@Param("taiKhoanId") UUID taiKhoanId);
+
+    // ⭐ METHOD MỚI: TÌM ĐỊA CHỈ MẶC ĐỊNH
+    Optional<DiaChi> findByIdTaiKhoan_IdAndMacDinhTrue(UUID taiKhoanId);
+    List<DiaChi> findByIdTaiKhoan_Id(UUID idTaiKhoan);
+
+
 }
+

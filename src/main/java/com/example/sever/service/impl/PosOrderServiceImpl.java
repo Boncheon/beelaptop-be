@@ -2,6 +2,7 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.OrderDTO.OrderRespone;
 import com.example.sever.dto.Pos.*;
+import com.example.sever.dto.Pos.GHN.PosUpdateShippingRequest;
 import com.example.sever.entity.*;
 import com.example.sever.mapper.PosOrderMapper;
 import com.example.sever.repository.*;
@@ -12,7 +13,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.sever.dto.Pos.GHN.GhnFeeRequest;
+import com.example.sever.service.GhnClientService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -29,13 +35,23 @@ public class PosOrderServiceImpl implements PosOrderService {
     private final HinhThucThanhToanChiTietRepository hinhThucThanhToanChiTietRepository;
     private final GiamGiaHoaDonRepository giamGiaHoaDonRepository;
     private final PhieuGiamGiaRepository phieuGiamGiaRepository;
-
+    private final DiaChiRepository diaChiRepository;
+    private final GhnClientService ghnClientService;
     private final PhieuGiamGiaService phieuGiamGiaService;
     private final PosOrderMapper posOrderMapper;
+    private final AnhRepository anhRepository;
+
+    // ✅ ADD: action log repo
+    private final OrderActionLogRepository orderActionLogRepository;
 
     private static final int ORDER_STATUS_DRAFT = 1;
-    private static final int ORDER_STATUS_COMPLETED = 2;
-    private static final int ORDER_STATUS_CANCELLED = 3;
+    private static final int ORDER_STATUS_COMPLETED = 2; // POS hoàn tất
+    private static final int ORDER_STATUS_CANCELLED = 3; // POS huỷ
+
+    // ✅ ADD: Online/Delivery statuses (để log/luồng giao hàng)
+    private static final int ORDER_STATUS_CONFIRMED = 2;
+    private static final int ORDER_STATUS_PREPARING = 3;
+    private static final int ORDER_STATUS_ONLINE_CANCELLED = 7;
 
     private static final int SERI_ACTIVE = 1;
     private static final int SERI_PENDING = 2;
@@ -66,8 +82,11 @@ public class PosOrderServiceImpl implements PosOrderService {
         }
 
         if (request.getIdDiaChi() != null) {
-            DiaChi dc = new DiaChi();
-            dc.setId(request.getIdDiaChi());
+            DiaChi dc = diaChiRepository.findById(request.getIdDiaChi())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Không tìm thấy địa chỉ: " + request.getIdDiaChi()
+                    ));
             order.setIdDiaChi(dc);
         }
 
@@ -90,6 +109,18 @@ public class PosOrderServiceImpl implements PosOrderService {
         order.setGhiChu(request.getGhiChu());
 
         orderRepository.save(order);
+
+        // ✅ ADD: ActionLog theo loại đơn
+        if ("GIAO_HANG".equalsIgnoreCase(order.getLoaiDon())) {
+            // giao hàng: coi như "đã xác nhận" sẵn (chỉ timeline, không đổi trạng thái draft)
+            writeLog(order, ORDER_STATUS_CONFIRMED,
+                    "Chuyển sang giao hàng (đã xác nhận): " + order.getMaDonHang());
+        } else {
+            // tại quầy: chỉ cần tạo đơn
+            writeLog(order, ORDER_STATUS_DRAFT,
+                    "Tạo đơn tại quầy: " + order.getMaDonHang());
+        }
+
         return posOrderMapper.toPosOrderDetail(order);
     }
 
@@ -150,13 +181,16 @@ public class PosOrderServiceImpl implements PosOrderService {
         Order order = getOrderOrThrow(orderId);
         requireDraft(order);
 
-        OrderCT ct = orderCTRepository.findById(orderCtId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy OrderCT: " + orderCtId));
+        // ✅ chỉ lấy OrderCT thuộc đúng đơn
+        OrderCT ct = orderCTRepository.findByIdAndIdOrder_Id(orderCtId, orderId)
+                .orElse(null);
 
-        if (!ct.getIdOrder().getId().equals(order.getId())) {
-            throw new IllegalArgumentException("Dòng chi tiết không thuộc đơn này");
+        // ✅ idempotent: nếu không tồn tại -> coi như đã xoá rồi
+        if (ct == null) {
+            return getDetail(orderId);
         }
 
+        // trả seri về ACTIVE
         if (ct.getIdSeri() != null) {
             Seri seri = ct.getIdSeri();
             seri.setTrangThai(SERI_ACTIVE);
@@ -176,26 +210,242 @@ public class PosOrderServiceImpl implements PosOrderService {
         Order order = getOrderOrThrow(orderId);
         requireDraft(order);
 
-        if (request.getIdTaiKhoan() != null) {
+        // set tài khoản
+        UUID tkId = request.getIdTaiKhoan();
+        if (tkId != null) {
             TaiKhoan tk = new TaiKhoan();
-            tk.setId(request.getIdTaiKhoan());
+            tk.setId(tkId);
             order.setIdTaiKhoan(tk);
+
+            // ✅ Nếu FE không truyền idDiaChi -> tự lấy địa chỉ mặc định
+            DiaChi picked = null;
+
+            if (request.getIdDiaChi() != null) {
+                picked = diaChiRepository.findById(request.getIdDiaChi()).orElse(null);
+            } else {
+                picked = diaChiRepository.findByIdTaiKhoan_IdAndMacDinhTrue(tkId)
+                        .orElseGet(() -> {
+                            List<DiaChi> list = diaChiRepository.findByIdTaiKhoan_Id(tkId);
+                            return (list != null && !list.isEmpty()) ? list.get(0) : null;
+                        });
+            }
+
+            if (picked != null) {
+                order.setIdDiaChi(picked);
+
+                // ✅ snapshot người nhận theo địa chỉ nếu FE không gửi
+                if (request.getTenKhachHang() == null || request.getTenKhachHang().isBlank()) {
+                    order.setTenKhachHang(picked.getHoTen());
+                } else {
+                    order.setTenKhachHang(request.getTenKhachHang());
+                }
+
+                if (request.getSdtKhachHang() == null || request.getSdtKhachHang().isBlank()) {
+                    order.setSdtKhachHang(picked.getSoDienThoai());
+                } else {
+                    order.setSdtKhachHang(request.getSdtKhachHang());
+                }
+            } else {
+                // không có địa chỉ
+                order.setIdDiaChi(null);
+                order.setTenKhachHang(request.getTenKhachHang());
+                order.setSdtKhachHang(request.getSdtKhachHang());
+            }
         } else {
+            // bỏ chọn khách
             order.setIdTaiKhoan(null);
-        }
-
-        if (request.getIdDiaChi() != null) {
-            DiaChi dc = new DiaChi();
-            dc.setId(request.getIdDiaChi());
-            order.setIdDiaChi(dc);
-        } else {
             order.setIdDiaChi(null);
+            order.setTenKhachHang(request.getTenKhachHang());
+            order.setSdtKhachHang(request.getSdtKhachHang());
         }
-
-        order.setTenKhachHang(request.getTenKhachHang());
-        order.setSdtKhachHang(request.getSdtKhachHang());
 
         orderRepository.save(order);
+        return getDetail(orderId);
+    }
+
+    private String generateDiaChiCode() {
+        Integer max = diaChiRepository.findMaxDiaChiCode();
+        int next = (max == null) ? 1 : (max + 1);
+        return String.format("DC%04d", next);
+    }
+
+    @Override
+    @Transactional
+    public PosOrderDetailDTO updateShipping(UUID orderId, PosUpdateShippingRequest req) {
+        Order order = getOrderOrThrow(orderId);
+        requireDraft(order);
+
+        boolean giaoHang = Boolean.TRUE.equals(req.getGiaoHang());
+
+        // ✅ ADD: detect switch TAI_QUAY -> GIAO_HANG (log 1 lần)
+        boolean wasGiaoHang = "GIAO_HANG".equalsIgnoreCase(order.getLoaiDon());
+
+        // set loại đơn
+        order.setLoaiDon(giaoHang ? "GIAO_HANG" : "TAI_QUAY");
+
+        // ✅ ADD: log khi vừa bật giao hàng
+        if (giaoHang && !wasGiaoHang) {
+            writeLog(order, ORDER_STATUS_CONFIRMED,
+                    "Chuyển sang giao hàng (đã xác nhận): " + order.getMaDonHang());
+        }
+
+        // Nếu tắt giao hàng -> reset phí
+        if (!giaoHang) {
+            order.setPhiVanChuyen(BigDecimal.ZERO);
+
+            // ✅ FIX: tắt giao hàng thì bỏ địa chỉ gắn trên đơn (tránh giữ thông tin giao hàng cũ)
+            order.setIdDiaChi(null);
+
+            recalcOrderTotals(order); // ✅ cập nhật tongTienThuHo ngay
+            return getDetail(orderId);
+        }
+
+        UUID tkId = (order.getIdTaiKhoan() != null ? order.getIdTaiKhoan().getId() : null);
+
+        // ==============================
+        // CASE 1: KHÁCH LẺ (không tài khoản) -> KHÔNG LƯU DiaChi, chỉ tính phí GHN
+        // ==============================
+        if (tkId == null) {
+            DiaChi dc = null;
+
+            if (req.getIdDiaChi() != null) {
+                dc = diaChiRepository.findById(req.getIdDiaChi())
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "Không tìm thấy địa chỉ: " + req.getIdDiaChi()));
+                order.setIdDiaChi(dc);
+            }
+
+            Integer toDistrictId = (req.getDistrictId() != null ? req.getDistrictId()
+                    : (dc != null ? dc.getDistrictId() : null));
+            String toWardCode = (req.getWardCode() != null && !req.getWardCode().isBlank() ? req.getWardCode()
+                    : (dc != null ? dc.getWardCode() : null));
+
+            if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
+                order.setPhiVanChuyen(BigDecimal.ZERO);
+                recalcOrderTotals(order);
+                return getDetail(orderId);
+            }
+
+            if (req.getHoTen() != null && !req.getHoTen().isBlank()) order.setTenKhachHang(req.getHoTen());
+            if (req.getSoDienThoai() != null && !req.getSoDienThoai().isBlank()) order.setSdtKhachHang(req.getSoDienThoai());
+
+            GhnFeeRequest feeReq = new GhnFeeRequest();
+            feeReq.setToDistrictId(toDistrictId);
+            feeReq.setToWardCode(toWardCode);
+
+            int fee = ghnClientService.calcFee(feeReq);
+            order.setPhiVanChuyen(BigDecimal.valueOf(fee));
+            recalcOrderTotals(order); // ✅ cập nhật tongTienThuHo ngay
+            return getDetail(orderId);
+        }
+
+        // ==============================
+        // CASE 2: KHÁCH CÓ TÀI KHOẢN
+        // ==============================
+        DiaChi diaChiToUse = null;
+
+        // 2.1) Nếu FE chọn địa chỉ có sẵn
+        if (req.getIdDiaChi() != null) {
+            diaChiToUse = diaChiRepository.findById(req.getIdDiaChi()).orElse(null);
+            if (diaChiToUse == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy địa chỉ: " + req.getIdDiaChi());
+            }
+
+            // ✅ FIX: validate địa chỉ phải thuộc đúng tài khoản
+            if (diaChiToUse.getIdTaiKhoan() == null || diaChiToUse.getIdTaiKhoan().getId() == null
+                    || !tkId.equals(diaChiToUse.getIdTaiKhoan().getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Địa chỉ không thuộc tài khoản khách hàng.");
+            }
+
+            order.setIdDiaChi(diaChiToUse);
+        } else {
+            // 2.2) FE không chọn idDiaChi
+            boolean saveAddress = Boolean.TRUE.equals(req.getSaveAddress());
+
+            if (saveAddress) {
+                // ✅ Chỉ tạo mới khi user thật sự muốn lưu địa chỉ mới
+                DiaChi newDc = new DiaChi();
+                newDc.setId(UUID.randomUUID());
+
+                TaiKhoan tkRef = new TaiKhoan();
+                tkRef.setId(tkId);
+                newDc.setIdTaiKhoan(tkRef);
+
+                newDc.setIdDiaChi(generateDiaChiCode());
+
+                newDc.setHoTen(req.getHoTen());
+                newDc.setSoDienThoai(req.getSoDienThoai());
+
+                newDc.setQuocGia(req.getQuocGia());
+                newDc.setTinhThanh(req.getTinhThanh());
+                newDc.setQuanHuyen(req.getQuanHuyen());
+                newDc.setPhuongXa(req.getPhuongXa());
+                newDc.setDiaChiChiTiet(req.getDiaChiChiTiet());
+
+                newDc.setProvinceId(req.getProvinceId());
+                newDc.setDistrictId(req.getDistrictId());
+                newDc.setWardCode(req.getWardCode());
+
+                boolean setAsDefault = Boolean.TRUE.equals(req.getSetAsDefault());
+                newDc.setMacDinh(setAsDefault);
+
+                if (setAsDefault) {
+                    diaChiRepository.clearDefault(tkId);
+                }
+
+                diaChiToUse = diaChiRepository.save(newDc);
+                order.setIdDiaChi(diaChiToUse);
+            } else {
+                // ✅ ĐÚNG NGHIỆP VỤ: KHÔNG LƯU, LẤY ĐỊA CHỈ MẶC ĐỊNH
+                diaChiToUse = diaChiRepository.findByIdTaiKhoan_IdAndMacDinhTrue(tkId)
+                        .orElseGet(() -> {
+                            List<DiaChi> list = diaChiRepository.findByIdTaiKhoan_Id(tkId);
+                            return (list != null && !list.isEmpty()) ? list.get(0) : null;
+                        });
+
+                order.setIdDiaChi(diaChiToUse);
+            }
+        }
+
+        // ==============================
+        // Snapshot tên/sdt (ưu tiên req nếu user đang nhập)
+        // ==============================
+        if (req.getHoTen() != null && !req.getHoTen().isBlank()) {
+            order.setTenKhachHang(req.getHoTen());
+        } else if (diaChiToUse != null && diaChiToUse.getHoTen() != null) {
+            order.setTenKhachHang(diaChiToUse.getHoTen());
+        }
+
+        if (req.getSoDienThoai() != null && !req.getSoDienThoai().isBlank()) {
+            order.setSdtKhachHang(req.getSoDienThoai());
+        } else if (diaChiToUse != null && diaChiToUse.getSoDienThoai() != null) {
+            order.setSdtKhachHang(diaChiToUse.getSoDienThoai());
+        }
+
+        // ==============================
+        // TÍNH PHÍ GHN:
+        // - Nếu user nhập district/ward (đổi địa chỉ tạm) => ưu tiên req để tính phí
+        // - Nếu không có => lấy từ diaChiToUse
+        // ==============================
+        Integer toDistrictId = (req.getDistrictId() != null ? req.getDistrictId()
+                : (diaChiToUse != null ? diaChiToUse.getDistrictId() : null));
+        String toWardCode = (req.getWardCode() != null && !req.getWardCode().isBlank() ? req.getWardCode()
+                : (diaChiToUse != null ? diaChiToUse.getWardCode() : null));
+
+        // ✅ FIX: thiếu district/ward => KHÔNG THROW, chỉ set phí ship = 0 và return
+        if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
+            order.setPhiVanChuyen(BigDecimal.ZERO);
+            recalcOrderTotals(order);
+            return getDetail(orderId);
+        }
+
+        GhnFeeRequest feeReq = new GhnFeeRequest();
+        feeReq.setToDistrictId(toDistrictId);
+        feeReq.setToWardCode(toWardCode);
+
+        int fee = ghnClientService.calcFee(feeReq);
+        order.setPhiVanChuyen(BigDecimal.valueOf(fee));
+        recalcOrderTotals(order); // ✅ cập nhật tongTienThuHo ngay
         return getDetail(orderId);
     }
 
@@ -203,15 +453,11 @@ public class PosOrderServiceImpl implements PosOrderService {
     @Override
     @Transactional
     public OrderRespone applyVoucher(UUID orderId, PosApplyVoucherRequest request) {
-
-        if (request == null
-                || request.getVoucherIds() == null
-                || request.getVoucherIds().isEmpty()) {
-            throw new IllegalArgumentException("Thiếu ID phiếu giảm giá");
+        if (request == null || request.getVoucherId() == null || request.getVoucherId().isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã phiếu giảm giá");
         }
 
-        // Lấy mã phiếu dạng "PGG001"
-        String voucherCode = request.getVoucherIds().get(0);
+        String voucherCode = request.getVoucherId().trim();
 
         Order order = getOrderOrThrow(orderId);
         requireDraft(order);
@@ -230,7 +476,14 @@ public class PosOrderServiceImpl implements PosOrderService {
         BigDecimal soTienGiam = phieuGiamGiaService.calculateDiscount(phieu, tongTien);
         order.setGiaTriGiamGia(soTienGiam);
 
-        BigDecimal mustPay = tongTien.subtract(soTienGiam);
+        BigDecimal phiKhac = nvl(order.getPhiDichVuKhac());
+        BigDecimal phiShip = nvl(order.getPhiVanChuyen());
+
+        BigDecimal mustPay = tongTien
+                .subtract(soTienGiam)
+                .add(phiKhac)
+                .add(phiShip);
+
         if (mustPay.compareTo(BigDecimal.ZERO) < 0) {
             mustPay = BigDecimal.ZERO;
         }
@@ -252,8 +505,11 @@ public class PosOrderServiceImpl implements PosOrderService {
         }
 
         g.setIdPhieuGiamGia(phieu);
+        BigDecimal sauGiamHang = tongTien.subtract(soTienGiam);
+        if (sauGiamHang.compareTo(BigDecimal.ZERO) < 0) sauGiamHang = BigDecimal.ZERO;
+
         g.setSoTienTruocGiam(tongTien);
-        g.setSoTienSauGiam(mustPay);
+        g.setSoTienSauGiam(sauGiamHang);
 
         orderRepository.save(order);
         giamGiaHoaDonRepository.save(g);
@@ -266,6 +522,31 @@ public class PosOrderServiceImpl implements PosOrderService {
         res.setTongPhaiTra(order.getTongTienThuHo());
 
         return res;
+    }
+
+    @Transactional
+    public void clearVoucher(UUID orderId) {
+        Order order = getOrderOrThrow(orderId);
+        requireDraft(order);
+
+        // xoá giảm giá hoá đơn nếu có
+        List<GiamGiaHoaDon> olds = giamGiaHoaDonRepository.findByIdOrders_Id(orderId);
+        if (!olds.isEmpty()) giamGiaHoaDonRepository.deleteAll(olds);
+
+        // tính lại tổng
+        BigDecimal tongTien = nvl(orderCTRepository.sumGiaBanByOrderId(order.getId()));
+        order.setGiaTriChuaGiam(tongTien);
+        order.setGiaTriGiamGia(BigDecimal.ZERO);
+
+        BigDecimal phiKhac = nvl(order.getPhiDichVuKhac());
+        BigDecimal phiShip = nvl(order.getPhiVanChuyen());
+
+        BigDecimal mustPay = tongTien
+                .add(phiKhac)
+                .add(phiShip);
+
+        order.setTongTienThuHo(mustPay);
+        orderRepository.save(order);
     }
 
     // ===== THÊM THANH TOÁN (TIỀN KHÁCH ĐƯA) =====
@@ -326,9 +607,6 @@ public class PosOrderServiceImpl implements PosOrderService {
         BigDecimal paidAfter =
                 nvl(hinhThucThanhToanChiTietRepository.sumSoTienByOrder(orderId));
 
-        // 🔥 CẬP NHẬT TRẠNG THÁI THANH TOÁN
-        //  - Nếu paidAfter >= mustPay  → ĐÃ THANH TOÁN
-        //  - Ngược lại                  → CHƯA THANH TOÁN (có thể đã thanh toán một phần)
         if (paidAfter.compareTo(mustPay) >= 0) {
             order.setTrangThaiThanhToan(PAYMENT_STATUS_PAID);
         } else {
@@ -364,7 +642,6 @@ public class PosOrderServiceImpl implements PosOrderService {
                             + totalPaid + ", cần: " + mustPay);
         }
 
-        // Chốt seri: PENDING -> SOLD
         for (OrderCT ct : items) {
             if (ct.getIdSeri() != null) {
                 Seri seri = ct.getIdSeri();
@@ -373,7 +650,6 @@ public class PosOrderServiceImpl implements PosOrderService {
             }
         }
 
-        // 🔥 Trừ số lượng voucher khi đơn đã hoàn tất
         List<GiamGiaHoaDon> discounts =
                 giamGiaHoaDonRepository.findByIdOrders_Id(orderId);
         for (GiamGiaHoaDon d : discounts) {
@@ -383,17 +659,27 @@ public class PosOrderServiceImpl implements PosOrderService {
                 if (current > 0) {
                     phieu.setSoLuong(current - 1);
                     if (phieu.getSoLuong() <= 0) {
-                        phieu.setTrangThai(0); // 0 = hết lượt
+                        phieu.setTrangThai(0);
                     }
                     phieuGiamGiaRepository.save(phieu);
                 }
             }
         }
 
-        // 🔥 đảm bảo trạng thái đơn + thanh toán
         order.setTrangThaiThanhToan(PAYMENT_STATUS_PAID);
-        order.setTrangThai(ORDER_STATUS_COMPLETED);
-        orderRepository.save(order);
+
+        // ✅ FIX: phân nhánh theo loại đơn + ghi log
+        if ("GIAO_HANG".equalsIgnoreCase(order.getLoaiDon())) {
+            // giao hàng: sau khi chốt tại quầy, bắt đầu bước tiếp theo (3)
+            order.setTrangThai(ORDER_STATUS_PREPARING);
+            orderRepository.save(order);
+            writeLog(order, ORDER_STATUS_PREPARING, "Đang chuẩn bị hàng: " + order.getMaDonHang());
+        } else {
+            // tại quầy: hoàn tất = 2
+            order.setTrangThai(ORDER_STATUS_COMPLETED);
+            orderRepository.save(order);
+            writeLog(order, ORDER_STATUS_COMPLETED, "Hoàn tất đơn tại quầy: " + order.getMaDonHang());
+        }
 
         return getDetail(orderId);
     }
@@ -414,9 +700,18 @@ public class PosOrderServiceImpl implements PosOrderService {
             }
         }
 
-        order.setTrangThai(ORDER_STATUS_CANCELLED);
-        order.setTrangThaiThanhToan(PAYMENT_STATUS_UNPAID); // 🔥 huỷ đơn ⇒ chưa thanh toán
-        orderRepository.save(order);
+        order.setTrangThaiThanhToan(PAYMENT_STATUS_UNPAID);
+
+        // ✅ FIX: phân nhánh theo loại đơn + ghi log
+        if ("GIAO_HANG".equalsIgnoreCase(order.getLoaiDon())) {
+            order.setTrangThai(ORDER_STATUS_ONLINE_CANCELLED); // 7
+            orderRepository.save(order);
+            writeLog(order, ORDER_STATUS_ONLINE_CANCELLED, "Hủy đơn giao hàng: " + order.getMaDonHang());
+        } else {
+            order.setTrangThai(ORDER_STATUS_CANCELLED); // 3
+            orderRepository.save(order);
+            writeLog(order, ORDER_STATUS_CANCELLED, "Hủy đơn tại quầy: " + order.getMaDonHang());
+        }
 
         return getDetail(orderId);
     }
@@ -426,7 +721,24 @@ public class PosOrderServiceImpl implements PosOrderService {
     @Transactional(readOnly = true)
     public PosOrderDetailDTO getDetail(UUID orderId) {
         Order order = getOrderOrThrow(orderId);
-        return posOrderMapper.toPosOrderDetail(order);
+
+        PosOrderDetailDTO dto = posOrderMapper.toPosOrderDetail(order);
+
+        if (dto.getItems() != null) {
+            for (PosOrderItemDTO it : dto.getItems()) {
+                UUID laptopCtId = it.getLaptopCtId();
+                if (laptopCtId == null) continue;
+
+                List<String> urls = anhRepository.findAllImgUrlByLaptopChiTietId(laptopCtId);
+                if (urls != null && !urls.isEmpty()) {
+                    it.setAnhUrl(urls.get(0));
+                } else {
+                    it.setAnhUrl(null);
+                }
+            }
+        }
+
+        return dto;
     }
 
     @Override
@@ -469,10 +781,12 @@ public class PosOrderServiceImpl implements PosOrderService {
         order.setGiaTriGiamGia(totalDiscount);
 
         BigDecimal phiKhac = nvl(order.getPhiDichVuKhac());
+        BigDecimal phiShip = nvl(order.getPhiVanChuyen());
 
         BigDecimal mustPay = subtotal
                 .subtract(totalDiscount)
-                .add(phiKhac);
+                .add(phiKhac)
+                .add(phiShip);
 
         if (mustPay.compareTo(BigDecimal.ZERO) < 0) {
             mustPay = BigDecimal.ZERO;
@@ -482,14 +796,9 @@ public class PosOrderServiceImpl implements PosOrderService {
         orderRepository.save(order);
     }
 
-
-
-
-
     private BigDecimal nvl(BigDecimal b) {
         return b == null ? BigDecimal.ZERO : b;
     }
-
 
     @Override
     @Transactional
@@ -510,7 +819,6 @@ public class PosOrderServiceImpl implements PosOrderService {
             Seri seri = seriRepository.findByIdSeriAndTrangThai(trimmed, SERI_ACTIVE)
                     .orElseThrow(() -> new RuntimeException("Seri '" + trimmed + "' không tồn tại hoặc đã bán"));
 
-            // Kiểm tra trùng trong đơn (tránh quét 2 lần cùng seri)
             boolean alreadyInOrder = orderCTRepository.existsByIdOrder_IdAndIdSeri_Id(orderId, seri.getId());
             if (alreadyInOrder) {
                 throw new RuntimeException("Seri '" + trimmed + "' đã có trong đơn hàng");
@@ -519,25 +827,22 @@ public class PosOrderServiceImpl implements PosOrderService {
             seriUuids.add(seri.getId());
         }
 
-        // Dùng lại hàm cũ (an toàn, không cần viết lại logic)
         PosAddItemsRequest request = new PosAddItemsRequest();
         request.setSeriIds(seriUuids);
         return addItems(orderId, request);
     }
+
     private String generateMaDonHang() {
-        // Phần ngày: yyyyMMdd
         String datePart = LocalDate.now()
-                .format(DateTimeFormatter.BASIC_ISO_DATE); // 20251207
+                .format(DateTimeFormatter.BASIC_ISO_DATE);
 
-        // Prefix mã đơn trong ngày
-        String prefix = "OD" + datePart + "-";            // OD20251207-
+        String prefix = "OD" + datePart + "-";
 
-        // Lấy mã cuối cùng trong ngày đó từ DB
         String lastCode = orderRepository.findLastMaDonHangByPrefix(prefix);
 
-        int next = 0; // bắt đầu từ 0000
+        int next = 0;
         if (lastCode != null && lastCode.startsWith(prefix)) {
-            String numberStr = lastCode.substring(prefix.length()); // lấy phần 0000 phía sau
+            String numberStr = lastCode.substring(prefix.length());
             try {
                 next = Integer.parseInt(numberStr) + 1;
             } catch (NumberFormatException ignored) {
@@ -545,18 +850,13 @@ public class PosOrderServiceImpl implements PosOrderService {
             }
         }
 
-        // Giới hạn từ 0 -> 1000
         if (next > 1000) {
-            // tuỳ em: có thể throw exception nếu muốn chặn tạo quá 1000 đơn/ngày
-            // throw new IllegalStateException("Vượt quá số lượng đơn cho phép trong ngày");
-            next = 0; // hoặc quay lại từ 0000
+            next = 0;
         }
 
-        // %04d => chuẩn hoá 4 chữ số: 0 -> 0000, 15 -> 0015, 1000 -> 1000
         return String.format("%s%04d", prefix, next);
     }
 
-    // 🔥 lấy ID tài khoản đang đăng nhập (nhân viên / admin)
     private UUID getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -567,7 +867,26 @@ public class PosOrderServiceImpl implements PosOrderService {
         if (principal instanceof TaiKhoan tk) {
             return tk.getId();
         }
-        // Nếu bạn dùng CustomUserDetails riêng thì sửa lại đoạn này
         return null;
+    }
+
+    // ✅ ADD: helper ghi OrderActionLog
+    private void writeLog(Order order, int hanhDong, String moTa) {
+        OrderActionLog log = new OrderActionLog();
+        log.setId(UUID.randomUUID());
+        log.setIdOrderacl("ACL" + System.currentTimeMillis()); // <= 20 ký tự
+        log.setIdOrder(order);
+        log.setNgayTao(Instant.now());
+        log.setHanhDong(hanhDong);
+        log.setMoTa(moTa);
+
+        UUID userId = getCurrentUserId();
+        if (userId != null) {
+            TaiKhoan tk = new TaiKhoan();
+            tk.setId(userId);
+            log.setIdTaiKhoan(tk);
+        }
+
+        orderActionLogRepository.save(log);
     }
 }

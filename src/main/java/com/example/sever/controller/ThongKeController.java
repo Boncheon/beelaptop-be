@@ -2,6 +2,8 @@ package com.example.sever.controller;
 
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.response.ThongKeTongQuanResponseDTO;
+import com.example.sever.dto.response.ThongKeTrangThaiResponseDTO;
+import com.example.sever.dto.response.ThongKeTruyCapResponseDTO;
 import com.example.sever.service.ThongKeService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -77,5 +79,44 @@ public class ThongKeController {
                             .build());
         }
     }
-}
 
+    @GetMapping("/trang-thai")
+    public ResponseEntity<ApiResponse<ThongKeTrangThaiResponseDTO>> getThongKeTrangThai(){
+        try {
+            ThongKeTrangThaiResponseDTO result = thongKeService.thongKeTheoTrangThai();
+            return ResponseEntity.ok(
+                    ApiResponse.<ThongKeTrangThaiResponseDTO>builder()
+                            .code(HttpStatus.OK.value())
+                            .message("Lấy thống kê theo trạng thái thành công")
+                            .data(result)
+                            .build()
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<ThongKeTrangThaiResponseDTO>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi khi lấy thống kê theo trạng thái: " + e.getMessage())
+                            .build());
+        }
+    }
+
+    @GetMapping("/truy-cap")
+    public ResponseEntity<ApiResponse<ThongKeTruyCapResponseDTO>> getThongKeTruyCap() {
+        try {
+            ThongKeTruyCapResponseDTO result = thongKeService.thongKeTruyCap();
+            return ResponseEntity.ok(
+                    ApiResponse.<ThongKeTruyCapResponseDTO>builder()
+                            .code(HttpStatus.OK.value())
+                            .message("Lấy thống kê truy cập thành công")
+                            .data(result)
+                            .build()
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.<ThongKeTruyCapResponseDTO>builder()
+                            .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .message("Lỗi khi lấy thống kê truy cập: " + e.getMessage())
+                            .build());
+        }
+    }
+}

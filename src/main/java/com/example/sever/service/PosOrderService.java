@@ -3,6 +3,8 @@ package com.example.sever.service;
 
 import com.example.sever.dto.OrderDTO.OrderRespone;
 import com.example.sever.dto.Pos.*;
+import com.example.sever.dto.Pos.GHN.PosUpdateShippingRequest;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -29,4 +31,9 @@ public interface PosOrderService {
     void addSeriToOrder(UUID orderId, PosAddItemsRequest request);
 
     PosOrderDetailDTO addItemsBySeriCode(UUID orderId, List<String> seriCodes);
+
+    void clearVoucher(UUID orderId);
+    PosOrderDetailDTO updateShipping(UUID orderId, PosUpdateShippingRequest req);
+
+
 }

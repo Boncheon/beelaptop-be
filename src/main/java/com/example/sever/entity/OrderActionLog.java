@@ -48,8 +48,5 @@ public class OrderActionLog {
         if (ngayTao == null) ngayTao = Instant.now();
     }
 
-    @PreUpdate
-    public void preUpdate() {
-        ngayTao = Instant.now(); // vì bạn muốn 1 log duy nhất => ngay_tao hiểu là "lần cập nhật gần nhất"
-    }
+    // ❌ BỎ @PreUpdate: log là lịch sử, không được tự đổi "ngay_tao"
 }

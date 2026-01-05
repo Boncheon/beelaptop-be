@@ -32,10 +32,8 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order không tồn tại: " + orderId));
 
-        // ✅ 1 log duy nhất
-        List<OrderActionLog> logs = logRepo.findByIdOrder_Id(orderId)
-                .map(List::of)
-                .orElseGet(List::of);
+        // ✅ lấy toàn bộ log
+        List<OrderActionLog> logs = logRepo.findByIdOrder_IdOrderByNgayTaoAsc(orderId);
 
         return buildTimeline(order, logs);
     }
@@ -50,6 +48,11 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order không tồn tại: " + orderId));
 
+        // ✅ Đơn tại quầy không dùng updateStatus kiểu giao hàng
+        if ("TAI_QUAY".equalsIgnoreCase(order.getLoaiDon())) {
+            throw new IllegalStateException("Đơn tại quầy không dùng API updateStatus giao hàng.");
+        }
+
         int oldStatus = nvl(order.getTrangThai(), OrderConstants.ST_WAIT_CONFIRM);
         int newStatus = request.getNewStatus();
 
@@ -60,33 +63,26 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
 
         TaiKhoan actor = getCurrentActor();
 
-        // ✅ UP SERT: 1 order chỉ có 1 log
-        OrderActionLog log = logRepo.findByIdOrder_Id(orderId).orElseGet(() -> {
-            OrderActionLog l = new OrderActionLog();
-            l.setId(UUID.randomUUID());
-            l.setIdOrder(order);
-            l.setIdOrderacl(genACL());
-            return l;
-        });
-
+        // ✅ INSERT log mới mỗi lần đổi trạng thái
+        OrderActionLog log = new OrderActionLog();
+        log.setId(UUID.randomUUID());
+        log.setIdOrder(order);
+        log.setIdOrderacl(genACL());
         log.setHanhDong(newStatus);
-        log.setIdTaiKhoan(actor); // null = hệ thống
+        log.setIdTaiKhoan(actor);
         log.setMoTa(buildLogMessage(newStatus, request.getNote(), actor));
-        log.setNgayTao(Instant.now()); // cập nhật time
+        log.setNgayTao(Instant.now());
 
         logRepo.save(log);
 
-        List<OrderActionLog> logs = List.of(log);
+        List<OrderActionLog> logs = logRepo.findByIdOrder_IdOrderByNgayTaoAsc(orderId);
         return buildTimeline(order, logs);
     }
 
     // ===== helper =====
 
     private String genACL() {
-        Random rand = new Random();
-        StringBuilder acl = new StringBuilder("ACL");
-        for (int i = 0; i < 6; i++) acl.append(rand.nextInt(10));
-        return acl.toString();
+        return "ACL" + System.currentTimeMillis();
     }
 
     private void validateTransition(int from, int to) {
@@ -110,15 +106,122 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
         res.setOrderId(order.getId());
         res.setMaDonHang(order.getMaDonHang());
 
-        int st = nvl(order.getTrangThai(), OrderConstants.ST_WAIT_CONFIRM);
-        res.setTrangThai(st);
-        res.setTenTrangThai(statusName(st));
+        String loai = order.getLoaiDon() != null ? order.getLoaiDon().trim().toUpperCase() : "";
+        int st = order.getTrangThai() != null ? order.getTrangThai() : 0;
+
+        // ====== 1) TẠI QUẦY: steps = 1/2/3 ======
+        if ("TAI_QUAY".equals(loai)) {
+            res.setTrangThai(st);
+            res.setTenTrangThai(statusNameTaiQuay(st));
+            res.setTrangThaiThanhToan(nvl(order.getTrangThaiThanhToan(), OrderConstants.PAY_UNPAID));
+            res.setTenTrangThaiThanhToan(res.getTrangThaiThanhToan() == OrderConstants.PAY_PAID ? "Đã thanh toán" : "Chưa thanh toán");
+
+            int[] codes = {1, 2, 3}; // tạo / hoàn tất / hủy
+            List<OrderTimelineResponse.TimelineStepDTO> steps = new ArrayList<>();
+            for (int code : codes) {
+                String state;
+                if (st == 3) {
+                    state = (code == 3) ? "CANCELLED" : "UPCOMING";
+                } else if (code < st) state = "DONE";
+                else if (code == st) state = "CURRENT";
+                else state = "UPCOMING";
+
+                steps.add(new OrderTimelineResponse.TimelineStepDTO(code, statusNameTaiQuay(code), state));
+            }
+            res.setSteps(steps);
+
+            // logs chỉ lấy 1/2/3
+            List<OrderTimelineResponse.TimelineLogDTO> logDtos = new ArrayList<>();
+            for (OrderActionLog l : logs) {
+                if (l.getHanhDong() == null) continue;
+                if (l.getHanhDong() != 1 && l.getHanhDong() != 2 && l.getHanhDong() != 3) continue;
+
+                logDtos.add(toLogDTO(l, titleFromActionTaiQuay(l.getHanhDong())));
+            }
+            res.setLogs(logDtos);
+            return res;
+        }
+
+        // ====== 2) GIAO HÀNG: ẩn bước xác nhận, chỉ show 3..6 + cancel ======
+        if ("GIAO_HANG".equals(loai)) {
+
+            // nếu DB đang lưu st=1/2 thì UI vẫn muốn coi như đang ở bước 3
+            int stDisplay = st;
+            if (stDisplay != OrderConstants.ST_CANCEL && stDisplay <= OrderConstants.ST_CONFIRMED) {
+                stDisplay = OrderConstants.ST_PREPARING; // ép current UI từ bước 3
+            }
+
+            res.setTrangThai(stDisplay);
+            res.setTenTrangThai(statusName(stDisplay));
+            res.setTrangThaiThanhToan(nvl(order.getTrangThaiThanhToan(), OrderConstants.PAY_UNPAID));
+            res.setTenTrangThaiThanhToan(
+                    res.getTrangThaiThanhToan() == OrderConstants.PAY_PAID ? "Đã thanh toán" : "Chưa thanh toán"
+            );
+
+            int[] codes = {
+                    OrderConstants.ST_WAIT_CONFIRM,
+                    OrderConstants.ST_CONFIRMED,
+                    OrderConstants.ST_PREPARING,
+                    OrderConstants.ST_READY_SHIP,
+                    OrderConstants.ST_SHIPPING,
+                    OrderConstants.ST_DONE
+            };
+
+            List<OrderTimelineResponse.TimelineStepDTO> steps = new ArrayList<>();
+            for (int code : codes) {
+                String state;
+
+                if (st == OrderConstants.ST_CANCEL) {
+                    // nếu đã hủy: 1-2 vẫn coi là DONE (vì giao hàng mặc định đã xác nhận),
+                    // các bước sau là UPCOMING
+                    state = (code <= OrderConstants.ST_CONFIRMED) ? "DONE" : "UPCOMING";
+                } else if (st <= OrderConstants.ST_CONFIRMED) {
+                    // giao hàng đã xác nhận sẵn => 1-2 DONE, 3 CURRENT
+                    if (code <= OrderConstants.ST_CONFIRMED) state = "DONE";
+                    else if (code == OrderConstants.ST_PREPARING) state = "CURRENT";
+                    else state = "UPCOMING";
+                } else {
+                    // bình thường theo trạng thái hiện tại
+                    if (code < st) state = "DONE";
+                    else if (code == st) state = "CURRENT";
+                    else state = "UPCOMING";
+                }
+
+                steps.add(new OrderTimelineResponse.TimelineStepDTO(code, statusName(code), state));
+            }
+
+            if (st == OrderConstants.ST_CANCEL) {
+                steps.add(new OrderTimelineResponse.TimelineStepDTO(OrderConstants.ST_CANCEL, "Hủy đơn", "CANCELLED"));
+            }
+            res.setSteps(steps);
+
+            // logs: cho phép lấy cả 1..6 và cancel (nếu có)
+            List<OrderTimelineResponse.TimelineLogDTO> logDtos = new ArrayList<>();
+            for (OrderActionLog l : logs) {
+                Integer a = l.getHanhDong();
+                if (a == null) continue;
+
+                if (a == OrderConstants.ST_WAIT_CONFIRM || a == OrderConstants.ST_CONFIRMED
+                        || a == OrderConstants.ST_PREPARING || a == OrderConstants.ST_READY_SHIP
+                        || a == OrderConstants.ST_SHIPPING || a == OrderConstants.ST_DONE
+                        || a == OrderConstants.ST_CANCEL) {
+                    logDtos.add(toLogDTO(l, titleFromAction(a)));
+                }
+            }
+            res.setLogs(logDtos);
+
+            return res;
+        }
+
+        // ====== 3) ONLINE (mặc định): steps 1..6 + cancel ======
+        int stOnline = nvl(order.getTrangThai(), OrderConstants.ST_WAIT_CONFIRM);
+        res.setTrangThai(stOnline);
+        res.setTenTrangThai(statusName(stOnline));
 
         int pay = nvl(order.getTrangThaiThanhToan(), OrderConstants.PAY_UNPAID);
         res.setTrangThaiThanhToan(pay);
         res.setTenTrangThaiThanhToan(pay == OrderConstants.PAY_PAID ? "Đã thanh toán" : "Chưa thanh toán");
 
-        // steps 1..6 (cancel đặc biệt)
         List<OrderTimelineResponse.TimelineStepDTO> steps = new ArrayList<>();
         int[] codes = {
                 OrderConstants.ST_WAIT_CONFIRM,
@@ -131,36 +234,41 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
 
         for (int code : codes) {
             String state;
-            if (st == OrderConstants.ST_CANCEL) state = "UPCOMING";
-            else if (code < st) state = "DONE";
-            else if (code == st) state = "CURRENT";
+            if (stOnline == OrderConstants.ST_CANCEL) state = "UPCOMING";
+            else if (code < stOnline) state = "DONE";
+            else if (code == stOnline) state = "CURRENT";
             else state = "UPCOMING";
 
             steps.add(new OrderTimelineResponse.TimelineStepDTO(code, statusName(code), state));
         }
 
-        if (st == OrderConstants.ST_CANCEL) {
+        if (stOnline == OrderConstants.ST_CANCEL) {
             steps.add(new OrderTimelineResponse.TimelineStepDTO(OrderConstants.ST_CANCEL, "Hủy đơn", "CANCELLED"));
         }
         res.setSteps(steps);
 
-        // logs (1 phần tử hoặc rỗng)
         List<OrderTimelineResponse.TimelineLogDTO> logDtos = new ArrayList<>();
         for (OrderActionLog l : logs) {
-            String by = (l.getIdTaiKhoan() != null && l.getIdTaiKhoan().getTen() != null && !l.getIdTaiKhoan().getTen().isBlank())
-                    ? l.getIdTaiKhoan().getTen()
-                    : "Hệ thống";
-
-            logDtos.add(new OrderTimelineResponse.TimelineLogDTO(
-                    l.getNgayTao() != null ? l.getNgayTao() : Instant.now(),
-                    titleFromAction(l.getHanhDong()),
-                    l.getMoTa(),
-                    by
-            ));
+            logDtos.add(toLogDTO(l, titleFromAction(l.getHanhDong())));
         }
         res.setLogs(logDtos);
 
         return res;
+    }
+
+    private OrderTimelineResponse.TimelineLogDTO toLogDTO(OrderActionLog l, String title) {
+        String by = (l.getIdTaiKhoan() != null
+                && l.getIdTaiKhoan().getTen() != null
+                && !l.getIdTaiKhoan().getTen().isBlank())
+                ? l.getIdTaiKhoan().getTen()
+                : "Hệ thống";
+
+        return new OrderTimelineResponse.TimelineLogDTO(
+                l.getNgayTao() != null ? l.getNgayTao() : Instant.now(),
+                title != null ? title : "Cập nhật đơn hàng",
+                l.getMoTa(),
+                by
+        );
     }
 
     private String buildLogMessage(int newStatus, String note, TaiKhoan actor) {
@@ -203,6 +311,30 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
             case OrderConstants.ST_CANCEL       -> "Hủy đơn";
             default -> "Không xác định";
         };
+    }
+
+    private String statusNameTaiQuay(int st) {
+        return switch (st) {
+            case 1 -> "Tạo đơn";
+            case 2 -> "Hoàn tất";
+            case 3 -> "Hủy đơn";
+            default -> "Không xác định";
+        };
+    }
+
+    private String titleFromActionTaiQuay(int action) {
+        return switch (action) {
+            case 1 -> "Tạo đơn";
+            case 2 -> "Hoàn tất";
+            case 3 -> "Hủy đơn";
+            default -> "Cập nhật đơn";
+        };
+    }
+
+    private String statusNameGiaoHang(int st) {
+        // giao hàng có thể ở 2 (confirmed) nhưng UI sẽ show các bước sau
+        if (st == OrderConstants.ST_CONFIRMED) return "Đã xác nhận";
+        return statusName(st);
     }
 
     private int nvl(Integer v, int def) {

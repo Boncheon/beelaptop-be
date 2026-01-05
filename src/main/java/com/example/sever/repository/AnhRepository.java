@@ -16,6 +16,8 @@ public interface AnhRepository extends JpaRepository<Anh, UUID> {
 
     List<Anh> findByIdLaptopChiTiet_Id(UUID idLaptopChiTiet);
 
+    List<Anh> findByIdLaptopChiTiet_IdInOrderByIdLaptopChiTiet_IdAscIdAnhAsc(List<UUID> ids);
+
     // dùng để sinh id_anh: anh0001, anh0002...
     @Query("select max(a.idAnh) from Anh a")
     String findMaxIdAnh();

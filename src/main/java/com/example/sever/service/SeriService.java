@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SeriService {
+
+
+
     void addListSeri(SeriAddRequestDTO dto);
 
     List<SeriDisplayReponse> getByLaptopCt(UUID idLaptopCt);
@@ -23,4 +26,5 @@ public interface SeriService {
 
 
     SeriDisplayReponse findByIdSeri(String idSeri);
+
 }

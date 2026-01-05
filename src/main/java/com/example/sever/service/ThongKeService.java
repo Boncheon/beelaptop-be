@@ -2,6 +2,8 @@ package com.example.sever.service;
 
 import com.example.sever.dto.response.ThongKeResponseDTO;
 import com.example.sever.dto.response.ThongKeTongQuanResponseDTO;
+import com.example.sever.dto.response.ThongKeTrangThaiResponseDTO;
+import com.example.sever.dto.response.ThongKeTruyCapResponseDTO;
 import com.example.sever.dto.response.TopLaptopBanChayResponseDTO;
 
 import java.time.LocalDate;
@@ -13,6 +15,7 @@ public interface ThongKeService {
     List<ThongKeResponseDTO> soSanhHaiNgay(LocalDate ngay1, LocalDate ngay2);
     TopLaptopBanChayResponseDTO topLaptopBanChayNhat(int nam);
     ThongKeTongQuanResponseDTO thongKeTongQuan();
+    ThongKeTrangThaiResponseDTO thongKeTheoTrangThai();
+    ThongKeTruyCapResponseDTO thongKeTruyCap();
 }
-
 

@@ -208,17 +208,24 @@ public class LapTopCTServiceImpl implements LapTopCTService {
     ///-----------code huy-----------/
     @Override
     public List<CustomerLaptopChiTietResponse> getLapTopCustomer(UUID laptopId) {
-        List<CustomerLaptopChiTietProject> projections = laptopChiTietRepository.findLaptopChiTietWithAnhAndVersionsByLaptopId(laptopId);
+        List<CustomerLaptopChiTietProject> projections = laptopChiTietRepository
+                .findLaptopChiTietWithAnhAndVersionsByLaptopId(laptopId);
 
         List<CustomerLaptopChiTietResponse> responses = new ArrayList<>();
+
         for (CustomerLaptopChiTietProject projection : projections) {
             List<String> images = anhRepository.findAllImgUrlByLaptopChiTietId(projection.getCtId());
             if (images == null || images.isEmpty()) {
                 images = new ArrayList<>();
             }
 
-            Optional<Integer> trangThaiSeriOpt = seriRepository.findTrangThaiSeriByLaptopChiTietId(projection.getCtId());
-            Integer trangThaiSeri = trangThaiSeriOpt.orElse(0);
+            // Lấy danh sách tất cả trạng thái seri của biến thể này
+            List<Integer> trangThaiList = seriRepository.findAllTrangThaiSeri(projection.getCtId());
+
+            // Xác định trạng thái tồn kho:
+            // - Nếu có ít nhất 1 seri trạng thái 1 → còn hàng
+            // - Ngược lại (không có hoặc list rỗng) → hết hàng
+            int trangThaiSeri = trangThaiList.contains(1) ? 1 : 2;
 
             CustomerLaptopChiTietResponse response = new CustomerLaptopChiTietResponse();
             response.setCtId(projection.getCtId());

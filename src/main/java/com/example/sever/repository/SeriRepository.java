@@ -19,26 +19,7 @@ import java.util.UUID;
 @Repository
 public interface SeriRepository extends JpaRepository<Seri, UUID> {
 
-    boolean existsByIdSeri(String idSeri);
 
-    List<Seri> findByIdLapTopCt_Id(UUID idLaptopCt);
-    SeriDisplayReponse findByIdSeri(String idSeri);
-
-    Optional<Seri> findByIdSeriAndTrangThai(String idSeri, Integer trangThai);
-
-
-    long countByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
-
-    // Seri còn hoạt động cho 1 LaptopCT
-    List<Seri> findByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
-
-
-    @Query("""
-        SELECT COUNT(s)
-        FROM Seri s
-        WHERE s.idLapTopCt.idLaptop.id = :idLaptop
-    """)
-    long countSeriByLaptop(@Param("idLaptop") UUID idLaptop);
 
 
     //------------------------------Code huy bán onl-----------/
@@ -78,4 +59,35 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
         ORDER BY s.ID
         """, nativeQuery = true)
     Optional<Integer> findTrangThaiSeriByLaptopChiTietId(@Param("laptopChiTietId") UUID laptopChiTietId);
+
+
+    ///------------------
+    boolean existsByIdSeri(String idSeri);
+
+    List<Seri> findByIdLapTopCt_Id(UUID idLaptopCt);
+    SeriDisplayReponse findByIdSeri(String idSeri);
+
+    Optional<Seri> findByIdSeriAndTrangThai(String idSeri, Integer trangThai);
+
+
+    long countByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
+
+    // Seri còn hoạt động cho 1 LaptopCT
+    List<Seri> findByIdLapTopCt_IdAndTrangThai(UUID idLaptopCt, Integer trangThai);
+
+
+    @Query("""
+    SELECT COUNT(s)
+    FROM Seri s
+    WHERE s.idLapTopCt.idLaptop.id = :idLaptop
+      AND s.trangThai = 1
+""")
+    long countSeriByLaptop(@Param("idLaptop") UUID idLaptop);
+
+    @Query(value = """
+    SELECT s.trang_thai
+    FROM Seri s
+    WHERE s.id_lap_top_ct = :laptopChiTietId
+""", nativeQuery = true)
+    List<Integer> findAllTrangThaiSeri(@Param("laptopChiTietId") UUID laptopChiTietId);
 }

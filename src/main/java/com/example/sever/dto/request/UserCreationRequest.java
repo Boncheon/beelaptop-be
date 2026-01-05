@@ -56,7 +56,15 @@ public class UserCreationRequest implements Serializable {
 
     @Size(max = 100, message = "PHƯỜNG/XÃ KHÔNG HỢP LỆ")
     String phuongXa;
+    // Các field hỗ trợ GHN - bắt buộc (frontend phải gửi)
+    @NotNull(message = "Province ID không được để trống")
+    Integer provinceId;
 
+    @NotNull(message = "District ID không được để trống")
+    Integer districtId;
+
+    @NotBlank(message = "Ward Code không được để trống")
+    String wardCode;
 
     @Size(max = 255, message = "ĐỊA CHỈ CHI TIẾT KHÔNG HỢP LỆ")
     String diaChiChiTiet;

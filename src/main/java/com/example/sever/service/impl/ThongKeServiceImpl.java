@@ -2,9 +2,12 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.response.ThongKeResponseDTO;
 import com.example.sever.dto.response.ThongKeTongQuanResponseDTO;
+import com.example.sever.dto.response.ThongKeTrangThaiResponseDTO;
+import com.example.sever.dto.response.ThongKeTruyCapResponseDTO;
 import com.example.sever.dto.response.TopLaptopBanChayResponseDTO;
 import com.example.sever.repository.OrderRepository;
 import com.example.sever.service.ThongKeService;
+import com.example.sever.service.UserSessionTracker;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -17,9 +20,11 @@ import java.util.*;
 public class ThongKeServiceImpl implements ThongKeService {
 
     private final OrderRepository orderRepository;
+    private final UserSessionTracker sessionTracker;
 
-    public ThongKeServiceImpl(OrderRepository orderRepository) {
+    public ThongKeServiceImpl(OrderRepository orderRepository, UserSessionTracker sessionTracker) {
         this.orderRepository = orderRepository;
+        this.sessionTracker = sessionTracker;
     }
 
 
@@ -51,7 +56,7 @@ public class ThongKeServiceImpl implements ThongKeService {
     }
 
     // Helper method để convert từ row query thống kê (có thêm top laptop)
-    // Format: [label, doanhSo, idLaptop, tenSanPham, soLuongBan]
+    // Format: [label, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
     private TopLaptopBanChayResponseDTO convertToTopLaptopFromRow(Object[] row, int startIndex) {
         if (row == null || row.length <= startIndex || row[startIndex] == null) {
             return null;
@@ -73,15 +78,17 @@ public class ThongKeServiceImpl implements ThongKeService {
                 .idLaptop(idLaptop)
                 .tenSanPham(row.length > startIndex + 1 && row[startIndex + 1] != null
                         ? (String) row[startIndex + 1] : "N/A")
-                .soLuongBan(row.length > startIndex + 2 && row[startIndex + 2] != null
-                        ? ((Number) row[startIndex + 2]).longValue() : 0L)
+                .hinhAnh(row.length > startIndex + 2 && row[startIndex + 2] != null
+                        ? (String) row[startIndex + 2] : null)
+                .soLuongBan(row.length > startIndex + 3 && row[startIndex + 3] != null
+                        ? ((Number) row[startIndex + 3]).longValue() : 0L)
                 .build();
     }
 
     // Helper method để convert list Object[] thành List<TopLaptopBanChayResponseDTO>
     // Hỗ trợ 2 format:
-    // - 3 cột: [idLaptop, tenSanPham, soLuongBan]
-    // - 5 cột: [ngay, doanhSo, idLaptop, tenSanPham, soLuongBan]
+    // - 4 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan]
+    // - 6 cột: [ngay, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
     private List<TopLaptopBanChayResponseDTO> convertToListTopLaptop(List<Object[]> results) {
         if (results == null || results.isEmpty()) {
             return new ArrayList<>();
@@ -94,18 +101,20 @@ public class ThongKeServiceImpl implements ThongKeService {
             }
 
             // Xác định offset dựa trên số cột
-            int idLaptopIndex, tenSanPhamIndex, soLuongBanIndex;
+            int idLaptopIndex, tenSanPhamIndex, hinhAnhIndex, soLuongBanIndex;
 
-            if (row.length >= 5) {
-                // Format 5 cột: [ngay, doanhSo, idLaptop, tenSanPham, soLuongBan]
+            if (row.length >= 6) {
+                // Format 6 cột: [ngay, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
                 idLaptopIndex = 2;
                 tenSanPhamIndex = 3;
-                soLuongBanIndex = 4;
-            } else if (row.length >= 3) {
-                // Format 3 cột: [idLaptop, tenSanPham, soLuongBan]
+                hinhAnhIndex = 4;
+                soLuongBanIndex = 5;
+            } else if (row.length >= 4) {
+                // Format 4 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan]
                 idLaptopIndex = 0;
                 tenSanPhamIndex = 1;
-                soLuongBanIndex = 2;
+                hinhAnhIndex = 2;
+                soLuongBanIndex = 3;
             } else {
                 continue; // Không đủ cột
             }
@@ -135,6 +144,11 @@ public class ThongKeServiceImpl implements ThongKeService {
                 tenSanPham = "N/A";
             }
 
+            String hinhAnh = null;
+            if (row[hinhAnhIndex] != null) {
+                hinhAnh = (String) row[hinhAnhIndex];
+            }
+
             Long soLuongBan = 0L;
             if (row[soLuongBanIndex] != null) {
                 if (row[soLuongBanIndex] instanceof Number) {
@@ -145,6 +159,7 @@ public class ThongKeServiceImpl implements ThongKeService {
             list.add(TopLaptopBanChayResponseDTO.builder()
                     .idLaptop(idLaptop)
                     .tenSanPham(tenSanPham)
+                    .hinhAnh(hinhAnh)
                     .soLuongBan(soLuongBan)
                     .build());
         }
@@ -215,17 +230,14 @@ public class ThongKeServiceImpl implements ThongKeService {
 
         // Tạo map với key là ngày, value là [doanhSo, listTopLaptop]
         Map<Integer, BigDecimal> doanhSoMap1 = new HashMap<>();
-        Map<Integer, List<TopLaptopBanChayResponseDTO>> topLaptopMap1 = new HashMap<>();
+        // KHÔNG thu thập top laptop cho tháng 1 nữa
+        // Map<Integer, List<TopLaptopBanChayResponseDTO>> topLaptopMap1 = new HashMap<>();
 
         for (Object[] row : ds1) {
             int ngay = ((Number) row[0]).intValue();
             if (!doanhSoMap1.containsKey(ngay)) {
                 doanhSoMap1.put(ngay, (BigDecimal) row[1]);
-                topLaptopMap1.put(ngay, new ArrayList<>());
-            }
-            TopLaptopBanChayResponseDTO laptop = convertToTopLaptopFromRow(row, 2);
-            if (laptop != null) {
-                topLaptopMap1.get(ngay).add(laptop);
+                // Không cần thu tập top laptop 1
             }
         }
 
@@ -254,8 +266,8 @@ public class ThongKeServiceImpl implements ThongKeService {
                             .label(day)
                             .value1(doanhSoMap1.getOrDefault(day, BigDecimal.ZERO))
                             .value2(doanhSoMap2.getOrDefault(day, BigDecimal.ZERO))
-                            .topLaptop1(topLaptopMap1.getOrDefault(day, new ArrayList<>()))
-                            .topLaptop2(topLaptopMap2.getOrDefault(day, new ArrayList<>()))
+                            .topLaptop1(new ArrayList<>())  // Trả về empty list thay vì top laptop tháng 1
+                            .topLaptop2(topLaptopMap2.getOrDefault(day, new ArrayList<>()))  // Chỉ có top laptop tháng 2
                             .build()
             );
         }
@@ -341,5 +353,35 @@ public class ThongKeServiceImpl implements ThongKeService {
                 .tongKhachHang(tongKhachHang)
                 .tangTruong(tangTruong)
                 .build();
+    }
+
+    @Override
+    public ThongKeTrangThaiResponseDTO thongKeTheoTrangThai() {
+        List<Object[]> results = orderRepository.thongKeDonHangTheoTrangThai();
+
+        if (results == null || results.isEmpty() || results.get(0) == null) {
+            return ThongKeTrangThaiResponseDTO.builder()
+                    .donHangChoXacNhan(0L)
+                    .donHangDangXuLy(0L)
+                    .donHangDangGiao(0L)
+                    .donHangHoanThanh(0L)
+                    .donHangDaHuy(0L)
+                    .build();
+        }
+
+        Object[] row = results.get(0);
+
+        return ThongKeTrangThaiResponseDTO.builder()
+                .donHangChoXacNhan(row[0] != null ? ((Number) row[0]).longValue() : 0L)
+                .donHangDangXuLy(row[1] != null ? ((Number) row[1]).longValue() : 0L)
+                .donHangDangGiao(row[2] != null ? ((Number) row[2]).longValue() : 0L)
+                .donHangHoanThanh(row[3] != null ? ((Number) row[3]).longValue() : 0L)
+                .donHangDaHuy(row[4] != null ? ((Number) row[4]).longValue() : 0L)
+                .build();
+    }
+
+    @Override
+    public ThongKeTruyCapResponseDTO thongKeTruyCap() {
+        return sessionTracker.getStatistics();
     }
 }

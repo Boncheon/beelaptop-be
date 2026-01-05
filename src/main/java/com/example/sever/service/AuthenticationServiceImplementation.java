@@ -46,6 +46,7 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
     JwtUtil jwtUtil;
     MailService mailService;
     PasswordEncoder passwordEncoder;
+    UserSessionTracker sessionTracker;
 
     private static final String KEY_COOKIE = "ARTICLE_SERVICE";
 
@@ -150,6 +151,10 @@ public class AuthenticationServiceImplementation implements AuthenticationServic
             taiKhoanRepository.save(user);
             deleteCookie(response);
             SecurityContextHolder.clearContext();
+
+            // ✅ Track user logout
+            sessionTracker.trackLogout(user.getId().toString());
+
             log.info("User {} logged out successfully", username);
         } else {
             log.error("Token expired for user: {}", username);

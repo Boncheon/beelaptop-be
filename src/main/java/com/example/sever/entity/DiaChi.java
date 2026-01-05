@@ -58,10 +58,23 @@ public class DiaChi {
     @Column(name = "phuong_xa", length = 100)
     private String phuongXa;
 
+
+
     @Size(max = 255)
     @Nationalized
     @Column(name = "dia_chi_chi_tiet")
     private String diaChiChiTiet;
+
+    // ===== BẮT BUỘC CHO GHN/GHTK =====
+    @Column(name = "province_id")
+    private Integer provinceId;         // ID tỉnh theo GHN
+
+    @Column(name = "district_id")
+    private Integer districtId;         // ID quận/huyện theo GHN (bắt buộc)
+
+    @Size(max = 20)
+    @Column(name = "ward_code", length = 20)
+    private String wardCode;            // Mã phường/xã theo GHN (bắt buộc)
 
     // ⭐ Thêm 3 trường mới
     @Size(max = 100)

@@ -272,23 +272,45 @@ public class UserServiceImplementation implements UserService {
     }
 
     private void saveUserAddress(TaiKhoan user, UserCreationRequest request) {
-        DiaChi address = diaChiRepository.findByIdTaiKhoan(user).orElse(new DiaChi());
+        // ⭐ SỬA CHÍNH: TÌM TẤT CẢ ĐỊA CHỈ THEO UUID (KHÔNG DÙNG STRING NỮA)
+        List<DiaChi> addresses = diaChiRepository.findAllByTaiKhoanId(user.getId());
 
-        if (address.getId() == null) {
-            address.setId(UUID.randomUUID());
+        DiaChi addressToSave;
+
+        if (!addresses.isEmpty()) {
+            // Ưu tiên lấy địa chỉ mặc định nếu có
+            addressToSave = addresses.stream()
+                    .filter(addr -> Boolean.TRUE.equals(addr.getMacDinh()))
+                    .findFirst()
+                    .orElse(addresses.get(0)); // nếu không có mặc định → lấy cái đầu tiên
+        } else {
+            // Chưa có địa chỉ → tạo mới
+            addressToSave = new DiaChi();
+            addressToSave.setId(UUID.randomUUID());
             Integer maxCode = diaChiRepository.findMaxDiaChiCode();
             int nextCode = (maxCode != null ? maxCode : 0) + 1;
-            address.setIdDiaChi("DC" + String.format("%03d", nextCode));
+            addressToSave.setIdDiaChi("DC" + String.format("%03d", nextCode));
         }
 
-        address.setIdTaiKhoan(user);
-        address.setQuocGia(request.getQuocGia());
-        address.setTinhThanh(request.getTinhThanh());
-        address.setQuanHuyen(request.getQuanHuyen());
-        address.setPhuongXa(request.getPhuongXa());
-        address.setDiaChiChiTiet(request.getDiaChiChiTiet());
+        // Cập nhật thông tin địa chỉ từ request
+        addressToSave.setIdTaiKhoan(user);
+        addressToSave.setQuocGia("Việt Nam");
+        addressToSave.setTinhThanh(request.getTinhThanh());
+        addressToSave.setQuanHuyen(request.getQuanHuyen());
+        addressToSave.setPhuongXa(request.getPhuongXa());
+        addressToSave.setDiaChiChiTiet(request.getDiaChiChiTiet());
+        addressToSave.setHoTen(request.getTen());
+        addressToSave.setSoDienThoai(request.getSoDienThoai());
 
-        diaChiRepository.save(address);
+        // ⭐ BẮT BUỘC CHO GHN – ĐÃ CÓ TRONG REQUEST TỪ FRONTEND
+        addressToSave.setProvinceId(request.getProvinceId());
+        addressToSave.setDistrictId(request.getDistrictId());
+        addressToSave.setWardCode(request.getWardCode());
+
+        // Luôn đặt làm mặc định khi tạo/sửa từ admin
+        addressToSave.setMacDinh(true);
+
+        diaChiRepository.save(addressToSave);
     }
 
     private String uploadImage(MultipartFile file) {

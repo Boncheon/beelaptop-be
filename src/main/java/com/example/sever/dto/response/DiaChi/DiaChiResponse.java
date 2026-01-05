@@ -23,4 +23,13 @@ public class DiaChiResponse {
     private Boolean macDinh;
     private String hoTen;
     private String soDienThoai;
+
+
+    private Integer provinceId;         // ID tỉnh theo GHN
+
+
+    private Integer districtId;         // ID quận/huyện theo GHN (bắt buộc)
+
+
+    private String wardCode;
 }

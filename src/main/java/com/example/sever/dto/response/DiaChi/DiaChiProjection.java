@@ -12,4 +12,7 @@ public interface DiaChiProjection   {
     Boolean getMacDinh();
     String getHoTen();
     String getSoDienThoai();
+    Integer getProvinceId();
+    Integer getDistrictId();
+    String getWardCode();
 }
