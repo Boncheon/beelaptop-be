@@ -56,7 +56,7 @@ public class ThongKeServiceImpl implements ThongKeService {
     }
 
     // Helper method để convert từ row query thống kê (có thêm top laptop)
-    // Format: [label, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
+    // Format: [label, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan, tongTienThuHo]
     private TopLaptopBanChayResponseDTO convertToTopLaptopFromRow(Object[] row, int startIndex) {
         if (row == null || row.length <= startIndex || row[startIndex] == null) {
             return null;
@@ -82,6 +82,8 @@ public class ThongKeServiceImpl implements ThongKeService {
                         ? (String) row[startIndex + 2] : null)
                 .soLuongBan(row.length > startIndex + 3 && row[startIndex + 3] != null
                         ? ((Number) row[startIndex + 3]).longValue() : 0L)
+                .tongTienThuHo(row.length > startIndex + 4 && row[startIndex + 4] != null
+                        ? new BigDecimal(row[startIndex + 4].toString()) : BigDecimal.ZERO)
                 .build();
     }
 
@@ -335,7 +337,6 @@ public class ThongKeServiceImpl implements ThongKeService {
             return ThongKeTongQuanResponseDTO.builder()
                     .tongDoanhThu(BigDecimal.ZERO)
                     .tongDonHang(0L)
-                    .tongKhachHang(0L)
                     .tangTruong(BigDecimal.ZERO)
                     .build();
         }
@@ -344,13 +345,11 @@ public class ThongKeServiceImpl implements ThongKeService {
 
         BigDecimal tongDoanhThu = row[0] != null ? (BigDecimal) row[0] : BigDecimal.ZERO;
         Long tongDonHang = row[1] != null ? ((Number) row[1]).longValue() : 0L;
-        Long tongKhachHang = row[2] != null ? ((Number) row[2]).longValue() : 0L;
-        BigDecimal tangTruong = row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO;
+        BigDecimal tangTruong = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
 
         return ThongKeTongQuanResponseDTO.builder()
                 .tongDoanhThu(tongDoanhThu)
                 .tongDonHang(tongDonHang)
-                .tongKhachHang(tongKhachHang)
                 .tangTruong(tangTruong)
                 .build();
     }

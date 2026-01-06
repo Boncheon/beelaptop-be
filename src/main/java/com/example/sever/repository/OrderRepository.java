@@ -118,6 +118,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                  FROM Anh a 
                  WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
                 COUNT(*) AS soLuongBan,
+                SUM(o.tong_tien_thu_ho) AS tongTienThuHo,
                 ROW_NUMBER() OVER (PARTITION BY MONTH(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
             FROM OrderCT oct
             JOIN [Orders] o ON o.ID = oct.id_order
@@ -133,7 +134,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             tlt.idLaptop,
             tlt.tenSanPham,
             tlt.hinhAnh,
-            tlt.soLuongBan
+            tlt.soLuongBan,
+            tlt.tongTienThuHo
         FROM ThongKeThang tkt
         LEFT JOIN TopLaptopThang tlt ON tkt.thang = tlt.thang AND tlt.rn <= 10
         ORDER BY tkt.thang, tlt.rn
@@ -161,6 +163,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
              FROM Anh a 
              WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
             COUNT(*) AS soLuongBan,
+            SUM(o.tong_tien_thu_ho) AS tongTienThuHo,
             ROW_NUMBER() OVER (PARTITION BY DAY(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
         FROM OrderCT oct
         JOIN [Orders] o ON o.ID = oct.id_order
@@ -177,7 +180,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         tln.idLaptop,
         tln.tenSanPham,
         tln.hinhAnh,
-        tln.soLuongBan
+        tln.soLuongBan,
+        tln.tongTienThuHo
     FROM ThongKeNgay tkn
     LEFT JOIN TopLaptopNgay tln ON tkn.ngay = tln.ngay AND tln.rn <= 10
     ORDER BY tkn.ngay, tln.rn
@@ -226,6 +230,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         SELECT TOP 10
             l.ID AS idLaptop,
             l.ten_san_pham AS tenSanPham,
+            o.tong_tien_thu_ho as tongTienThuHo,
             COUNT(*) AS soLuongBan
         FROM OrderCT oct
         JOIN [Orders] o 
@@ -305,26 +310,30 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // Top 10 laptop bán chạy nhất (không filter năm - để test, dùng id_lap_top_ct trực tiếp)
     @Query(value = """
-        SELECT TOP 10
-            l.ID AS idLaptop,
-            l.ten_san_pham AS tenSanPham,
-            COUNT(*) AS soLuongBan
-        FROM OrderCT oct
-        JOIN [Orders] o 
-            ON o.ID = oct.id_order    
-        JOIN Seri s 
-            ON s.ID = oct.id_seri      
-        JOIN LaptopChiTiet lct 
-            ON lct.ID = s.id_lap_top_ct
-        JOIN Laptop l 
-            ON l.ID = lct.id_lap_top
-        GROUP BY 
-            l.ID,
-            l.ten_san_pham
-        ORDER BY 
-            soLuongBan DESC
-        """, nativeQuery = true)
-    List<Object[]> topLaptopBanChayNhatTatCa();
+    SELECT TOP 10
+        l.ID AS idLaptop,
+        l.ten_san_pham AS tenSanPham,
+        SUM(oct.so_luong) AS soLuongBan,
+        SUM(o.tong_tien_thu_ho) AS tongTienThuHo
+    FROM OrderCT oct
+    JOIN Orders o ON o.ID = oct.id_order
+    JOIN Seri s ON s.ID = oct.id_seri
+    JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
+    JOIN Laptop l ON l.ID = lct.id_lap_top
+    WHERE o.ngay_tao >= DATEFROMPARTS(:nam, :thang, 1)
+      AND o.ngay_tao <  DATEADD(MONTH, 1, DATEFROMPARTS(:nam, :thang, 1))
+    GROUP BY
+        l.ID,
+        l.ten_san_pham
+    ORDER BY
+        soLuongBan DESC
+""", nativeQuery = true)
+    List<Object[]> topLaptopBanChayTheoThangNam(
+            @Param("thang") int thang,
+            @Param("nam") int nam
+    );
+
+
 
     // Top 10 laptop bán chạy nhất theo tháng
     @Query(value = """
@@ -334,7 +343,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         (SELECT TOP 1 a.ImgURL 
          FROM Anh a 
          WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
-        COUNT(*) AS soLuongBan
+        COUNT(*) AS soLuongBan,
+        SUM(o.tong_tien_thu_ho) AS tongTienThuHo
     FROM OrderCT oct
     JOIN [Orders] o 
         ON o.ID = oct.id_order    
@@ -360,6 +370,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         SELECT TOP 10
             l.ID AS idLaptop,
             l.ten_san_pham AS tenSanPham,
+            o.tong_tien_thu_ho as tongTienThuHo,
             COUNT(*) AS soLuongBan
         FROM OrderCT oct
         JOIN [Orders] o 
@@ -379,52 +390,45 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         """, nativeQuery = true)
     List<Object[]> topLaptopBanChayNhatTheoNgay(@Param("ngay") LocalDate ngay);
 
-    // Thống kê tổng quan (doanh thu, đơn hàng, khách hàng, tăng trưởng)
+    // Thống kê tổng quan (doanh thu, đơn hàng, tăng trưởng)
     @Query(value = """
-        DECLARE 
-            @today DATE = CAST(GETDATE() AS DATE),
-            @yesterday DATE = DATEADD(DAY, -1, CAST(GETDATE() AS DATE));
+    DECLARE 
+        @today DATE = CAST(GETDATE() AS DATE),
+        @yesterday DATE = DATEADD(DAY, -1, CAST(GETDATE() AS DATE));
 
-        ;WITH DoanhThuToday AS (
-            SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        ),
-        DoanhThuYesterday AS (
-            SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @yesterday
-        ),
-        DonHangToday AS (
-            SELECT COUNT(*) AS countOrder
-            FROM [dbo].[Orders] o 
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        ),
-        KhachToday AS (
-            SELECT COUNT(DISTINCT o.sdt_khach_hang) AS countCustomer
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        )
+    ;WITH DoanhThuToday AS (
+        SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
+        FROM [dbo].[Orders] o
+        WHERE CAST(o.ngay_tao AS DATE) = @today
+    ),
+    DoanhThuYesterday AS (
+        SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
+        FROM [dbo].[Orders] o
+        WHERE CAST(o.ngay_tao AS DATE) = @yesterday
+    ),
+    DonHangToday AS (
+        SELECT COUNT(*) AS countOrder
+        FROM [dbo].[Orders] o 
+        WHERE CAST(o.ngay_tao AS DATE) = @today
+    )
 
-        SELECT
-            COALESCE(dtT.revenue, 0) AS TongDoanhThu,
-            COALESCE(dhT.countOrder, 0) AS TongDonHang,
-            COALESCE(khT.countCustomer, 0) AS TongKhachHang,
-            CASE 
-                -- Nếu hôm qua = 0 và hôm nay > 0: tăng trưởng 100%
-                WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) > 0 THEN 100.0
-                -- Nếu cả hai đều = 0: tăng trưởng 0%
-                WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) = 0 THEN 0.0
-                -- Nếu hôm qua > 0: tính tăng trưởng (có thể âm nếu hôm nay < hôm qua)
-                WHEN COALESCE(dtY.revenue, 0) > 0 THEN 
-                    CAST(((CAST(COALESCE(dtT.revenue, 0) AS FLOAT) - CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) / CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) * 100 AS DECIMAL(18, 2))
-                ELSE 0.0
-            END AS TangTruong
-        FROM DoanhThuToday dtT
-        CROSS JOIN DoanhThuYesterday dtY
-        CROSS JOIN DonHangToday dhT
-        CROSS JOIN KhachToday khT
-        """, nativeQuery = true)
+    SELECT
+        COALESCE(dtT.revenue, 0) AS TongDoanhThu,
+        COALESCE(dhT.countOrder, 0) AS TongDonHang,
+        CASE 
+            -- Nếu hôm qua = 0 và hôm nay > 0: tăng trưởng 100%
+            WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) > 0 THEN 100.0
+            -- Nếu cả hai đều = 0: tăng trưởng 0%
+            WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) = 0 THEN 0.0
+            -- Nếu hôm qua > 0: tính tăng trưởng (có thể âm nếu hôm nay < hôm qua)
+            WHEN COALESCE(dtY.revenue, 0) > 0 THEN 
+                CAST(((CAST(COALESCE(dtT.revenue, 0) AS FLOAT) - CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) / CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) * 100 AS DECIMAL(18, 2))
+            ELSE 0.0
+        END AS TangTruong
+    FROM DoanhThuToday dtT
+    CROSS JOIN DoanhThuYesterday dtY
+    CROSS JOIN DonHangToday dhT
+    """, nativeQuery = true)
     List<Object[]> thongKeTongQuan();
 
     // Thống kê đơn hàng theo từng trạng thái
