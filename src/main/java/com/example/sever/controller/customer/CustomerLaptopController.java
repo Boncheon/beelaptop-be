@@ -76,4 +76,9 @@ public class CustomerLaptopController {
         return laptopService.getAllBrand();
     }
 
+    //Update code huy 05.01
+    @GetMapping("/check-inventory/{id}")
+    public Integer checkInvenTory(@PathVariable UUID id) {
+        return laptopService.getAllStatusIs1Laptop(id);
+    }
 }

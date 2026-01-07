@@ -86,7 +86,7 @@ public class MailService {
 
         // Header
         html.append("<div class='header'>");
-        html.append("<div class='company-name'>BEE LAPTOP</div>");
+        html.append("<div class='company-name'>BEETOP</div>");
         html.append("<div class='invoice-title'>Thông tin hóa đơn</div>");
         html.append("</div>");
 
@@ -174,9 +174,9 @@ public class MailService {
 
         // Footer
         html.append("<div class='footer'>");
-        html.append("<p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của <strong>BeeLaptop</strong>!</p>");
+        html.append("<p>Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ của <strong>BeeTop</strong>!</p>");
         html.append("<p>Chúng tôi sẽ liên hệ với bạn sớm nhất để xác nhận đơn hàng.</p>");
-        html.append("<p style='margin-top: 20px;'><em>Trân trọng,<br>Đội ngũ BeeLaptop</em></p>");
+        html.append("<p style='margin-top: 20px;'><em>Trân trọng,<br>Đội ngũ BeeTop</em></p>");
         html.append("</div>");
 
         html.append("</div>");

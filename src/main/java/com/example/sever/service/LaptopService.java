@@ -45,5 +45,6 @@ public interface LaptopService {
     List<CustomerLaptopProjection> getLatestLaptops();
     List<LaptopSearchBrandProjection> getSearchBrand(UUID idBrand);
     List<BrandSearchResponse> getAllBrand();
-
+    //Update code huy 05.01
+    Integer getAllStatusIs1Laptop(UUID idLaptopChiTiet);
 }
