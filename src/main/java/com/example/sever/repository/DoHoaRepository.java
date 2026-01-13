@@ -1,6 +1,8 @@
 package com.example.sever.repository;
 
 import com.example.sever.entity.DoHoa;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -20,5 +22,5 @@ public interface DoHoaRepository extends JpaRepository<DoHoa, UUID>, JpaSpecific
 //            @Param("keyword") String keyword,
 //            Pageable pageable);
 
-
+    Page<DoHoa> findByTrangThai(Integer page, Pageable pageable);
 }

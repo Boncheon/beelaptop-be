@@ -21,6 +21,10 @@ public class OrderCustomerResponse {
     private BigDecimal tongPhaiTra;
     private Integer trangThai;
     private String message;
+    private Integer trangThaiThanhToan;
+    private String tenTrangThai;          // map từ OrderStatus
+    private String tenTrangThaiThanhToan; // map từ PaymentStatus
+    private String loaiDon;               // ONLINE / GIAO_HANG / TAI_QUAY
 }
 
 

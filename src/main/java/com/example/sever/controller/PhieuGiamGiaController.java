@@ -19,7 +19,6 @@ import java.util.Map;
 @CrossOrigin("*")
 @AllArgsConstructor
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/phieu-giam-gia")
 
 public class PhieuGiamGiaController {
@@ -29,6 +28,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<List<PhieuGiamGiaDto>> getAll(){
 
         List<PhieuGiamGiaDto> ghd = phieuGiamGiaService.getAllVoucher();
@@ -39,6 +39,7 @@ public class PhieuGiamGiaController {
 
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PhieuGiamGiaDto> add(@RequestBody PhieuGiamGiaDto phieuGiamGiaDto){
 
         PhieuGiamGiaDto addVC = phieuGiamGiaService.addVoucher(phieuGiamGiaDto);
@@ -48,6 +49,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping("{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<PhieuGiamGiaDto> detail(@PathVariable("id") String voucherId){
 
         PhieuGiamGiaDto getAll = phieuGiamGiaService.detailVoucher(voucherId);
@@ -58,6 +60,7 @@ public class PhieuGiamGiaController {
 
 
     @PostMapping("{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PhieuGiamGiaDto> update(@PathVariable("id") String voucherId,@RequestBody PhieuGiamGiaDto phieuGiamGiaDto){
 
 
@@ -68,6 +71,7 @@ public class PhieuGiamGiaController {
 
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> delete(@PathVariable("id") String voucherId){
 
         phieuGiamGiaService.deleteVoucher(voucherId);
@@ -77,6 +81,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<List<PhieuGiamGiaDto>> searchVoucherId(@RequestParam("p") String keyword){
 
         List<PhieuGiamGiaDto> rs = phieuGiamGiaService.searchVoucherByIdOrTen(keyword);
@@ -86,6 +91,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<List<PhieuGiamGiaDto>> filterVouchers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -100,6 +106,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping("/phan-trang")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Map<String, Object>> getVouchersByPage(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
@@ -117,6 +124,7 @@ public class PhieuGiamGiaController {
 
 
     @GetMapping("/check-ma")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Boolean> checkMaPhieuTrung(@RequestParam String ma) {
         boolean exists = phieuGiamGiaService.checkMaTrung(ma);
         return ResponseEntity.ok(exists);
@@ -124,6 +132,7 @@ public class PhieuGiamGiaController {
 
 
     @PutMapping("/ngung-hoat-dong/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> ngungHoatDong(@PathVariable("id") String id) {
         try {
             PhieuGiamGiaDto dto = phieuGiamGiaService.doiTrangThaiNgungHoatDong(id);

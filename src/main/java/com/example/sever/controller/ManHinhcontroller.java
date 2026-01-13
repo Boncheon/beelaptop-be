@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.ManHinhAddRequestDTO;
 import com.example.sever.dto.request.ManHinhUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.ManHinhDisplayReponse;
 import com.example.sever.entity.ManHinh;
@@ -19,7 +20,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/man-hinh")
 @AllArgsConstructor
 public class ManHinhcontroller {
@@ -27,6 +27,7 @@ public class ManHinhcontroller {
     ManHinhService manhinhService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<ManHinhDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                            @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -37,6 +38,7 @@ public class ManHinhcontroller {
     }
 
     @PostMapping("/them-man-hinh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ManHinh> addManHinh(@RequestBody ManHinhAddRequestDTO manhinhAddRequestDTO) {
         ManHinh add = manhinhService.addManHinh(manhinhAddRequestDTO);
         return ApiResponse.<ManHinh>builder()
@@ -45,6 +47,7 @@ public class ManHinhcontroller {
                 .build();
     }
     @PostMapping("/sua-man-hinh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ManHinh> updateManHinh(@RequestBody ManHinhUpdateRequestDTO manhinhUpdateRequestDTO) {
         ManHinh  updated = manhinhService.updateManHinh(manhinhUpdateRequestDTO);
         return ApiResponse.<ManHinh>builder()
@@ -53,11 +56,23 @@ public class ManHinhcontroller {
                 .build();
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<ManHinhDisplayReponse> getManhHinhById(@PathVariable("id") UUID id) {
         ManHinhDisplayReponse mh = manhinhService.getDetailedManHinh(id);
         return ApiResponse.<ManHinhDisplayReponse>builder()
                 .message("Lấy chi tiết HDH thành công")
                 .data(mh)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<ManHinhDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<ManHinhDisplayReponse> cpuPage = manhinhService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

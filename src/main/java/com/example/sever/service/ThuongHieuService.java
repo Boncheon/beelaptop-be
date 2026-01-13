@@ -14,4 +14,6 @@ public interface ThuongHieuService {
     ThuongHieu addThuongHieu(ThuongHieuAddRequestDTO adddto);
     ThuongHieu updateThuongHieu(ThuongHieuUpdateRequestDTO updatedto);
     ThuongHieuDisplayReponse getDetailedThuongHieu(UUID id);
+
+    Page<ThuongHieuDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

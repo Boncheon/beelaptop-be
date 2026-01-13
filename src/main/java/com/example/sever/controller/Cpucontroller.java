@@ -27,7 +27,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/cpu")
 @AllArgsConstructor
 public class Cpucontroller {
@@ -35,6 +34,7 @@ public class Cpucontroller {
     CpuService cpuService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<CpuDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                        @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -44,6 +44,7 @@ public class Cpucontroller {
         return ResponseEntity.ok(cpuPage);
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<CpuDisplayReponse> getCpuById(@PathVariable("id") UUID id) {
         CpuDisplayReponse cpu = cpuService.getDetailedCpu(id);
         return ApiResponse.<CpuDisplayReponse>builder()
@@ -52,6 +53,7 @@ public class Cpucontroller {
                 .build();
     }
     @PostMapping("/them-cpu")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Cpu> addCpu(@RequestBody CpuAddRequestDTO cpuAddRequestDTO) {
         Cpu add = cpuService.addCpu(cpuAddRequestDTO);
         return ApiResponse.<Cpu>builder()
@@ -60,6 +62,7 @@ public class Cpucontroller {
                 .build();
     }
     @PostMapping("/sua-cpu")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Cpu> updateCpu(@RequestBody CpuUpdateRequestDTO cpuUpdateRequestDTO) {
 //        cpuUpdateRequestDTO.setIdCpu(id.toString());
         Cpu  updated = cpuService.updateCpu(cpuUpdateRequestDTO);
@@ -69,6 +72,7 @@ public class Cpucontroller {
                 .build();
     }
     @PostMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Cpu> Status(@RequestBody StatusRequestDTO statusRequestDTO) {
         Cpu updatedStatus = cpuService.updateStatus(statusRequestDTO);
         return ApiResponse.<Cpu>builder()
@@ -77,6 +81,7 @@ public class Cpucontroller {
                 .build();
     }
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<CpuDisplayReponse>>> filterCpu(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
@@ -90,5 +95,16 @@ public class Cpucontroller {
                         .data(result)
                         .build()
         );
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<CpuDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                          @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<CpuDisplayReponse> cpuPage = cpuService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

@@ -1,12 +1,17 @@
 package com.example.sever.service.impl;
 
 import com.example.sever.dto.OrderDTO.*;
+import com.example.sever.dto.Pos.GHN.GhnFeeRequest; // ✅ ADD
 import com.example.sever.entity.*;
 import com.example.sever.exception.ResourceNotFoundException;
 import com.example.sever.repository.*;
-import com.example.sever.service.MailService;
+import com.example.sever.service.GhnClientService; // ✅ ADD
 import com.example.sever.service.OrderCustomerService;
 import com.example.sever.service.PhieuGiamGiaService;
+import com.example.sever.statusauto.OrderStatus;
+import com.example.sever.statusauto.PaymentStatus;
+import com.example.sever.statusauto.SeriStatus;
+import com.example.sever.utils.GhnFeeRequestBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,10 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode; // ✅ ADD
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -68,18 +71,52 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
     @Autowired
     private com.example.sever.service.MailService mailService;
 
+    // ✅ ADD: GHN client service (tính phí vận chuyển giống POS)
+    @Autowired
+    private GhnClientService ghnClientService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
+
+
+    private boolean needShipping(String loaiDon) {
+        if (loaiDon == null) return false;
+        String v = loaiDon.trim().toUpperCase();
+        // OrderType dbValue: TAI_QUAY / ONLINE / GIAO_HANG
+        return "ONLINE".equals(v) || "GIAO_HANG".equals(v);
+    }
+
+
+    // ======================================================================================
+    private boolean isCOD(HinhThucThanhToan httt) {
+        if (httt == null || httt.getTenHinhThuc() == null) return false;
+        return httt.getTenHinhThuc().trim().equalsIgnoreCase("COD");
+    }
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderCustomerResponse taoDonHangCustomer(OrderCustomerRequest request) {
+
+        UUID currentUserId = requireCurrentUserId();
+
+// Nếu FE có gửi idTaiKhoan thì bắt buộc phải trùng current user
+        if (request.getIdTaiKhoan() == null) {
+            request.setIdTaiKhoan(currentUserId); // (nếu DTO cho phép set)
+        } else if (!currentUserId.equals(request.getIdTaiKhoan())) {
+            throw new IllegalArgumentException("Bạn không có quyền tạo đơn cho tài khoản khác");
+        }
+
         TaiKhoan taiKhoan = taiKhoanRepo.findById(request.getIdTaiKhoan())
                 .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại"));
 
+
+
         DiaChi diaChi = diaChiRepo.findById(request.getIdDiaChi())
                 .orElseThrow(() -> new ResourceNotFoundException("Địa chỉ không tồn tại"));
-
+        if (diaChi.getIdTaiKhoan() == null || diaChi.getIdTaiKhoan().getId() == null
+                || !diaChi.getIdTaiKhoan().getId().equals(taiKhoan.getId())) {
+            throw new IllegalArgumentException("Địa chỉ không thuộc tài khoản");
+        }
         if (request.getListOrderCT() == null || request.getListOrderCT().isEmpty()) {
             throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
         }
@@ -87,7 +124,9 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         BigDecimal tongTienChuaGiam = BigDecimal.ZERO;
         List<Map<String, Object>> productList = new ArrayList<>();
 
-        Map<UUID, Integer> seriUsageCount = new HashMap<>();
+        // ✅ ADD: gom thông số GHN ngay trong loop (giống POS)
+        int totalWeightGram = 0;
+        int maxL = 0, maxW = 0, maxH = 0;
 
         for (OrderCTCustomerRequest ctRequest : request.getListOrderCT()) {
             UUID laptopChiTietId = ctRequest.getIdLaptopChiTiet();
@@ -96,38 +135,56 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                 throw new ResourceNotFoundException("LaptopChiTiet không tồn tại: " + laptopChiTietId);
             }
 
-            List<String> seriIdStrings = seriRepo.findSeriIdsByLaptopChiTietIdAndTrangThai(
-                    laptopChiTietId.toString().toUpperCase()
+            // ✅ GIỮ SERI ATOMIC: ACTIVE -> PENDING (chống trùng khi nhiều người đặt)
+            List<UUID> reserved = seriRepo.reserveOneSeriForLaptopCt(
+                    laptopChiTietId,
+                    SeriStatus.ACTIVE.code(),
+                    SeriStatus.PENDING.code()
             );
 
-            java.util.List<UUID> seriIds = new java.util.ArrayList<>();
-            for (String seriIdStr : seriIdStrings) {
-                try {
-                    seriIds.add(UUID.fromString(seriIdStr));
-                } catch (IllegalArgumentException e) {
-                }
-            }
-
-            if (seriIds.isEmpty()) {
+            if (reserved == null || reserved.isEmpty()) {
                 throw new IllegalArgumentException("Đã hết hàng");
             }
 
-            int currentUsageCount = seriUsageCount.getOrDefault(laptopChiTietId, 0);
-            if (currentUsageCount >= seriIds.size()) {
-                throw new IllegalArgumentException("Đã hết hàng");
-            }
+            UUID seriId = reserved.get(0);
 
-            UUID seriId = seriIds.get(currentUsageCount);
-            seriUsageCount.put(laptopChiTietId, currentUsageCount + 1);
+            LaptopChiTiet lct = laptopChiTietRepo.findById(laptopChiTietId)
+                    .orElseThrow(() -> new ResourceNotFoundException("LaptopChiTiet không tồn tại: " + laptopChiTietId));
 
-            BigDecimal thanhTien = ctRequest.getGiaBan();
+            BigDecimal giaBanDb = lct.getGiaBan();
+            if (giaBanDb == null) throw new IllegalStateException("Sản phẩm chưa có giá bán");
+
+            BigDecimal thanhTien = giaBanDb;
             tongTienChuaGiam = tongTienChuaGiam.add(thanhTien);
 
             Map<String, Object> productInfo = new HashMap<>();
             productInfo.put("laptopChiTietId", laptopChiTietId);
             productInfo.put("seriId", seriId);
-            productInfo.put("giaBan", ctRequest.getGiaBan());
+            productInfo.put("giaBan", giaBanDb);
             productList.add(productInfo);
+
+            // ✅ ADD: build thông số weight/dimensions cho GHN (đồng nhất POS)
+            Laptop laptop = lct.getIdLaptop();
+            KichThuoc kt = (laptop != null ? laptop.getIdKichThuoc() : null);
+
+// ---- DIMENSIONS (cm) ----
+            int itemL = (kt != null ? GhnFeeRequestBuilder.toPositiveIntCeil(kt.getChieuDai()) : 0);
+            int itemW = (kt != null ? GhnFeeRequestBuilder.toPositiveIntCeil(kt.getChieuRong()) : 0);
+            int itemH = (kt != null ? GhnFeeRequestBuilder.toPositiveIntCeil(kt.getChieuCao()) : 0);
+
+            if (itemL <= 0) itemL = GhnFeeRequestBuilder.DEFAULT_L_CM;
+            if (itemW <= 0) itemW = GhnFeeRequestBuilder.DEFAULT_W_CM;
+            if (itemH <= 0) itemH = GhnFeeRequestBuilder.DEFAULT_H_CM;
+
+            maxL = Math.max(maxL, itemL);
+            maxW = Math.max(maxW, itemW);
+            maxH = Math.max(maxH, itemH);
+
+// ---- WEIGHT (gram) ----
+            int itemWeight = (kt != null ? GhnFeeRequestBuilder.toWeightGram(kt.getKhoiLuong()) : 0);
+            if (itemWeight <= 0) itemWeight = GhnFeeRequestBuilder.DEFAULT_ITEM_WEIGHT_GRAM;
+
+            totalWeightGram += itemWeight;
         }
 
         BigDecimal soTienGiam = BigDecimal.ZERO;
@@ -144,6 +201,11 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             if (tongTienChuaGiam.compareTo(phieuGiamGia.getGiaTriMin()) < 0) {
                 throw new IllegalArgumentException("Giá trị đơn hàng chưa đạt điều kiện áp dụng phiếu giảm giá");
             }
+            Integer qty = phieuGiamGia.getSoLuong();
+
+            if (qty != null && qty <= 0) {
+                throw new IllegalArgumentException("Phiếu giảm giá đã hết lượt sử dụng");
+            }
 
             soTienGiam = phieuGiamGiaService.calculateDiscount(phieuGiamGia, tongTienChuaGiam);
         } else {
@@ -153,9 +215,42 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             }
         }
 
-        BigDecimal phiVanChuyen = request.getPhiVanChuyen() != null ? request.getPhiVanChuyen() : BigDecimal.ZERO;
+        // ✅ FIX: TÍNH PHÍ VẬN CHUYỂN BẰNG GHN (giống POS) - KHÔNG LẤY TỪ FE
+        BigDecimal phiVanChuyen = BigDecimal.ZERO;
+        if (needShipping(request.getLoaiDon())) {
+            Integer toDistrictId = diaChi.getDistrictId();
+            String toWardCode = (diaChi.getWardCode() != null ? diaChi.getWardCode().trim() : null);
+
+            if (toDistrictId == null || toWardCode == null || toWardCode.isBlank()) {
+                throw new IllegalArgumentException("Địa chỉ thiếu districtId/wardCode để tính phí vận chuyển GHN");
+            }
+
+            if (totalWeightGram <= 0) totalWeightGram = GhnFeeRequestBuilder.DEFAULT_ITEM_WEIGHT_GRAM;
+
+            boolean useInsurance = Boolean.TRUE.equals(request.getUseInsurance()); // ✅ NEW (DTO)
+
+            // ✅ FREESHIP như POS (theo subtotal)
+            if (isFreeShip(tongTienChuaGiam)) {
+                phiVanChuyen = BigDecimal.ZERO;
+            } else {
+                GhnFeeRequest feeReq = GhnFeeRequestBuilder.buildFeeRequest(
+                        toDistrictId,
+                        toWardCode,
+                        totalWeightGram,
+                        maxL, maxW, maxH,
+                        tongTienChuaGiam,
+                        useInsurance // ✅ bật/tắt insurance theo request (giống POS)
+                );
+
+                int fee = ghnClientService.calcFee(feeReq);
+                phiVanChuyen = BigDecimal.valueOf(fee);
+            }
+
+        }
+
         BigDecimal phiDichVuKhac = request.getPhiDichVuKhac() != null ? request.getPhiDichVuKhac() : BigDecimal.ZERO;
         BigDecimal tongTienThuHo = tongTienChuaGiam.subtract(soTienGiam).add(phiVanChuyen).add(phiDichVuKhac);
+
         Random rand = new Random();
         StringBuilder sb = new StringBuilder("OD");
         for (int i = 0; i < 6; i++) {
@@ -165,6 +260,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         for (int i = 0; i < 6; i++) {
             mhd.append(rand.nextInt(10));
         }
+
         Order order = new Order();
         order.setId(UUID.randomUUID());
         order.setIdOrder(sb.toString());
@@ -179,7 +275,13 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         order.setGiaTriChuaGiam(tongTienChuaGiam);
         order.setGiaTriGiamGia(soTienGiam);
         order.setTongTienThuHo(tongTienThuHo);
-        order.setTrangThai(1);
+
+        // ✅ SỬA: trạng thái theo enum mới
+        order.setTrangThai(OrderStatus.PENDING_CONFIRM.code());
+
+        // ✅ SỬA: mặc định chưa thanh toán
+        order.setTrangThaiThanhToan(PaymentStatus.UNPAID.code());
+
         String ghiChuFinal = request.getGhiChu() != null ? request.getGhiChu().trim() : "";
         if (request.getDiaChiDayDu() != null && !request.getDiaChiDayDu().trim().isEmpty()) {
             if (!ghiChuFinal.isEmpty()) {
@@ -191,9 +293,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         order.setNgayTao(Instant.now());
 
         Order savedOrder = orderRepo.save(order);
-        entityManager.flush();
-        orderRepo.updateNgayTaoById(savedOrder.getId());
-        entityManager.refresh(savedOrder);
+
 
         for (Map<String, Object> productInfo : productList) {
             UUID seriId = (UUID) productInfo.get("seriId");
@@ -215,12 +315,11 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             orderCT.setGiaBan(giaBan);
 
             orderCTRepo.save(orderCT);
-            seriRepo.updateTrangThaiSeri(seriId.toString().toUpperCase(), 2);
+
         }
 
         if (phieuGiamGia != null && soTienGiam.compareTo(BigDecimal.ZERO) > 0) {
             GiamGiaHoaDon giamGiaHoaDon = new GiamGiaHoaDon();
-            giamGiaHoaDon.setId(UUID.randomUUID());
             StringBuilder gg = new StringBuilder("GG");
             for (int i = 0; i < 6; i++) {
                 gg.append(rand.nextInt(10));
@@ -239,26 +338,70 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             }
         }
 
+        boolean hasCOD = false;
+
         if (request.getListHinhThucThanhToan() != null && !request.getListHinhThucThanhToan().isEmpty()) {
             for (PaymentCustomerRequest paymentRequest : request.getListHinhThucThanhToan()) {
-                HinhThucThanhToan hinhThucThanhToan = hinhThucThanhToanRepo.findById(paymentRequest.getIdHinhThucThanhToan())
+                HinhThucThanhToan hinhThucThanhToan = hinhThucThanhToanRepo
+                        .findById(paymentRequest.getIdHinhThucThanhToan())
                         .orElseThrow(() -> new ResourceNotFoundException("Hình thức thanh toán không tồn tại"));
+
+                boolean cod = isCOD(hinhThucThanhToan);
+
+                // Kiểm tra nếu đã có COD thì không thêm nữa
+                if (cod && !hasCOD) {
+                    hasCOD = true;  // Đánh dấu COD đã có
+                } else if (cod && hasCOD) {
+                    throw new IllegalArgumentException("Hình thức thanh toán COD đã được thêm.");
+                }
 
                 HinhThucThanhToanChiTiet paymentDetail = new HinhThucThanhToanChiTiet();
                 paymentDetail.setId(UUID.randomUUID());
+
                 StringBuilder httt = new StringBuilder("HTTT");
                 for (int i = 0; i < 6; i++) {
-                    httt.append(rand.nextInt(10));
+                    httt.append(new Random().nextInt(10));
                 }
-                paymentDetail.setIdHinhthucthanhtoanchitiet(httt.toString());
+                paymentDetail.setIdThanhToanCt(httt.toString());
                 paymentDetail.setIdOrder(savedOrder);
                 paymentDetail.setIdHinhThucThanhToan(hinhThucThanhToan);
-                paymentDetail.setSoTienThanhToan(paymentRequest.getSoTien());
-                paymentDetail.setGhiChu(paymentRequest.getGhiChu());
+
+                // COD: chưa thu tiền => ghi 0
+                if (cod) {
+                    paymentDetail.setSoTienThanhToan(BigDecimal.ZERO);
+                    String note = (paymentRequest.getGhiChu() != null ? paymentRequest.getGhiChu().trim() : "");
+                    paymentDetail.setGhiChu((note.isEmpty() ? "" : note + " | ") + "COD - CHƯA THU TIỀN");
+                } else {
+                    paymentDetail.setSoTienThanhToan(paymentRequest.getSoTien() != null ? paymentRequest.getSoTien() : BigDecimal.ZERO);
+                    paymentDetail.setGhiChu(paymentRequest.getGhiChu());
+                }
 
                 hinhThucThanhToanChiTietRepo.save(paymentDetail);
             }
         }
+
+
+        // ✅ SỬA: cập nhật trạng thái thanh toán theo tổng tiền đã trả
+        // - Nếu là VNPay (đi qua luồng redirect/callback) => để UNPAID tại thời điểm tạo đơn
+        // - Nếu không phải VNPay => tính tổng paid, đủ thì PAID, chưa đủ thì UNPAID
+        if (Boolean.TRUE.equals(request.getIsVnPay())) {
+            // VNPay sẽ PAID ở callback
+            savedOrder.setTrangThaiThanhToan(PaymentStatus.UNPAID.code());
+        } else if (hasCOD) {
+            // ✅ COD: lúc tạo đơn luôn UNPAID
+            savedOrder.setTrangThaiThanhToan(PaymentStatus.UNPAID.code());
+        } else {
+            BigDecimal totalPaid = hinhThucThanhToanChiTietRepo.sumSoTienByOrder(savedOrder.getId());
+            totalPaid = (totalPaid != null ? totalPaid : BigDecimal.ZERO);
+
+            if (totalPaid.compareTo(tongTienThuHo) >= 0) {
+                savedOrder.setTrangThaiThanhToan(PaymentStatus.PAID.code());
+            } else {
+                savedOrder.setTrangThaiThanhToan(PaymentStatus.UNPAID.code());
+            }
+        }
+        orderRepo.save(savedOrder);
+
 
         OrderActionLog actionLog = new OrderActionLog();
         actionLog.setId(UUID.randomUUID());
@@ -269,8 +412,9 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         actionLog.setIdOrderacl(acl.toString());
         actionLog.setIdOrder(savedOrder);
         actionLog.setIdTaiKhoan(taiKhoan);
-        actionLog.setHanhDong(1); // 1 = Tạo đơn
-        actionLog.setMoTa("Khách hàng tạo đơn hàng mới: " + savedOrder.getMaDonHang());
+        actionLog.setHanhDong(savedOrder.getTrangThai()); // hoặc OrderStatus.PENDING_CONFIRM.code()
+        actionLog.setNgayTao(Instant.now());              // nên set rõ (dù @PrePersist có)
+        actionLog.setMoTa("Khách hàng tạo đơn hàng mới (Chờ xác nhận): " + savedOrder.getMaDonHang());
 
         orderActionLogRepo.save(actionLog);
 
@@ -318,7 +462,10 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                         }
                     }
                     java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-                    String ngayDatStr = Instant.now().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).format(formatter);
+                    Instant ngay = savedOrder.getNgayTao();
+                    String ngayDatStr = (ngay != null ? ngay : Instant.now())
+                            .atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                            .format(formatter);
 
                     List<com.example.sever.service.MailService.OrderEmailProduct> emailProducts = new ArrayList<>();
                     Map<UUID, com.example.sever.service.MailService.OrderEmailProduct> productMap = new HashMap<>();
@@ -329,12 +476,10 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                         BigDecimal giaBan = (BigDecimal) row[5];
 
                         if (productMap.containsKey(idLaptopChiTiet)) {
-                            // Sản phẩm đã tồn tại (cùng idLaptopChiTiet), tăng số lượng và cộng thêm thành tiền
                             com.example.sever.service.MailService.OrderEmailProduct existingProduct = productMap.get(idLaptopChiTiet);
                             existingProduct.setSoLuong(existingProduct.getSoLuong() + 1);
                             existingProduct.setThanhTien(existingProduct.getThanhTien().add(giaBan));
                         } else {
-                            // Sản phẩm chưa tồn tại, tạo mới
                             Integer soLuong = 1;
                             BigDecimal thanhTien = giaBan;
 
@@ -388,10 +533,16 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         response.setTrangThai(savedOrder.getTrangThai());
         response.setMessage("Tạo đơn hàng thành công!");
 
+        // ✅ SỬA: set thêm fields mới trong response
+        response.setLoaiDon(savedOrder.getLoaiDon());
+        response.setTenTrangThai(convertTrangThaiToTen(savedOrder.getTrangThai()));
+        response.setTrangThaiThanhToan(savedOrder.getTrangThaiThanhToan());
+        PaymentStatus ps = PaymentStatus.fromCode(savedOrder.getTrangThaiThanhToan());
+        response.setTenTrangThaiThanhToan(ps == PaymentStatus.PAID ? "Đã thanh toán" : "Chưa thanh toán");
+
         return response;
     }
 
-    // Helper method để tạo mã ngẫu nhiên (tái sử dụng)
     private String generateRandomCode(int length) {
         Random rand = new Random();
         StringBuilder sb = new StringBuilder();
@@ -407,7 +558,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
 
         if (lastCode != null && lastCode.length() >= 8) {
             try {
-                String numberStr = lastCode.substring(2, 5); // VD: OD007-2024 → "007"
+                String numberStr = lastCode.substring(2, 5);
                 next = Integer.parseInt(numberStr) + 1;
             } catch (NumberFormatException ignored) {
                 next = 1;
@@ -419,6 +570,11 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
 
     @Override
     public List<OrderListCustomerResponse> getDanhSachDonHangByTaiKhoanCustomer(UUID idTaiKhoan) {
+        UUID currentUserId = requireCurrentUserId();
+        if (!currentUserId.equals(idTaiKhoan)) {
+            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng của tài khoản khác");
+        }
+
         if (idTaiKhoan == null) {
             throw new IllegalArgumentException("ID tài khoản không được để trống");
         }
@@ -431,7 +587,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             OrderListCustomerResponse response = OrderListCustomerResponse.builder()
                     .idOrder(order.getId())
                     .maDonHang(order.getMaDonHang())
-                    .ngayTao(order.getNgayTao() != null ? order.getNgayTao() : Instant.now())
+                    .ngayTao(order.getNgayTao() != null ? order.getNgayTao() : order.getNgayCapNhat())
                     .trangThai(order.getTrangThai())
                     .tenKhachHang(order.getTenKhachHang())
                     .sdtKhachHang(order.getSdtKhachHang())
@@ -463,11 +619,19 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             throw new IllegalArgumentException("ID đơn hàng không được để trống");
         }
 
-        if (!orderRepo.existsById(idOrder)) {
-            throw new ResourceNotFoundException("Đơn hàng không tồn tại: " + idOrder);
+        UUID currentUserId = requireCurrentUserId();
+
+// Load order + check ownership
+        Order order = orderRepo.findById(idOrder)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại: " + idOrder));
+
+        if (order.getIdTaiKhoan() == null || order.getIdTaiKhoan().getId() == null
+                || !order.getIdTaiKhoan().getId().equals(currentUserId)) {
+            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng này");
         }
 
-        List<Object[]> productDataList = orderCTRepo.findProductInfoByIdOrder(idOrder);
+        List<Object[]> productDataList = orderCTRepo.findProductInfoByIdOrder(order.getId());
+
 
         List<OrderProductCustomerResponse> responseList = new ArrayList<>();
         for (Object[] row : productDataList) {
@@ -517,7 +681,6 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
 
     @Override
     public List<OrderDetailCustomerResponse> timKiemDonHangCustomer(SearchOrderCustomerRequest request) {
-        // Validate request
         if (request == null) {
             throw new IllegalArgumentException("Request không được để trống");
         }
@@ -528,14 +691,11 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             throw new IllegalArgumentException("Số điện thoại không được để trống");
         }
 
-        // Normalize số điện thoại: loại bỏ khoảng trắng và ký tự đặc biệt
         String normalizedSdt = request.getSdt().trim().replaceAll("[\\s-()]", "");
         String normalizedMaDonHang = request.getMaDonHang().trim();
 
-        // Tìm đơn hàng theo mã đơn và số điện thoại khách hàng (sdt_khach_hang trong bảng Order)
         List<Order> orders = orderRepo.findByMaDonHangAndSdtKhachHang(normalizedMaDonHang, normalizedSdt);
 
-        // Nếu không tìm thấy với số điện thoại đã normalize, thử với số điện thoại gốc
         if (orders.isEmpty() && !normalizedSdt.equals(request.getSdt().trim())) {
             orders = orderRepo.findByMaDonHangAndSdtKhachHang(normalizedMaDonHang, request.getSdt().trim());
         }
@@ -544,23 +704,18 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             throw new ResourceNotFoundException("Không tìm thấy đơn hàng với mã đơn: " + request.getMaDonHang() + " và số điện thoại: " + request.getSdt());
         }
 
-        // Convert sang DTO
         List<OrderDetailCustomerResponse> responseList = new ArrayList<>();
         for (Order order : orders) {
-            // Lấy địa chỉ giao hàng
             String diaChiGiaoHang = extractDiaChiDayDuFromGhiChu(order.getGhiChu());
             if (diaChiGiaoHang == null || diaChiGiaoHang.isEmpty()) {
                 diaChiGiaoHang = buildDiaChiGiaoHang(order.getIdDiaChi());
             }
 
-            // Lấy ngày đặt từ Order entity
             Instant ngayDat = order.getNgayTao() != null ? order.getNgayTao() : Instant.now();
 
-            // Lấy hình thức thanh toán
             List<String> hinhThucThanhToan = hinhThucThanhToanChiTietRepo
                     .findTenHinhThucThanhToanByIdOrder(order.getId());
 
-            // Lấy danh sách sản phẩm
             List<OrderProductCustomerResponse> danhSachSanPham = orderCTRepo.findProductInfoByIdOrder(order.getId())
                     .stream()
                     .map(row -> {
@@ -570,9 +725,8 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                         String tenSanPham = (String) row[3];
                         String anhSanPham = row[4] != null ? (String) row[4] : null;
                         BigDecimal giaBan = (BigDecimal) row[5];
-                        // Mỗi sản phẩm = 1, không nhân số lượng
                         Integer soLuong = 1;
-                        BigDecimal thanhTien = giaBan; // thanhTien = giaBan (không nhân số lượng)
+                        BigDecimal thanhTien = giaBan;
 
                         return OrderProductCustomerResponse.builder()
                                 .idOrderCT(idOrderCT)
@@ -587,10 +741,8 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
                     })
                     .toList();
 
-            // Convert trạng thái
             String tenTrangThai = convertTrangThaiToTen(order.getTrangThai());
 
-            // Build response
             OrderDetailCustomerResponse response = OrderDetailCustomerResponse.builder()
                     .idOrder(order.getId())
                     .maDonHang(order.getMaDonHang())
@@ -697,25 +849,54 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         return ghiChu;
     }
 
+    // ✅ SỬA: map tên trạng thái theo enum mới (không hardcode số kiểu cũ)
     private String convertTrangThaiToTen(Integer trangThai) {
-        if (trangThai == null) {
-            return "Không xác định";
-        }
-        return switch (trangThai) {
-            case 1 -> "Chờ xác nhận";
-            case 2 -> "Đã xác nhận";
-            case 3 -> "Chờ vận chuyển";
-            case 4 -> "Đang vận chuyển";
-            case 5 -> "Đã thanh toán";
-            case 6 -> "Thành công";
-            case 7 -> "Hủy đơn";
-            default -> "Không xác định";
+        if (trangThai == null) return "Không xác định";
+        OrderStatus s = OrderStatus.fromCode(trangThai);
+        return switch (s) {
+            case DRAFT -> "Tạo đơn";
+            case PENDING_CONFIRM -> "Chờ xác nhận";
+            case CONFIRMED -> "Đã xác nhận";
+            case PREPARING -> "Đang chuẩn bị hàng";
+            case SHIPPING -> "Đang vận chuyển";
+            case DELIVERED -> "Đã giao hàng";
+            case COMPLETED -> "Hoàn tất";
+            case CANCELED -> "Hủy";
         };
     }
+    // thêm vào cuối class
+    private UUID getCurrentUserId() {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) return null;
+            Object principal = auth.getPrincipal();
+
+            if (principal instanceof TaiKhoan tk) return tk.getId();
+            if (principal instanceof String s) {
+                String username = s.trim();
+                if (!username.isEmpty() && !"anonymousUser".equalsIgnoreCase(username)) {
+                    TaiKhoan tk = taiKhoanRepo.findByEmail(username).orElse(null);
+                    if (tk != null) return tk.getId();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private UUID requireCurrentUserId() {
+        UUID id = getCurrentUserId();
+        if (id == null) throw new RuntimeException("Bạn chưa đăng nhập hoặc phiên không hợp lệ");
+        return id;
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderCustomerResponse huyDonHangCustomer(UUID idOrder, UUID idTaiKhoan) {
+        UUID currentUserId = requireCurrentUserId();
+        idTaiKhoan = currentUserId; // ép về user đang đăng nhập (bỏ qua id client truyền)
         Order order = orderRepo.findById(idOrder)
                 .orElseThrow(() -> new ResourceNotFoundException("Đơn hàng không tồn tại"));
 
@@ -727,48 +908,78 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
             throw new IllegalArgumentException("Trạng thái đơn hàng không hợp lệ");
         }
 
-        if (order.getTrangThai() == 7) {
+        // Đã huỷ rồi
+        if (order.getTrangThai().equals(OrderStatus.CANCELED.code())) {
             throw new IllegalArgumentException("Đơn hàng đã được hủy trước đó");
         }
 
-        if (order.getTrangThai() >= 4) {
-            throw new IllegalArgumentException("Không thể hủy đơn hàng đang trong quá trình vận chuyển hoặc đã hoàn thành");
+        // ONLINE/GIAO_HANG: đã xác nhận thì khách không được hủy
+        if (needShipping(order.getLoaiDon()) && order.getTrangThai() >= OrderStatus.CONFIRMED.code()) {
+            throw new IllegalArgumentException("Đơn hàng đã được xác nhận, khách không thể hủy");
         }
 
-        order.setTrangThai(7);
+// vẫn giữ rule chung: đang giao hàng trở lên thì không hủy được
+        if (order.getTrangThai() >= OrderStatus.SHIPPING.code()) {
+            throw new IllegalArgumentException("Không thể hủy đơn hàng đang vận chuyển hoặc đã hoàn thành");
+        }
+
+
+        // 1) Update trạng thái đơn
+        order.setTrangThai(OrderStatus.CANCELED.code());
         Order savedOrder = orderRepo.save(order);
         entityManager.flush();
 
+        // 2) Trả seri về ACTIVE (atomic)
         List<OrderCT> orderCTList = orderCTRepo.findByIdOrder(idOrder);
         for (OrderCT orderCT : orderCTList) {
-            if (orderCT.getIdSeri() != null) {
+            if (orderCT.getIdSeri() != null && orderCT.getIdSeri().getId() != null) {
                 UUID seriId = orderCT.getIdSeri().getId();
-                Optional<Integer> currentTrangThai = seriRepo.findTrangThaiById(seriId);
 
-                if (currentTrangThai.isPresent() && currentTrangThai.get() == 2) {
-                    seriRepo.updateTrangThaiSeri(seriId, 1);
-                }
+                // ✅ FIX: atomic update tránh race-condition
+                seriRepo.updateTrangThaiSeriIfCurrent(
+                        seriId,
+                        SeriStatus.PENDING.code(),
+                        SeriStatus.ACTIVE.code()
+                );
             }
         }
 
+        // 3) (Tuỳ chọn) Hoàn lại số lượng voucher nếu đơn có áp voucher và trước đó đã trừ
+        try {
+            List<GiamGiaHoaDon> ggList = giamGiaHoaDonRepo.findByIdOrders_Id(savedOrder.getId());
+            if (ggList != null && !ggList.isEmpty()) {
+                GiamGiaHoaDon gg = ggList.get(0);
+
+                PhieuGiamGia pgg = gg.getIdPhieuGiamGia();
+                if (pgg != null && pgg.getSoLuong() != null) {
+                    pgg.setSoLuong(pgg.getSoLuong() + 1);
+                    phieuGiamGiaRepo.save(pgg);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi hoàn lại voucher: " + e.getMessage());
+        }
+
+        // 4) Log action
         TaiKhoan taiKhoan = taiKhoanRepo.findById(idTaiKhoan)
                 .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại"));
 
         Random rand = new Random();
         OrderActionLog actionLog = new OrderActionLog();
         actionLog.setId(UUID.randomUUID());
+
         StringBuilder acl = new StringBuilder("ACL");
-        for (int i = 0; i < 6; i++) {
-            acl.append(rand.nextInt(10));
-        }
+        for (int i = 0; i < 6; i++) acl.append(rand.nextInt(10));
+
         actionLog.setIdOrderacl(acl.toString());
         actionLog.setIdOrder(savedOrder);
         actionLog.setIdTaiKhoan(taiKhoan);
-        actionLog.setHanhDong(7);
+        actionLog.setHanhDong(OrderStatus.CANCELED.code());
+        actionLog.setNgayTao(Instant.now());
         actionLog.setMoTa("Khách hàng hủy đơn hàng: " + savedOrder.getMaDonHang());
-
         orderActionLogRepo.save(actionLog);
 
+        // 5) Response
         OrderCustomerResponse response = new OrderCustomerResponse();
         response.setIdOrder(savedOrder.getId());
         response.setMaDonHang(savedOrder.getMaDonHang());
@@ -778,7 +989,18 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         response.setTrangThai(savedOrder.getTrangThai());
         response.setMessage("Hủy đơn hàng thành công");
 
+        response.setLoaiDon(savedOrder.getLoaiDon());
+        response.setTenTrangThai(convertTrangThaiToTen(savedOrder.getTrangThai()));
+        response.setTrangThaiThanhToan(savedOrder.getTrangThaiThanhToan());
+        PaymentStatus ps = PaymentStatus.fromCode(savedOrder.getTrangThaiThanhToan());
+        response.setTenTrangThaiThanhToan(ps == PaymentStatus.PAID ? "Đã thanh toán" : "Chưa thanh toán");
+
         return response;
     }
-}
 
+    private static final BigDecimal FREESHIP_THRESHOLD = new BigDecimal("30000000");
+
+    private boolean isFreeShip(BigDecimal subtotal) {
+        return subtotal != null && subtotal.compareTo(FREESHIP_THRESHOLD) >= 0;
+    }
+}

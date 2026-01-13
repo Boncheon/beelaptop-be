@@ -34,6 +34,18 @@ public class KichThuocServiceImpl implements KichThuocService {
 
         return new PageImpl<>(romDisplayReponses , pageable, KichThuocPage.getTotalElements());
     }
+
+    @Override
+    public Page<KichThuocDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<KichThuoc> kichThuocPage = kichthuocRepository.findByTrangThai(1, pageable);
+
+        List<KichThuocDisplayReponse> responses = kichThuocPage.getContent()
+                .stream()
+                .map(kichThuocMapper::getAlldisplayKichThuoc)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, kichThuocPage.getTotalElements());
+    }
     @Override
     public KichThuoc addKichThuoc(KichThuocAddRequestDTO adddto) {
         KichThuoc kichthuoc = kichThuocMapper.toKichThuoc(adddto);

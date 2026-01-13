@@ -19,4 +19,6 @@ public interface RamService {
     Ram updateStatus(StatusRequestDTO updatedto);
     Page<RamDIsplayReponse> getRamByFilter(Integer trangThai, String keyword, Pageable pageable);
     RamDIsplayReponse getDetailedRam(UUID id);
+
+    Page<RamDIsplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

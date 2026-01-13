@@ -36,7 +36,17 @@ public class MauSacServiceImpl implements MauSacService {
 
         return new PageImpl<>(mausacDisplayReponses , pageable, MauSacPage.getTotalElements());
     }
+    @Override
+    public Page<MauSacDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<MauSac> mauSacPage = mausacRepository.findByTrangThai(1, pageable);
 
+        List<MauSacDisplayReponse> responses = mauSacPage.getContent()
+                .stream()
+                .map(mauSacMapper::getAlldisplayMauSac)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, mauSacPage.getTotalElements());
+    }
     @Override
     public MauSac addMauSac(MauSacAddRequestDTO adddto) {
         // map từ DTO sang entity

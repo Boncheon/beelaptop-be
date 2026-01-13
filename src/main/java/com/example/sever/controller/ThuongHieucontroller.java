@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.ThuongHieuAddRequestDTO;
 import com.example.sever.dto.request.ThuongHieuUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.ThuongHieuDisplayReponse;
 import com.example.sever.entity.ThuongHieu;
 import com.example.sever.service.ThuongHieuService;
@@ -18,7 +19,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/thuong-hieu")
 @AllArgsConstructor
 public class ThuongHieucontroller {
@@ -26,6 +26,7 @@ public class ThuongHieucontroller {
     ThuongHieuService thuonghieuService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<ThuongHieuDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                               @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -36,6 +37,7 @@ public class ThuongHieucontroller {
     }
 
     @PostMapping("/them-thuong-hieu")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ThuongHieu> addThuongHieu(@RequestBody ThuongHieuAddRequestDTO ThuongHieuAddRequestDTO) {
         ThuongHieu add = thuonghieuService.addThuongHieu(ThuongHieuAddRequestDTO);
         return ApiResponse.<ThuongHieu>builder()
@@ -44,6 +46,7 @@ public class ThuongHieucontroller {
                 .build();
     }
     @PostMapping("/sua-thuong-hieu")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<ThuongHieu> updateThuongHieu(@RequestBody ThuongHieuUpdateRequestDTO ThuongHieuUpdateRequestDTO) {
         ThuongHieu  updated = thuonghieuService.updateThuongHieu(ThuongHieuUpdateRequestDTO);
         return ApiResponse.<ThuongHieu>builder()
@@ -52,11 +55,23 @@ public class ThuongHieucontroller {
                 .build();
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<ThuongHieuDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
         ThuongHieuDisplayReponse hdh = thuonghieuService.getDetailedThuongHieu(id);
         return ApiResponse.<ThuongHieuDisplayReponse>builder()
                 .message("Lấy chi tiết HDH thành công")
                 .data(hdh)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<ThuongHieuDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<ThuongHieuDisplayReponse> cpuPage = thuonghieuService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

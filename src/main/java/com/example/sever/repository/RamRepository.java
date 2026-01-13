@@ -1,6 +1,8 @@
 package com.example.sever.repository;
 
 import com.example.sever.entity.Ram;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -19,6 +21,6 @@ public interface RamRepository extends JpaRepository<Ram, UUID> , JpaSpecificati
 //            @Param("trangThai") Integer trangThai,
 //            @Param("idLoaiRam") String idLoaiRam,
 //            Pageable pageable);
-
+Page<Ram> findByTrangThai(Integer page, Pageable pageable);
 
 }

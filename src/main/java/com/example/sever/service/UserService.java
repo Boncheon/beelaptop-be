@@ -15,9 +15,12 @@ public interface UserService {
     TaiKhoan findUserById(String id);
     UserDetailResponse getCurrentUser();
     UserDetailResponse getUserDetail(String id);
-
+    UserDetailResponse updateUserByAdmin(String id, UserCreationRequest request);
     List<UserDetailResponse> getUsersByRole(String roleId);
     UserDetailResponse toggleUserStatus(String id);
     void changePassword(TaiKhoan user, String currentPassword, String newPassword);
+
+    UserDetailResponse createAdmin(UserCreationRequest request);
+    UserDetailResponse updateAdmin(String id, UserCreationRequest request);
 
 }

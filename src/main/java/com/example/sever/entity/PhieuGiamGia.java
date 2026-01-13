@@ -38,7 +38,8 @@ public class PhieuGiamGia {
     @Column(name = "ten")
     private String ten;
 
-    @Column(name = "so_luong")
+    @Column(name = "so_luong", nullable = false)
+    @ColumnDefault("0")
     private Integer soLuong;
 
     @Nationalized

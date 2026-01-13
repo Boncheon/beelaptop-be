@@ -4,12 +4,15 @@ import com.example.sever.dto.VnPayDTO.VnPayCallbackResponseCustomer;
 import com.example.sever.dto.VnPayDTO.VnPayPaymentRequestCustomer;
 import com.example.sever.dto.VnPayDTO.VnPayPaymentResponseCustomer;
 import com.example.sever.entity.Order;
+import com.example.sever.entity.OrderActionLog;
 import com.example.sever.entity.OrderCT;
 import com.example.sever.exception.ResourceNotFoundException;
 import com.example.sever.repository.*;
 import com.example.sever.service.MailService;
-
 import com.example.sever.service.VnPayServiceCustomer;
+import com.example.sever.statusauto.OrderStatus;
+import com.example.sever.statusauto.PaymentStatus;
+import com.example.sever.statusauto.SeriStatus;
 import com.example.sever.utils.VnPayConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -44,6 +48,9 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
     @Autowired
     private MailService mailService;
 
+    @Autowired
+    private OrderActionLogRepository orderActionLogRepository;
+
     @Override
     public VnPayPaymentResponseCustomer createPaymentUrl(VnPayPaymentRequestCustomer request) {
         try {
@@ -56,7 +63,13 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             vnp_Params.put("vnp_Version", "2.1.0");
             vnp_Params.put("vnp_Command", "pay");
             vnp_Params.put("vnp_TmnCode", VnPayConstant.vnp_TmnCode);
-            vnp_Params.put("vnp_Amount", request.getAmount().multiply(BigDecimal.valueOf(100)).toBigInteger().toString());
+            BigDecimal amount = order.getTongTienThuHo();
+            if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Đơn hàng không có tongTienThuHo hợp lệ để thanh toán");
+            }
+
+            vnp_Params.put("vnp_Amount", amount.multiply(BigDecimal.valueOf(100))
+                    .toBigInteger().toString());
             vnp_Params.put("vnp_CurrCode", "VND");
             vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
             vnp_Params.put("vnp_OrderInfo", request.getOrderInfo() != null ? request.getOrderInfo() : "Thanh toan don hang " + order.getMaDonHang());
@@ -64,7 +77,9 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             vnp_Params.put("vnp_Locale", "vn");
             vnp_Params.put("vnp_ReturnUrl", VnPayConstant.vnp_ReturnUrl);
             vnp_Params.put("vnp_IpAddr", "127.0.0.1");
-
+            if (request.getBankCode() != null && !request.getBankCode().isBlank()) {
+                vnp_Params.put("vnp_BankCode", request.getBankCode().trim());
+            }
             TimeZone tz = TimeZone.getTimeZone("Asia/Ho_Chi_Minh");
             Calendar cld = Calendar.getInstance(tz);
             SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -90,13 +105,8 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
                     String encodedFieldName = URLEncoder.encode(fieldName, StandardCharsets.UTF_8);
                     String encodedFieldValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8);
 
-                    hashData.append(encodedFieldName);
-                    hashData.append("=");
-                    hashData.append(encodedFieldValue);
-
-                    query.append(encodedFieldName);
-                    query.append("=");
-                    query.append(encodedFieldValue);
+                    hashData.append(encodedFieldName).append("=").append(encodedFieldValue);
+                    query.append(encodedFieldName).append("=").append(encodedFieldValue);
 
                     if (i < fieldNames.size() - 1) {
                         query.append("&");
@@ -134,6 +144,7 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             String vnp_Amount = params.get("vnp_Amount");
             String vnp_BankCode = params.get("vnp_BankCode");
             String vnp_TransactionNo = params.get("vnp_TransactionNo");
+            String vnp_SecureHash = params.get("vnp_SecureHash");
 
             response.setVnpTxnRef(vnp_TxnRef);
             response.setVnpResponseCode(vnp_ResponseCode);
@@ -142,12 +153,25 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             response.setVnpBankCode(vnp_BankCode);
             response.setVnpTransactionNo(vnp_TransactionNo);
 
-            if (!"00".equals(vnp_ResponseCode)) {
+            // ✅ BẮT BUỘC: verify chữ ký callback
+            if (vnp_SecureHash == null || !verifySignature(params, vnp_SecureHash)) {
                 response.setSuccess(false);
-                response.setMessage("Thanh toán thất bại. Mã lỗi: " + vnp_ResponseCode);
+                response.setMessage("Sai chữ ký VNPay");
                 return response;
             }
 
+            // ✅ success condition
+            if (!"00".equals(vnp_ResponseCode) || !"00".equals(vnp_TransactionStatus)) {
+                response.setSuccess(false);
+                response.setMessage("Thanh toán thất bại. ResponseCode=" + vnp_ResponseCode
+                        + ", TransactionStatus=" + vnp_TransactionStatus);
+                return response;
+            }
+
+            // Parse orderId từ TxnRef "VNP" + uuid-without-dash
+            if (vnp_TxnRef == null || !vnp_TxnRef.startsWith("VNP") || vnp_TxnRef.length() < 3 + 32) {
+                throw new RuntimeException("vnp_TxnRef không hợp lệ: " + vnp_TxnRef);
+            }
 
             String orderIdStr = vnp_TxnRef.substring(3);
             String uuidStr = orderIdStr.substring(0, 8) + "-" +
@@ -160,49 +184,85 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với ID: " + orderId));
 
-            if (order.getIdTaiKhoan() != null) {
-                order.getIdTaiKhoan().getEmail();
+            // ✅ CHECK AMOUNT: vnp_Amount phải đúng bằng tongTienThuHo * 100
+            if (order.getTongTienThuHo() == null) {
+                throw new RuntimeException("Đơn hàng thiếu tongTienThuHo");
             }
-            if (order.getIdDiaChi() != null) {
-                order.getIdDiaChi().getDiaChiChiTiet();
+            long expected = order.getTongTienThuHo()
+                    .multiply(BigDecimal.valueOf(100))
+                    .toBigInteger()
+                    .longValue();
+
+            long paid = Long.parseLong(vnp_Amount != null ? vnp_Amount : "0");
+            if (paid != expected) {
+                response.setSuccess(false);
+                response.setMessage("Sai số tiền. expected=" + expected + " paid=" + paid);
+                return response;
             }
 
-            order.setTrangThai(2);
+            // ✅ Idempotent
+            if (Objects.equals(order.getTrangThaiThanhToan(), PaymentStatus.PAID.code())) {
+                response.setSuccess(true);
+                response.setMessage("Đơn hàng đã được thanh toán trước đó");
+                return response;
+            }
+
+            // ✅ update order status + payment status
+            order.setTrangThai(OrderStatus.PENDING_CONFIRM.code());
+            order.setTrangThaiThanhToan(PaymentStatus.PAID.code());
+            if (order.getTrangThai() == OrderStatus.DELIVERED.code()) {
+                // Cập nhật trạng thái serí từ PENDING -> SOLD
+                deductProductQuantity(order.getId());
+            }
             orderRepository.save(order);
 
-            deductProductQuantity(order.getId());
+            OrderActionLog log = new OrderActionLog();
+            log.setId(UUID.randomUUID());
+            log.setIdOrderacl("ACL" + System.currentTimeMillis());
+            log.setIdOrder(order);
+            log.setIdTaiKhoan(order.getIdTaiKhoan());
+            log.setHanhDong(OrderStatus.PENDING_CONFIRM.code());
+            log.setNgayTao(Instant.now());
+            log.setMoTa("VNPay thanh toán thành công. Mã GD: " + vnp_TransactionNo
+                    + ", Bank: " + vnp_BankCode
+                    + ". Đơn chuyển sang Đã xác nhận: " + order.getMaDonHang());
+            orderActionLogRepository.save(log);
+
+
 
             sendOrderConfirmationEmail(order);
 
             response.setSuccess(true);
             response.setMessage("Thanh toán thành công");
+            return response;
 
         } catch (Exception e) {
             response.setSuccess(false);
             response.setMessage("Lỗi khi xử lý callback: " + e.getMessage());
+            return response;
         }
-
-        return response;
     }
-
-
 
     @Transactional(rollbackFor = Exception.class)
     private void deductProductQuantity(UUID orderId) {
         List<OrderCT> orderCTList = orderCTRepository.findByIdOrder(orderId);
 
         for (OrderCT orderCT : orderCTList) {
-            if (orderCT.getIdSeri() == null) {
-                continue;
-            }
+            if (orderCT.getIdSeri() == null) continue;
 
             UUID seriId = orderCT.getIdSeri().getId();
 
-            seriRepository.updateTrangThaiSeri(seriId, 2);
+            // ✅ Atomic update: chỉ đổi nếu đang PENDING
+            int updated = seriRepository.updateTrangThaiSeriIfCurrent(
+                    seriId,
+                    SeriStatus.PENDING.code(),
+                    SeriStatus.SOLD.code()
+            );
 
+            // updated == 0 nghĩa là seri không còn PENDING (đã đổi trước đó hoặc trạng thái khác)
+            // bạn có thể log nếu muốn
         }
     }
-
 
     private void sendOrderConfirmationEmail(Order order) {
         try {
@@ -230,9 +290,8 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             for (Object[] row : productDataList) {
                 String tenSanPham = (String) row[3];
                 BigDecimal giaBan = (BigDecimal) row[5];
-                // Mỗi sản phẩm = 1, không nhân số lượng
+
                 Integer soLuong = 1;
-                // thanhTien = giaBan (không nhân số lượng vì mỗi sản phẩm = 1)
                 BigDecimal thanhTien = giaBan;
 
                 MailService.OrderEmailProduct emailProduct = new MailService.OrderEmailProduct();
@@ -282,7 +341,6 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
         }
     }
 
-
     private String extractDiaChiDayDuFromGhiChu(String ghiChu) {
         if (ghiChu == null || ghiChu.trim().isEmpty()) {
             return null;
@@ -297,7 +355,6 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
         }
         return null;
     }
-
 
     private String removeDiaChiDayDuFromGhiChu(String ghiChu) {
         if (ghiChu == null || ghiChu.trim().isEmpty()) {
@@ -317,57 +374,25 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
         return ghiChu;
     }
 
-    private String buildDiaChiGiaoHang(com.example.sever.entity.DiaChi diaChi) {
-        if (diaChi == null) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        if (diaChi.getDiaChiChiTiet() != null && !diaChi.getDiaChiChiTiet().trim().isEmpty()) {
-            sb.append(diaChi.getDiaChiChiTiet());
-        }
-        if (diaChi.getPhuongXa() != null && !diaChi.getPhuongXa().trim().isEmpty()) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(diaChi.getPhuongXa());
-        }
-        if (diaChi.getQuanHuyen() != null && !diaChi.getQuanHuyen().trim().isEmpty()) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(diaChi.getQuanHuyen());
-        }
-        if (diaChi.getTinhThanh() != null && !diaChi.getTinhThanh().trim().isEmpty()) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(diaChi.getTinhThanh());
-        }
-        if (diaChi.getQuocGia() != null && !diaChi.getQuocGia().trim().isEmpty()) {
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(diaChi.getQuocGia());
-        }
-        return sb.toString();
-    }
-
-
+    // ✅ SỬA: map theo OrderStatus enum mới
     private String convertTrangThaiToTen(Integer trangThai) {
-        if (trangThai == null) {
-            return "Không xác định";
-        }
-        return switch (trangThai) {
-            case 1 -> "Chờ xác nhận";
-            case 2 -> "Đã xác nhận";
-            case 3 -> "Chờ vận chuyển";
-            case 4 -> "Đang vận chuyển";
-            case 5 -> "Đã thanh toán";
-            case 6 -> "Thành công";
-            default -> "Không xác định";
+        if (trangThai == null) return "Không xác định";
+        OrderStatus s = OrderStatus.fromCode(trangThai);
+        return switch (s) {
+            case DRAFT -> "Đơn nháp";
+            case PENDING_CONFIRM -> "Chờ xác nhận";
+            case CONFIRMED -> "Đã xác nhận";
+            case PREPARING -> "Đang chuẩn bị hàng";
+            case SHIPPING -> "Đang vận chuyển";
+            case DELIVERED -> "Đã giao hàng";
+            case COMPLETED -> "Hoàn tất";
+            case CANCELED -> "Hủy";
         };
     }
 
-
     private UUID convertToUUID(Object obj) {
-        if (obj == null) {
-            return null;
-        }
-        if (obj instanceof UUID) {
-            return (UUID) obj;
-        }
+        if (obj == null) return null;
+        if (obj instanceof UUID) return (UUID) obj;
         if (obj instanceof String) {
             try {
                 return UUID.fromString((String) obj);
@@ -381,6 +406,8 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
     @Override
     public boolean verifySignature(Map<String, String> params, String vnp_SecureHash) {
         try {
+            if (vnp_SecureHash == null) return false;
+
             Map<String, String> paramsForHash = new HashMap<>(params);
             paramsForHash.remove("vnp_SecureHash");
             paramsForHash.remove("vnp_SecureHashType");
@@ -389,28 +416,25 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
             Collections.sort(fieldNames);
 
             StringBuilder hashData = new StringBuilder();
-            Iterator<String> itr = fieldNames.iterator();
-            while (itr.hasNext()) {
-                String fieldName = itr.next();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                String fieldName = fieldNames.get(i);
                 String fieldValue = paramsForHash.get(fieldName);
-                if ((fieldValue != null) && (fieldValue.length() > 0)) {
-                    hashData.append(fieldName);
-                    hashData.append('=');
-                    hashData.append(fieldValue); // KHÔNG encode trong hashData
-                    if (itr.hasNext()) {
-                        hashData.append('&');
-                    }
+
+                if (fieldValue != null && !fieldValue.isEmpty()) {
+                    String encodedFieldName = URLEncoder.encode(fieldName, StandardCharsets.UTF_8);
+                    String encodedFieldValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8);
+
+                    hashData.append(encodedFieldName).append("=").append(encodedFieldValue);
+                    if (i < fieldNames.size() - 1) hashData.append("&");
                 }
             }
 
             String calculatedHash = hmacSHA512(VnPayConstant.vnp_HashSecret, hashData.toString());
-
-            return calculatedHash.equals(vnp_SecureHash);
+            return calculatedHash.equalsIgnoreCase(vnp_SecureHash);
         } catch (Exception e) {
             return false;
         }
     }
-
 
     private String hmacSHA512(String key, String data) {
         try {
@@ -432,4 +456,3 @@ public class VnPayServiceCustomerImpl implements VnPayServiceCustomer {
         }
     }
 }
-

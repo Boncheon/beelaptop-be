@@ -4,6 +4,7 @@ import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.MauSacAddRequestDTO;
 import com.example.sever.dto.request.MauSacUpdateRequestDTO;
 import com.example.sever.dto.request.StatusRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.MauSacDisplayReponse;
 import com.example.sever.entity.MauSac;
 import com.example.sever.service.MauSacService;
@@ -26,7 +27,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/mau-sac")
 @AllArgsConstructor
 public class MauSaccontroller {
@@ -34,6 +34,7 @@ public class MauSaccontroller {
     MauSacService mausacService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<MauSacDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                           @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -44,6 +45,7 @@ public class MauSaccontroller {
     }
 
     @PostMapping("/them-mausac")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<MauSac> addMauSac(@RequestBody MauSacAddRequestDTO mausacAddRequestDTO) {
         MauSac add = mausacService.addMauSac(mausacAddRequestDTO);
         return ApiResponse.<MauSac>builder()
@@ -52,6 +54,7 @@ public class MauSaccontroller {
                 .build();
     }
     @PostMapping("/sua-mausac")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<MauSac> updateMauSac(@RequestBody MauSacUpdateRequestDTO mausacUpdateRequestDTO) {
         MauSac  updated = mausacService.updateMauSac(mausacUpdateRequestDTO);
         return ApiResponse.<MauSac>builder()
@@ -60,6 +63,7 @@ public class MauSaccontroller {
                 .build();
     }
     @PostMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<MauSac> Status(@RequestBody StatusRequestDTO statusRequestDTO) {
         MauSac updatedStatus = mausacService.updateStatus(statusRequestDTO);
         return ApiResponse.<MauSac>builder()
@@ -68,6 +72,7 @@ public class MauSaccontroller {
                 .build();
     }
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<MauSacDisplayReponse>>> filterMauSac(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
@@ -84,6 +89,7 @@ public class MauSaccontroller {
 
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<MauSacDisplayReponse> getMauSacById(@PathVariable("id") UUID id) {
         MauSacDisplayReponse mausac = mausacService.getDetailedMauSac(id);
         return ApiResponse.<MauSacDisplayReponse>builder()
@@ -91,5 +97,14 @@ public class MauSaccontroller {
                 .data(mausac)
                 .build();
     }
-
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<MauSacDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<MauSacDisplayReponse> cpuPage = mausacService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
+    }
 }

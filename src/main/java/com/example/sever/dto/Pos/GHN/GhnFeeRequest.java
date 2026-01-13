@@ -9,10 +9,10 @@ public class GhnFeeRequest {
     private Integer toDistrictId;
     private String toWardCode;
 
-    private Integer weight = 500;
-    private Integer length = 20;
-    private Integer width  = 15;
-    private Integer height = 10;
+    private Integer weight ;
+    private Integer length ;
+    private Integer width ;
+    private Integer height ;
 
-    private Integer insuranceValue = 0;
+    private Integer insuranceValue ;
 }

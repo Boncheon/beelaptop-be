@@ -17,7 +17,7 @@ public class GiamGiaHoaDon {
 
     @Id
     @ColumnDefault("newid()")
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "ID", nullable = false)
     private UUID id;
 

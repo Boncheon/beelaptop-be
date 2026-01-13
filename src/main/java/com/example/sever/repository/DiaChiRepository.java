@@ -18,8 +18,11 @@ import java.util.UUID;
 public interface DiaChiRepository extends JpaRepository<DiaChi, UUID> {
     Optional<DiaChi> findByIdTaiKhoan(TaiKhoan taiKhoan);
 
-    @Query("SELECT MAX(CAST(SUBSTRING(d.idDiaChi, 3) AS int)) FROM DiaChi d WHERE d.idDiaChi LIKE 'DC%'")
-    Integer findMaxDiaChiCode();
+//    @Query("SELECT MAX(CAST(SUBSTRING(d.idDiaChi, 3) AS int)) FROM DiaChi d WHERE d.idDiaChi LIKE 'DC%'")
+//    Integer findMaxDiaChiCode();
+
+//    @Query(value = "SELECT MAX(id_dia_chi) FROM DiaChi WHERE id_dia_chi LIKE 'DC%'", nativeQuery = true)
+//    String findMaxDiaChiCode();
 
     @Query(value = """
     SELECT 
@@ -61,7 +64,12 @@ public interface DiaChiRepository extends JpaRepository<DiaChi, UUID> {
     // ⭐ METHOD MỚI: TÌM ĐỊA CHỈ MẶC ĐỊNH
     Optional<DiaChi> findByIdTaiKhoan_IdAndMacDinhTrue(UUID taiKhoanId);
     List<DiaChi> findByIdTaiKhoan_Id(UUID idTaiKhoan);
-
+    @Query(value = """
+    SELECT ISNULL(MAX(CAST(SUBSTRING(id_dia_chi, 3, 10) AS INT)), 0)
+    FROM DiaChi WITH (UPDLOCK, HOLDLOCK)
+    WHERE id_dia_chi LIKE 'DC%'
+""", nativeQuery = true)
+    Integer findMaxDiaChiNumberWithLock();
 
 }
 

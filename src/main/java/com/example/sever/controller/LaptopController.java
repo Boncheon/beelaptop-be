@@ -19,7 +19,6 @@ import java.util.UUID;
 @CrossOrigin("*")
 @RestController
 @RequestMapping("/api/laptop")
-@PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class LaptopController {
 
@@ -29,6 +28,7 @@ public class LaptopController {
      * 📄 Lấy danh sách Laptop (Base) có phân trang
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<LapTopDisplayReponse>>> getAllLaptopForDisplay(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -50,6 +50,7 @@ public class LaptopController {
      * ➕ Thêm mới Laptop (Base)
      */
     @PostMapping("/them-laptop")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<LaptopResponseDTO>> addLaptop(@RequestBody LaptopAddRequestDTO dto) {
         LaptopResponseDTO response = laptopService.addLaptop(dto);
         return ResponseEntity.ok(
@@ -64,6 +65,7 @@ public class LaptopController {
      * ✏️ Cập nhật Laptop (Base)
      */
     @PostMapping("/sua-laptop/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<LaptopResponseDTO>> updateLaptop(
             @PathVariable("id") UUID id,
             @RequestBody LaptopUpdateRequestDTO dto
@@ -80,6 +82,7 @@ public class LaptopController {
      * 🔍 Xem chi tiết Laptop + danh sách LaptopChiTiet (bước 2)
      */
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<LapTopDisplayReponse> getLaTopById(@PathVariable("id") UUID id) {
         LapTopDisplayReponse lt = laptopService.getDetailedLapTop(id);
         return ApiResponse.<LapTopDisplayReponse>builder()

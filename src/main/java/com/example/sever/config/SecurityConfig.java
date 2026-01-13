@@ -50,7 +50,7 @@ public class SecurityConfig {
             "/oauth2/**", "/login/oauth2/**", "/auth/google-login-page", "/uploads/**",  "/api/pos/payment/vnpay-return",
             "/api/pos/payment/momo-return",
             "/api/pos/payment/vnpay-ipn",
-            "/api/pos/payment/momo-ipn", "/api/v1/**"
+            "/api/pos/payment/momo-ipn", "/api/v1/**", "/api/v1/ghn/**"
     };
 
     @Bean
@@ -61,8 +61,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/nhan-vien/**").hasAnyRole("NHAN_VIEN", "ADMIN")
+                        .requestMatchers("/admin/**").hasAnyRole("NHAN_VIEN", "ADMIN")
                         .requestMatchers("/khach-hang/**").hasAnyRole("KHACH_HANG", "NHAN_VIEN", "ADMIN")
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2

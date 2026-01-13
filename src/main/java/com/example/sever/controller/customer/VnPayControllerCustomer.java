@@ -6,12 +6,14 @@ import com.example.sever.dto.VnPayDTO.VnPayPaymentResponseCustomer;
 import com.example.sever.entity.Order;
 import com.example.sever.repository.OrderRepository;
 import com.example.sever.service.VnPayServiceCustomer;
+import com.example.sever.statusauto.PaymentStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -32,8 +34,13 @@ public class VnPayControllerCustomer {
     @PostMapping("/create-payment")
     public ResponseEntity<?> createPayment(@RequestBody VnPayPaymentRequestCustomer request) {
         try {
+            if (request == null || request.getIdOrder() == null) {
+                return ResponseEntity.badRequest().body("orderId không được null");
+            }
+
             VnPayPaymentResponseCustomer response = vnPayServiceCustomer.createPaymentUrl(request);
             return ResponseEntity.ok(response);
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
         } catch (Exception e) {
@@ -78,32 +85,48 @@ public class VnPayControllerCustomer {
     @GetMapping("/check-payment-status")
     public ResponseEntity<?> checkPaymentStatus(@RequestParam String vnpTxnRef) {
         try {
-            // Parse orderId từ vnpTxnRef
-            String orderIdStr = vnpTxnRef.substring(3);
-            String uuidStr = orderIdStr.substring(0, 8) + "-" +
-                           orderIdStr.substring(8, 12) + "-" +
-                           orderIdStr.substring(12, 16) + "-" +
-                           orderIdStr.substring(16, 20) + "-" +
-                           orderIdStr.substring(20);
-            UUID orderId = UUID.fromString(uuidStr);
-
-            // Tìm đơn hàng và trả về trạng thái
-            Order order = orderRepository.findById(orderId)
-                    .orElse(null);
-
-            if (order == null) {
-                return ResponseEntity.badRequest().body("Không tìm thấy đơn hàng");
+            if (vnpTxnRef == null || !vnpTxnRef.startsWith("VNP") || vnpTxnRef.length() < 3 + 32) {
+                return ResponseEntity.badRequest().body("vnpTxnRef không hợp lệ");
             }
+
+            String raw = vnpTxnRef.substring(3);
+            if (raw.length() != 32) {
+                return ResponseEntity.badRequest().body("vnpTxnRef không hợp lệ (length)");
+            }
+
+            String uuidStr = raw.substring(0, 8) + "-" +
+                    raw.substring(8, 12) + "-" +
+                    raw.substring(12, 16) + "-" +
+                    raw.substring(16, 20) + "-" +
+                    raw.substring(20);
+
+            UUID orderId;
+            try {
+                orderId = UUID.fromString(uuidStr);
+            } catch (IllegalArgumentException ex) {
+                return ResponseEntity.badRequest().body("vnpTxnRef không hợp lệ (uuid)");
+            }
+
+            Order order = orderRepository.findById(orderId).orElse(null);
+            if (order == null) {
+                return ResponseEntity.status(404).body("Không tìm thấy đơn hàng");
+            }
+
+            Integer paymentCode = order.getTrangThaiThanhToan();
+            boolean paid = Objects.equals(paymentCode, PaymentStatus.PAID.code());
 
             Map<String, Object> result = new HashMap<>();
             result.put("orderId", order.getId());
-            result.put("status", order.getTrangThai());
-            result.put("message", order.getTrangThai() != null && order.getTrangThai() == 2 ? "Đã thanh toán" : "Chưa thanh toán");
+            result.put("orderStatus", order.getTrangThai());
+            result.put("paymentStatus", paymentCode);
+            result.put("paid", paid);
+            result.put("message", paid ? "Đã thanh toán" : "Chưa thanh toán");
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
         }
     }
+
 }
 

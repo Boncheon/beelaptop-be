@@ -21,7 +21,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/seri")
 @AllArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class Sericontroller {
 
     private final SeriService seriService;
@@ -31,6 +30,7 @@ public class Sericontroller {
      * 📌 Lấy danh sách Seri theo biến thể LaptopChiTiet
      */
     @GetMapping("/by-laptop-ct/{idLaptopCt}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<List<SeriDisplayReponse>>> getByLaptopCt(
             @PathVariable UUID idLaptopCt) {
 
@@ -49,6 +49,7 @@ public class Sericontroller {
      * Body: SeriAddRequestDTO { idLaptopCt, list[ { idSeri, trangThai }, ... ] }
      */
     @PostMapping("/them-list")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> addListSeri(
             @RequestBody SeriAddRequestDTO dto) {
 
@@ -65,6 +66,7 @@ public class Sericontroller {
      * 📌 Cập nhật 1 Seri
      */
     @PutMapping("/update")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> update(@RequestBody SeriUpdateRequestDTO dto) {
         seriService.updateSeri(dto);
         return ResponseEntity.ok(
@@ -78,6 +80,7 @@ public class Sericontroller {
      * 📌 Lấy toàn bộ Seri trong hệ thống
      */
     @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<List<SeriDisplayReponse>>> getAll() {
         List<SeriDisplayReponse> data = seriService.getAll();
         return ResponseEntity.ok(
@@ -92,6 +95,7 @@ public class Sericontroller {
      * 📌 Lấy chi tiết 1 Seri theo id
      */
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<SeriDisplayReponse>> getDetail(@PathVariable UUID id) {
         SeriDisplayReponse data = seriService.getDetail(id);
         return ResponseEntity.ok(
@@ -103,6 +107,7 @@ public class Sericontroller {
     }
 
     @GetMapping("/by-id-seri/{idSeri}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<SeriDisplayReponse>> findByIdSeri(
             @PathVariable String idSeri) {
 
@@ -123,6 +128,7 @@ public class Sericontroller {
 //        return seriService.importExcel(idLaptopCt, file);
 //    }
     @GetMapping("/exists")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public boolean exists(@RequestParam("idSeri") String idSeri) {
         String norm = (idSeri == null) ? "" : idSeri.trim().toUpperCase();
         if (norm.isEmpty()) return false;

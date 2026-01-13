@@ -28,12 +28,13 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/do-hoa")
 @AllArgsConstructor
 public class doHoacontroller {
     DoHoaService doHoaService;
+
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<DoHoaDisplayReponse>> getAllLaptopsForDisplayPaged(@RequestParam(defaultValue = "1") int page,
                                                                                   @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -42,13 +43,15 @@ public class doHoacontroller {
         Page<DoHoaDisplayReponse> doHoapage = doHoaService.getAllDoHoaforDisplayPage(pageable);
         return ResponseEntity.ok(doHoapage);
     }
+
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<DoHoaDisplayReponse>>> filterDoHoa(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
             Pageable pageable) {
 
-        Page<DoHoaDisplayReponse> result = doHoaService.getDoHoaByFilter(trangThai,keyword, pageable);
+        Page<DoHoaDisplayReponse> result = doHoaService.getDoHoaByFilter(trangThai, keyword, pageable);
 
         return ResponseEntity.ok(
                 ApiResponse.<Page<DoHoaDisplayReponse>>builder()
@@ -59,6 +62,7 @@ public class doHoacontroller {
     }
 
     @PostMapping("/them-do-hoa")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DoHoa> addDoHoa(@RequestBody DoHoaAddRequestDTO doHoaRequestDTO) {
         DoHoa add = doHoaService.addDohoa(doHoaRequestDTO);
         return ApiResponse.<DoHoa>builder()
@@ -66,7 +70,9 @@ public class doHoacontroller {
                 .data(add)
                 .build();
     }
+
     @PostMapping("/sua-do-hoa")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DoHoa> updateDohoa(@RequestBody DoHoaUpdateRequestDTO doHoaUpdateRequestDTO) {
         DoHoa updated = doHoaService.updateDohoa(doHoaUpdateRequestDTO);
         return ApiResponse.<DoHoa>builder()
@@ -74,7 +80,9 @@ public class doHoacontroller {
                 .data(updated)
                 .build();
     }
+
     @PostMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<DoHoa> Status(@RequestBody StatusRequestDTO doHoaStatusRequestDTO) {
         DoHoa updatedStatus = doHoaService.updateStatus(doHoaStatusRequestDTO);
         return ApiResponse.<DoHoa>builder()
@@ -82,12 +90,25 @@ public class doHoacontroller {
                 .data(updatedStatus)
                 .build();
     }
+
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<DoHoaDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
         DoHoaDisplayReponse dohoa = doHoaService.getDetailedDoHoa(id);
         return ApiResponse.<DoHoaDisplayReponse>builder()
                 .message("Lấy chi tiết CPU thành công")
                 .data(dohoa)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<DoHoaDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<DoHoaDisplayReponse> cpuPage = doHoaService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

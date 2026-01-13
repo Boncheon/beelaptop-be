@@ -7,6 +7,7 @@ import com.example.sever.dto.response.GioHang.ProductCartResponse;
 import com.example.sever.service.GioHangService;
 import com.example.sever.service.LapTopCTService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,10 +33,9 @@ public class GioHangCustomerController {
     @GetMapping("/cart/{idTaiKhoan}")
     public ResponseEntity<?> getCart(@PathVariable UUID idTaiKhoan) {
         try {
-            CartResponse response = gioHangService.getProductUser(idTaiKhoan);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(404).body("Lỗi: " + e.getMessage());
+            return ResponseEntity.ok(gioHangService.getProductUser(idTaiKhoan));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Lỗi: " + e.getMessage());
         }
     }
     @PutMapping("/cart/update-cart-quantity")

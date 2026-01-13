@@ -29,5 +29,5 @@ public class PosUpdateShippingRequest {
     private UUID idDiaChi;
     private Boolean saveAddress;   // true: lưu địa chỉ mới vào bảng DiaChi
     private Boolean setAsDefault;  // true: set địa chỉ mới thành mặc định
-
+    private Boolean useInsurance;
 }

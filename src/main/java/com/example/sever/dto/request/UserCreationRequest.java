@@ -1,5 +1,6 @@
 package com.example.sever.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,6 +25,8 @@ public class UserCreationRequest implements Serializable {
     @NotBlank(message = "INVALID_EMAIL")
     @Email(message = "INVALID_EMAIL")
     String email;
+
+
 
 
     @NotBlank(message = "INVALID_SO_DIEN_THOAI")
@@ -57,16 +60,16 @@ public class UserCreationRequest implements Serializable {
     @Size(max = 100, message = "PHƯỜNG/XÃ KHÔNG HỢP LỆ")
     String phuongXa;
     // Các field hỗ trợ GHN - bắt buộc (frontend phải gửi)
-    @NotNull(message = "Province ID không được để trống")
+    @Valid
     Integer provinceId;
 
-    @NotNull(message = "District ID không được để trống")
+    @Valid
     Integer districtId;
 
-    @NotBlank(message = "Ward Code không được để trống")
+    @Valid
     String wardCode;
 
-    @Size(max = 255, message = "ĐỊA CHỈ CHI TIẾT KHÔNG HỢP LỆ")
+    @Valid
     String diaChiChiTiet;
 
     MultipartFile anh;

@@ -2,6 +2,8 @@ package com.example.sever.repository;
 
 import com.example.sever.dto.response.SeriDisplayReponse;
 import com.example.sever.entity.Seri;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -93,19 +95,69 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
     List<Integer> findAllTrangThaiSeri(@Param("laptopChiTietId") UUID laptopChiTietId);
 
     // update code huy ngày 05.01
+//    @Query(
+//            value = "SELECT SUM(trang_thai) " +
+//                    "FROM Seri " +
+//                    "WHERE id_lap_top_ct = :id " +
+//                    "AND trang_thai = 1",
+//            nativeQuery = true
+//    )
+//    Integer sumTrangThai(@Param("id") UUID id);
+    //    update code huy ngày 05.01
+//    @Query(value = "SELECT id FROM Seri WHERE id_lap_top_ct = :laptopChiTietId AND trang_thai = 1 ORDER BY id", nativeQuery = true)
+//    List<String> findSeriIdsByLaptopChiTietIdAndTrangThai(@Param("laptopChiTietId") String laptopChiTietId);
+    //    update code huy ngày 05.01
+//    @Modifying
+//    @Query(value = "UPDATE Seri SET trang_thai = :trangThai WHERE id = :seriId", nativeQuery = true)
+//    void updateTrangThaiSeri(@Param("seriId") String seriId, @Param("trangThai") Integer trangThai);
+
+
     @Query(
-            value = "SELECT SUM(trang_thai) " +
-                    "FROM Seri " +
-                    "WHERE id_lap_top_ct = :id " +
-                    "AND trang_thai = 1",
+            value = "SELECT COUNT(*) FROM dbo.Seri WHERE id_lap_top_ct = :id AND trang_thai = 1",
             nativeQuery = true
     )
-    Integer sumTrangThai(@Param("id") UUID id);
-    //    update code huy ngày 05.01
-    @Query(value = "SELECT id FROM Seri WHERE id_lap_top_ct = :laptopChiTietId AND trang_thai = 1 ORDER BY id", nativeQuery = true)
-    List<String> findSeriIdsByLaptopChiTietIdAndTrangThai(@Param("laptopChiTietId") String laptopChiTietId);
-    //    update code huy ngày 05.01
+    Integer countActiveSeri(@Param("id") UUID id);
+
     @Modifying
-    @Query(value = "UPDATE Seri SET trang_thai = :trangThai WHERE id = :seriId", nativeQuery = true)
-    void updateTrangThaiSeri(@Param("seriId") String seriId, @Param("trangThai") Integer trangThai);
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = """
+    UPDATE dbo.Seri
+    SET trang_thai = :toStatus
+    WHERE ID = :id AND trang_thai = :fromStatus
+""", nativeQuery = true)
+    int updateTrangThaiSeriIfCurrent(@Param("id") UUID id,
+                                     @Param("fromStatus") int fromStatus,
+                                     @Param("toStatus") int toStatus);
+
+    @Query(value = """
+    SELECT CAST(s.ID AS VARCHAR(36))
+    FROM dbo.Seri s
+    WHERE s.id_lap_top_ct = :laptopChiTietId
+      AND s.trang_thai = 1
+    ORDER BY s.ID
+""", nativeQuery = true)
+    List<String> findSeriIdsByLaptopChiTietIdAndTrangThai(@Param("laptopChiTietId") UUID laptopChiTietId);
+
+
+    @org.springframework.transaction.annotation.Transactional
+    @Modifying
+    @Query(value = """
+;WITH cte AS (
+    SELECT TOP (1) s.ID
+    FROM dbo.Seri s WITH (UPDLOCK, ROWLOCK, READPAST)
+    WHERE s.id_lap_top_ct = :laptopCtId
+      AND s.trang_thai = :fromStatus
+    ORDER BY s.ID
+)
+UPDATE dbo.Seri
+SET trang_thai = :toStatus
+OUTPUT inserted.ID
+WHERE ID IN (SELECT ID FROM cte)
+""", nativeQuery = true)
+    List<UUID> reserveOneSeriForLaptopCt(
+            @Param("laptopCtId") UUID laptopCtId,
+            @Param("fromStatus") int fromStatus,
+            @Param("toStatus") int toStatus
+    );
+
 }

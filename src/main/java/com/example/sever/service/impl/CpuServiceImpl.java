@@ -36,7 +36,17 @@ public class CpuServiceImpl implements CpuService {
 
         return new PageImpl<>(romDisplayReponses , pageable, CpuPage.getTotalElements());
     }
+    @Override
+    public Page<CpuDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<Cpu> CpuPage = cpuRepository.findByTrangThai(1, pageable);
 
+        List<CpuDisplayReponse> responses = CpuPage.getContent()
+                .stream()
+                .map(cpuMapper::getAlldisplayCpu)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, CpuPage.getTotalElements());
+    }
     @Override
     public CpuDisplayReponse getDetailedCpu(UUID id) {
         Cpu cpu = cpuRepository.findById(id)

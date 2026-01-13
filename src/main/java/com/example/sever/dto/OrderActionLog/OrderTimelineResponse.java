@@ -11,6 +11,8 @@ public class OrderTimelineResponse {
     private UUID orderId;
     private String maDonHang;
 
+    private String loaiDon;
+
     private Integer trangThai;
     private String tenTrangThai;
 

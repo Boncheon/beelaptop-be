@@ -7,5 +7,5 @@ import java.util.UUID;
 @Data
 public class UpdateQuantityProductRequest {
     private UUID idGioHangCT;
-    private Integer quantity;
+    private Integer soLuong;
 }

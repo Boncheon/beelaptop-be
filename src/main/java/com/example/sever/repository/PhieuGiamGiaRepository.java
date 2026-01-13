@@ -6,6 +6,7 @@ import com.example.sever.entity.PhieuGiamGia;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -63,6 +65,16 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, UUID
         ORDER BY p.ngay_ket_thuc ASC
         """, nativeQuery = true)
     List<PhieuGiamGiaCustomerProjection> findPhieuGiamGiaPhuHop(@Param("tongTien") BigDecimal tongTien);
+
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+UPDATE dbo.PhieuGiamGia
+SET so_luong = so_luong - 1
+WHERE ID = :id AND so_luong > 0
+""", nativeQuery = true)
+    int decrementQtyIfAvailable(@Param("id") UUID id);
 
 
 }

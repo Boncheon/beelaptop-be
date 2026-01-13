@@ -1,10 +1,6 @@
 package com.example.sever.service;
 
-import com.example.sever.dto.response.ThongKeResponseDTO;
-import com.example.sever.dto.response.ThongKeTongQuanResponseDTO;
-import com.example.sever.dto.response.ThongKeTrangThaiResponseDTO;
-import com.example.sever.dto.response.ThongKeTruyCapResponseDTO;
-import com.example.sever.dto.response.TopLaptopBanChayResponseDTO;
+import com.example.sever.dto.response.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,5 +13,9 @@ public interface ThongKeService {
     ThongKeTongQuanResponseDTO thongKeTongQuan();
     ThongKeTrangThaiResponseDTO thongKeTheoTrangThai();
     ThongKeTruyCapResponseDTO thongKeTruyCap();
+
+    ThongKeKhachHangTongResponseDTO thongKeTongKhachHang();
+
+    List<ThongKeKhachHangSoDonResponseDTO> thongKeKhachHangMuaBaoNhieuDon();
 }
 

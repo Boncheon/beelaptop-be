@@ -71,24 +71,23 @@ public class OrderCustomerController {
     }
 
     @PutMapping("/order/{idOrder}/cancel")
-    public ResponseEntity<OrderCustomerResponse> huyDonHangCustomer(
-            @PathVariable UUID idOrder,
-            @RequestParam UUID idTaiKhoan) {
+    public ResponseEntity<OrderCustomerResponse> huyDonHangCustomer(@PathVariable UUID idOrder) {
         try {
-            OrderCustomerResponse response = orderCustomerService.huyDonHangCustomer(idOrder, idTaiKhoan);
+            // truyền null cũng được vì Service của bạn ép về currentUserId
+            OrderCustomerResponse response = orderCustomerService.huyDonHangCustomer(idOrder, null);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            OrderCustomerResponse errorResponse = new OrderCustomerResponse();
-            errorResponse.setMessage("Lỗi: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
+            OrderCustomerResponse err = new OrderCustomerResponse();
+            err.setMessage("Lỗi: " + e.getMessage());
+            return ResponseEntity.badRequest().body(err);
         } catch (ResourceNotFoundException e) {
-            OrderCustomerResponse errorResponse = new OrderCustomerResponse();
-            errorResponse.setMessage("Lỗi: " + e.getMessage());
+            OrderCustomerResponse err = new OrderCustomerResponse();
+            err.setMessage("Lỗi: " + e.getMessage());
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            OrderCustomerResponse errorResponse = new OrderCustomerResponse();
-            errorResponse.setMessage("Lỗi hệ thống: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
+            OrderCustomerResponse err = new OrderCustomerResponse();
+            err.setMessage("Lỗi hệ thống: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(err);
         }
     }
 }

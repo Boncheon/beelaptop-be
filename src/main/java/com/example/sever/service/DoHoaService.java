@@ -19,4 +19,5 @@ public interface DoHoaService {
     DoHoa updateStatus(StatusRequestDTO updatedto);
     Page<DoHoaDisplayReponse> getDoHoaByFilter(Integer trangThai, String keyword, Pageable pageable);
     DoHoaDisplayReponse getDetailedDoHoa(UUID id);
+    Page<DoHoaDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

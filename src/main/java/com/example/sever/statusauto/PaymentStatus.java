@@ -2,14 +2,13 @@ package com.example.sever.statusauto;
 
 import java.util.Arrays;
 
-public enum SeriStatus {
-    ACTIVE(1),
-    PENDING(2),
-    SOLD(3);
+public enum PaymentStatus {
+    UNPAID(0),
+    PAID(1);
 
     private final int code;
 
-    SeriStatus(int code) {
+    PaymentStatus(int code) {
         this.code = code;
     }
 
@@ -17,11 +16,11 @@ public enum SeriStatus {
         return code;
     }
 
-    public static SeriStatus fromCode(Integer code) {
+    public static PaymentStatus fromCode(Integer code) {
         if (code == null) return null;
         return Arrays.stream(values())
                 .filter(s -> s.code == code)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown SeriStatus code: " + code));
+                .orElseThrow(() -> new IllegalArgumentException("Unknown PaymentStatus code: " + code));
     }
 }

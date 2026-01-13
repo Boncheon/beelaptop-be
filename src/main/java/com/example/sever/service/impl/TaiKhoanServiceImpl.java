@@ -22,9 +22,12 @@ import com.example.sever.repository.TaiKhoanRepository;
 import com.example.sever.service.TaiKhoanService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException; // ✅ FIX (retry mã địa chỉ)
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication; // ✅ FIX (ownership)
+import org.springframework.security.core.context.SecurityContextHolder; // ✅ FIX (ownership)
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,7 +43,6 @@ import java.util.stream.Collectors;
 public class TaiKhoanServiceImpl implements TaiKhoanService {
     private final RoleRepository roleRepository;
     private final TaiKhoanRepository taikhoanRepository;
-
 
     private final TaiKhoanMapper taikhoanMapper;
     @Autowired
@@ -91,8 +93,7 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
     @Override
     public TaiKhoanDisplayReponse updateTaiKhoan(TaiKhoanUpdateRequestDTO updatedto) {
         TaiKhoan tk = taikhoanRepository.findById(updatedto.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản"));
-        tk.setIdTaiKhoan(updatedto.getIdTaiKhoan());
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản"));
         tk.setTen(updatedto.getTen());
         tk.setTrangThai(updatedto.getTrangThai());
         tk.setAnh(updatedto.getAnh());
@@ -102,7 +103,7 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         tk.setSoDienThoai(updatedto.getSoDienThoai());
         // Lấy entity liên kết từ DB
         Role role = roleRepository.findById(updatedto.getRole().getId())
-                .orElseThrow(() -> new RuntimeException("RAM không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Role không tồn tại"));
         // Gán vào phiên bản
         tk.setIdRole(role);
 
@@ -110,21 +111,67 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         TaiKhoan saved = taikhoanRepository.save(tk);
         return taikhoanMapper.getAlldisplayTaiKhoan(saved);
     }
+
+    // ========================= ✅ ADD: role helpers (ADMIN bypass) =========================
+    private boolean hasRole(String role) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || auth.getAuthorities() == null) return false;
+            String need = "ROLE_" + role;
+            return auth.getAuthorities().stream().anyMatch(a -> need.equals(a.getAuthority()));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isAdmin() {
+        return hasRole("ADMIN");
+    }
+    // ========================= END ADD =========================
+
     @Override
     public List<DiaChiProjection> findAllAdress(UUID id) {
+        // ✅ FIX: ADMIN được phép xem tất cả address
+        if (isAdmin() || isStaff()) {
+            return diaChiRepository.findAllByTaiKhoanProjection(id);
+        }
+
+        // ✅ FIX: không cho lấy address của user khác (nếu có login)
+        UUID currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("Bạn chưa đăng nhập");
+        }
+        if (!currentUserId.equals(id)) {
+            throw new RuntimeException("Bạn không có quyền xem địa chỉ của tài khoản này");
+        }
         return diaChiRepository.findAllByTaiKhoanProjection(id);
     }
 
     @Override
+    @Transactional
     public DiaChiResponse createAddressCustomer(DiaChiCreateRequest request) {
-        int number = (int)(Math.random() * 900) + 100;
+
+        // ✅ FIX: ADMIN được phép tạo cho user bất kỳ; USER thường chỉ tạo cho chính mình
+        if (!isAdmin() && !isStaff()) {
+            UUID currentUserId = requireCurrentUserId();
+            if (request.getIdTaiKhoan() == null) {
+                request.setIdTaiKhoan(currentUserId);
+            } else if (!currentUserId.equals(request.getIdTaiKhoan())) {
+                throw new RuntimeException("Bạn không có quyền tạo địa chỉ cho tài khoản khác");
+            }
+        } else {
+            // ADMIN: bắt buộc phải có idTaiKhoan
+            if (request.getIdTaiKhoan() == null) {
+                throw new RuntimeException("Thiếu idTaiKhoan");
+            }
+        }
 
         TaiKhoan taiKhoan = taikhoanRepository.findById(request.getIdTaiKhoan())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản!"));
 
         DiaChi diaChi = new DiaChi();
         diaChi.setId(UUID.randomUUID());
-        diaChi.setIdDiaChi("DC" + number);
+        // diaChi.setIdDiaChi(nextDiaChiCode()); // ✅ moved into retry block
         diaChi.setIdTaiKhoan(taiKhoan);
 
         diaChi.setQuocGia("VietNam");
@@ -141,7 +188,65 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
         diaChi.setDistrictId(request.getDistrictId());
         diaChi.setWardCode(request.getWardCode());
 
-        diaChi.setMacDinh(false);
+        boolean hasDefault = diaChiRepository.findByIdTaiKhoan_IdAndMacDinhTrue(taiKhoan.getId()).isPresent();
+        diaChi.setMacDinh(!hasDefault);
+
+
+        // ✅ FIX: retry mã địa chỉ nếu DB có unique constraint và bị trùng do concurrent
+        DiaChi saved = null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                diaChi.setIdDiaChi(nextDiaChiCode());
+                saved = diaChiRepository.save(diaChi);
+                ensureExactlyOneDefault(taiKhoan.getId());
+                break;
+            } catch (DataIntegrityViolationException ex) {
+                // retry
+                if (i == 2) throw ex;
+            }
+        }
+
+        return new DiaChiResponse(
+                saved.getId(),
+                saved.getIdDiaChi(),
+                saved.getIdTaiKhoan().getId(),
+                saved.getQuocGia(),
+                saved.getTinhThanh(),
+                saved.getQuanHuyen(),
+                saved.getPhuongXa(),
+                saved.getDiaChiChiTiet(),
+                saved.getMacDinh(),
+                saved.getHoTen(),
+                saved.getSoDienThoai(),
+                saved.getProvinceId(),
+                saved.getDistrictId(),
+                saved.getWardCode()
+        );
+    }
+
+    @Override
+    @Transactional
+    public DiaChiResponse updateAddressCustomer(UUID id, DiaChiUpdateRequest request) {
+        // ✅ FIX: ownership check (ADMIN bypass nằm trong mustOwnAddress)
+        UUID currentUserId = getCurrentUserId();
+        if (currentUserId == null && !isAdmin()  && !isStaff()) {
+            throw new RuntimeException("Bạn chưa đăng nhập hoặc phiên đăng nhập không hợp lệ");
+        }
+        DiaChi diaChi = mustOwnAddress(currentUserId, id);
+
+        diaChi.setQuocGia("VietNam");
+        diaChi.setTinhThanh(request.getTinhThanh());
+        diaChi.setQuanHuyen(request.getQuanHuyen());
+        diaChi.setPhuongXa(request.getPhuongXa());
+        diaChi.setDiaChiChiTiet(request.getDiaChiChiTiet());
+
+        diaChi.setHoTen(request.getHoTen());
+        diaChi.setSoDienThoai(request.getSoDienThoai());
+
+        // ✅ 3 field GHN
+        diaChi.setProvinceId(request.getProvinceId());
+        diaChi.setDistrictId(request.getDistrictId());
+        diaChi.setWardCode(request.getWardCode());
 
         DiaChi saved = diaChiRepository.save(diaChi);
 
@@ -165,48 +270,10 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
 
     @Override
     @Transactional
-    public DiaChiResponse updateAddressCustomer(UUID id, DiaChiUpdateRequest request) {
-        DiaChi diaChi = diaChiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ!"));
-
-        diaChi.setQuocGia("VietNam");
-        diaChi.setTinhThanh(request.getTinhThanh());
-        diaChi.setQuanHuyen(request.getQuanHuyen());
-        diaChi.setPhuongXa(request.getPhuongXa());
-        diaChi.setDiaChiChiTiet(request.getDiaChiChiTiet());
-
-        diaChi.setHoTen(request.getHoTen());
-        diaChi.setSoDienThoai(request.getSoDienThoai());
-
-        // ✅ 3 field GHN
-        diaChi.setProvinceId(request.getProvinceId());
-        diaChi.setDistrictId(request.getDistrictId());
-        diaChi.setWardCode(request.getWardCode());
-
-        DiaChi saved = diaChiRepository.save(diaChi);
-
-        return new DiaChiResponse(
-                saved.getId(),
-                saved.getIdDiaChi(),
-                saved.getIdTaiKhoan().getId(),
-                saved.getQuocGia(),
-                saved.getTinhThanh(),
-                saved.getQuanHuyen(),
-                saved.getPhuongXa(),
-                saved.getDiaChiChiTiet(),
-                saved.getMacDinh(),
-                saved.getHoTen(),
-                saved.getSoDienThoai(),
-                saved.getProvinceId(),
-                saved.getDistrictId(),
-                saved.getWardCode()
-        );
-    }
-
-    @Override
     public DiaChiResponse setAddressDefaultCustomer(UUID id) {
-        DiaChi diaChi = diaChiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ!"));
+        // ✅ FIX: ownership check (ADMIN bypass nằm trong mustOwnAddress)
+        UUID currentUserId = requireCurrentUserId();
+        DiaChi diaChi = mustOwnAddress(currentUserId, id);
 
         UUID idTaiKhoan = diaChi.getIdTaiKhoan().getId();
 
@@ -236,16 +303,40 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
     @Override
     @Transactional
     public void deleteAddressCustomer(UUID id) {
-        DiaChi diaChi = diaChiRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
+        UUID currentUserId = requireCurrentUserId();
+        DiaChi diaChi = mustOwnAddress(currentUserId, id);
+
+        UUID taiKhoanId = diaChi.getIdTaiKhoan().getId();
+        boolean wasDefault = Boolean.TRUE.equals(diaChi.getMacDinh());
 
         diaChiRepository.delete(diaChi);
-    }
 
+        // ✅ Rule: nếu xoá địa chỉ default -> tự set 1 địa chỉ còn lại làm default
+        if (wasDefault) {
+            List<DiaChi> remain = diaChiRepository.findAllByTaiKhoanId(taiKhoanId);
+            if (remain != null && !remain.isEmpty()) {
+                diaChiRepository.clearDefault(taiKhoanId);
+                DiaChi pick = remain.get(0);
+                pick.setMacDinh(true);
+                diaChiRepository.save(pick);
+            }
+        } else {
+            // optional: fix data bẩn nếu trước đó DB có vấn đề
+            ensureExactlyOneDefault(taiKhoanId);
+        }
+    }
 
     @Override
     @Transactional
     public UpdateProfileCustomerResponse updateProfileCustomer(UUID id, UpdateProfileCustomerRequest request) {
+        // ✅ FIX: ADMIN được phép update user khác; USER thường chỉ update chính mình
+        UUID currentUserId = getCurrentUserId();
+        if (!isAdmin()) {
+            if (currentUserId != null && !currentUserId.equals(id)) {
+                throw new RuntimeException("Bạn không có quyền cập nhật tài khoản này");
+            }
+        }
+
         // Tìm tài khoản
         TaiKhoan taiKhoan = taikhoanRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "Không tìm thấy tài khoản"));
@@ -268,20 +359,20 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
             }
         }
 
-        // Cập nhật thông tin - luôn cập nhật nếu có giá trị (không cần kiểm tra empty)
-        if (request.getTen() != null) {
+        // ✅ FIX: chỉ update khi non-blank (tránh set "")
+        if (request.getTen() != null && !request.getTen().trim().isEmpty()) {
             taiKhoan.setTen(request.getTen().trim());
         }
-        if (request.getEmail() != null) {
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
             taiKhoan.setEmail(request.getEmail().trim());
         }
-        if (request.getSoDienThoai() != null) {
+        if (request.getSoDienThoai() != null && !request.getSoDienThoai().trim().isEmpty()) {
             taiKhoan.setSoDienThoai(request.getSoDienThoai().trim());
         }
         if (request.getNgaySinh() != null) {
             taiKhoan.setNgaySinh(request.getNgaySinh());
         }
-        if (request.getGioiTinh() != null) {
+        if (request.getGioiTinh() != null && !request.getGioiTinh().trim().isEmpty()) {
             taiKhoan.setGioiTinh(request.getGioiTinh().trim());
         }
 
@@ -334,7 +425,10 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
             // Upload lên Cloudinary
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), Map.of());
-            String imageUrl = uploadResult.get("url").toString();
+
+            // ✅ FIX: dùng secure_url
+            String imageUrl = String.valueOf(uploadResult.get("secure_url"));
+
             log.info("Upload ảnh thành công: {}", imageUrl);
             return imageUrl;
         } catch (IOException e) {
@@ -342,5 +436,95 @@ public class TaiKhoanServiceImpl implements TaiKhoanService {
             throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED, "Lỗi khi upload ảnh: " + e.getMessage());
         }
     }
+    private boolean isStaff() {
+        return hasRole("NHAN_VIEN");
+    }
+    private String nextDiaChiCode() {
+        Integer maxNum = diaChiRepository.findMaxDiaChiNumberWithLock(); // ✅ LOCK
+        int next = (maxNum == null ? 1 : maxNum + 1);
+        return String.format("DC%04d", next);
+    }
 
+    private DiaChi mustOwnAddress(UUID userId, UUID diaChiId) {
+        DiaChi dc = diaChiRepository.findById(diaChiId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ!"));
+
+        // ✅ FIX: ADMIN được phép thao tác mọi địa chỉ
+        if (isAdmin()) return dc;
+
+        if (userId == null) {
+            throw new RuntimeException("Bạn chưa đăng nhập");
+        }
+
+        if (dc.getIdTaiKhoan() == null || dc.getIdTaiKhoan().getId() == null
+                || !dc.getIdTaiKhoan().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền thao tác địa chỉ này");
+        }
+        return dc;
+    }
+
+    private void ensureExactlyOneDefault(UUID taiKhoanId) {
+        List<DiaChi> list = diaChiRepository.findAllByTaiKhoanId(taiKhoanId);
+        if (list == null || list.isEmpty()) return;
+
+        List<DiaChi> defaults = list.stream()
+                .filter(d -> Boolean.TRUE.equals(d.getMacDinh()))
+                .toList();
+
+        // 0 default -> set cái đầu tiên
+        if (defaults.isEmpty()) {
+            DiaChi pick = list.get(0);
+            diaChiRepository.clearDefault(taiKhoanId);
+            pick.setMacDinh(true);
+            diaChiRepository.save(pick);
+            return;
+        }
+
+        // nhiều default -> giữ 1, clear phần còn lại
+        if (defaults.size() > 1) {
+            DiaChi keep = defaults.get(0);
+            diaChiRepository.clearDefault(taiKhoanId);
+            keep.setMacDinh(true);
+            diaChiRepository.save(keep);
+        }
+    }
+
+    // ========================= ✅ FIX: lấy userId từ SecurityContext =========================
+    private UUID getCurrentUserId() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) return null;
+
+            Object principal = auth.getPrincipal();
+            if (principal instanceof TaiKhoan tk) {
+                return tk.getId();
+            }
+
+            // Trường hợp principal là username/email (String)
+            if (principal instanceof String s) {
+                String username = s.trim();
+                if (!username.isEmpty() && !"anonymousUser".equalsIgnoreCase(username)) {
+                    // ưu tiên email
+                    TaiKhoan tk = taikhoanRepository.findByEmail(username).orElse(null);
+                    if (tk != null) return tk.getId();
+
+                    // fallback phone (nếu repo có)
+                    try {
+                        tk = taikhoanRepository.findBySoDienThoai(username).orElse(null);
+                        if (tk != null) return tk.getId();
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private UUID requireCurrentUserId() {
+        UUID id = getCurrentUserId();
+        if (id == null) throw new RuntimeException("Bạn chưa đăng nhập hoặc phiên đăng nhập không hợp lệ");
+        return id;
+    }
 }

@@ -36,6 +36,17 @@ public class RomServiceImpl implements RomService {
 
         return new PageImpl<>(romDisplayReponses , pageable, RomPage.getTotalElements());
     }
+    @Override
+    public Page<RomDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<Rom> CpuPage = romRepository.findByTrangThai(1, pageable);
+
+        List<RomDisplayReponse> responses = CpuPage.getContent()
+                .stream()
+                .map(romMapper::getAlldisplayRom)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, CpuPage.getTotalElements());
+    }
 
     @Override
     public Rom addRom(RomAddRequestDTO adddto) {

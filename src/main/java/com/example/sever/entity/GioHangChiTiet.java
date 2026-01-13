@@ -22,16 +22,15 @@ public class GioHangChiTiet {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Size(max = 20)
-    @Column(name = "id_gio_hang_ct", length = 20)
+    @Column(name = "id_gio_hang_ct", length = 20, nullable = false, unique = true)
     private String idGiohangchitiet;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_gioHang")
+    @JoinColumn(name = "id_gioHang", nullable = false)
     private GioHang idGioHang;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_spct")
+    @JoinColumn(name = "id_spct", nullable = false)
     private LaptopChiTiet idSpct;
 
     @Column(name = "is_selected")
@@ -39,5 +38,16 @@ public class GioHangChiTiet {
 
     @Column(name = "so_luong")
     private Integer soLuong;
+
+    @PrePersist
+    public void prePersist() {
+        if (idGiohangchitiet == null || idGiohangchitiet.isBlank()) {
+            // CT + 12 = 14 ký tự (<= 20 OK)
+            idGiohangchitiet = "CT" + UUID.randomUUID().toString().replace("-", "")
+                    .substring(0, 12).toUpperCase();
+        }
+        if (isSelected == null) isSelected = 1;
+        if (soLuong == null) soLuong = 1;
+    }
 
 }

@@ -5,6 +5,7 @@ import com.example.sever.dto.OrderActionLog.OrderTimelineResponse;
 import com.example.sever.dto.OrderActionLog.UpdateOrderStatusRequest;
 import com.example.sever.service.OrderTimelineService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/orders")
+@PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
 public class OrderTimelineController {
 
     private final OrderTimelineService timelineService;
@@ -29,4 +31,6 @@ public class OrderTimelineController {
     ) {
         return timelineService.updateStatus(orderId, request);
     }
+
+
 }

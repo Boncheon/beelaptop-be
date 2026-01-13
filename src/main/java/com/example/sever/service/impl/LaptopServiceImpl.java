@@ -159,6 +159,6 @@ public List<CustomerLaptopProjection> getCustomerLaptop() {
     //Update code huy 05.01
     @Override
     public Integer getAllStatusIs1Laptop(UUID idLaptopChiTiet) {
-        return seriRepository.sumTrangThai(idLaptopChiTiet);
+        return seriRepository.countActiveSeri(idLaptopChiTiet);
     }
 }

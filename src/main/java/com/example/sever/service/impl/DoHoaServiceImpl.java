@@ -38,6 +38,17 @@ public class DoHoaServiceImpl implements DoHoaService {
 
        return new PageImpl<>(doHoaDisplayReponses , pageable, doHoaPage.getTotalElements());
     }
+    @Override
+    public Page<DoHoaDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<DoHoa> doHoaPage = doHoaRepository.findByTrangThai(1, pageable);
+
+        List<DoHoaDisplayReponse> responses = doHoaPage.getContent()
+                .stream()
+                .map(doHoaMapper::toDoHoaDisplayReponse)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable,  doHoaPage.getTotalElements());
+    }
 
     @Override
     public DoHoa addDohoa(DoHoaAddRequestDTO addrequestDTO) {

@@ -33,6 +33,18 @@ public class ManHinhServiceImpl implements ManHinhService {
 
         return new PageImpl<>(romDisplayReponses , pageable, ManHinhPage.getTotalElements());
     }
+
+    @Override
+    public Page<ManHinhDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<ManHinh> manHinhPage = manhinhRepository.findByTrangThai(1, pageable);
+
+        List<ManHinhDisplayReponse> responses = manHinhPage.getContent()
+                .stream()
+                .map(manhinhMapper::getAlldisplayManHinh)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, manHinhPage.getTotalElements());
+    }
     @Override
     public ManHinh addManHinh(ManHinhAddRequestDTO adddto) {
         ManHinh manhinh = manhinhMapper.toManHinh(adddto);

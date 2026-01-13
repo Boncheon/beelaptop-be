@@ -39,7 +39,17 @@ public class RamServiceImpl implements RamService {
 
         return new PageImpl<>(ramDIsplayReponses , pageable, RamPage.getTotalElements());
     }
+    @Override
+    public Page<RamDIsplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<Ram> ramPage = ramRepository.findByTrangThai(1, pageable);
 
+        List<RamDIsplayReponse> responses = ramPage.getContent()
+                .stream()
+                .map(ramMapper::getAlldisplayRam)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, ramPage.getTotalElements());
+    }
     @Override
     public Ram addRam(RamAddRequestDTO adddto) {
         Ram ram = ramMapper.toDoram(adddto);

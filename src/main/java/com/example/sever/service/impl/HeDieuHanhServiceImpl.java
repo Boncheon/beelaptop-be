@@ -35,6 +35,18 @@ public class HeDieuHanhServiceImpl implements HeDieuHanhService {
     }
 
     @Override
+    public Page<HeDieuHanhDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<HeDieuHanh> heDieuHanhPage = hedieuhanhRepository.findByTrangThai(1, pageable);
+
+        List<HeDieuHanhDisplayReponse> responses = heDieuHanhPage.getContent()
+                .stream()
+                .map(hedieuhanhMapper::getAlldisplayHeDieuHanh)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, heDieuHanhPage.getTotalElements());
+    }
+
+    @Override
     public HeDieuHanh addHeDieuHanh(HeDieuHanhAddRequestDTO adddto) {
         HeDieuHanh hedieuhanh = hedieuhanhMapper.toHeDieuHanh(adddto);
 

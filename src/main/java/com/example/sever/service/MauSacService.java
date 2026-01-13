@@ -17,4 +17,5 @@ public interface MauSacService {
     MauSac updateStatus(StatusRequestDTO updatedto);
     Page<MauSacDisplayReponse> getMauSacByFilter(Integer trangThai, String keyword, Pageable pageable);
     MauSacDisplayReponse getDetailedMauSac(UUID id);
+    Page<MauSacDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

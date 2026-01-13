@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -115,6 +116,36 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     //------------------------------Code quý thống kê-----------/
 
+
+
+
+
+    // Top 10 laptop bán chạy nhất (không filter năm - để test, dùng id_lap_top_ct trực tiếp)
+    @Query(value = """
+        SELECT TOP 10
+            l.ID AS idLaptop,
+            l.ten_san_pham AS tenSanPham,
+            COUNT(*) AS soLuongBan
+        FROM OrderCT oct
+        JOIN [Orders] o 
+            ON o.ID = oct.id_order    
+        JOIN Seri s 
+            ON s.ID = oct.id_seri      
+        JOIN LaptopChiTiet lct 
+            ON lct.ID = s.id_lap_top_ct
+        JOIN Laptop l 
+            ON l.ID = lct.id_lap_top
+        GROUP BY 
+            l.ID,
+            l.ten_san_pham
+        ORDER BY 
+            soLuongBan DESC
+        """, nativeQuery = true)
+    List<Object[]> topLaptopBanChayNhatTatCa();
+
+
+
+    ///----
     // Doanh số theo tháng của 1 năm (có thêm top 10 laptop của mỗi tháng)
     @Query(value = """
         WITH ThongKeThang AS (
@@ -122,7 +153,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                 MONTH(o.ngay_tao) AS thang,
                 SUM(o.tong_tien_thu_ho) AS doanhSo
             FROM [Orders] o
+            -- ✅ Doanh thu chỉ tính đơn PAID + COMPLETED
             WHERE YEAR(o.ngay_tao) = :year
+              AND o.trang_thai_thanh_toan = 1
+              AND o.trang_thai = 6
             GROUP BY MONTH(o.ngay_tao)
         ),
         TopLaptopThang AS (
@@ -130,18 +164,27 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                 MONTH(o.ngay_tao) AS thang,
                 l.ID AS idLaptop,
                 l.ten_san_pham AS tenSanPham,
-                (SELECT TOP 1 a.ImgURL 
-                 FROM Anh a 
-                 WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
+                -- ✅ Gom theo Laptop (không bị tách theo LaptopChiTiet)
+                MIN(img.ImgURL) AS hinhAnh,
                 COUNT(*) AS soLuongBan,
+                -- ✅ Tránh double-count doanh thu do join OrderCT: dùng tổng giá dòng
+                COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo,
                 ROW_NUMBER() OVER (PARTITION BY MONTH(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
             FROM OrderCT oct
             JOIN [Orders] o ON o.ID = oct.id_order
             JOIN Seri s ON s.ID = oct.id_seri
             JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
             JOIN Laptop l ON l.ID = lct.id_lap_top
+            OUTER APPLY (
+                SELECT TOP 1 a.ImgURL
+                FROM Anh a
+                WHERE a.id_laptop_chi_tiet = lct.ID
+                ORDER BY a.ID
+            ) img
             WHERE YEAR(o.ngay_tao) = :year
-            GROUP BY MONTH(o.ngay_tao), l.ID, l.ten_san_pham, lct.ID
+              AND o.trang_thai_thanh_toan = 1
+              AND o.trang_thai = 6
+            GROUP BY MONTH(o.ngay_tao), l.ID, l.ten_san_pham
         )
         SELECT 
             tkt.thang,
@@ -149,7 +192,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             tlt.idLaptop,
             tlt.tenSanPham,
             tlt.hinhAnh,
-            tlt.soLuongBan
+            tlt.soLuongBan,
+            tlt.tongTienThuHo
         FROM ThongKeThang tkt
         LEFT JOIN TopLaptopThang tlt ON tkt.thang = tlt.thang AND tlt.rn <= 10
         ORDER BY tkt.thang, tlt.rn
@@ -166,6 +210,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         FROM [Orders] o
         WHERE YEAR(o.ngay_tao) = :year
           AND MONTH(o.ngay_tao) = :month
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
         GROUP BY DAY(o.ngay_tao)
     ),
     TopLaptopNgay AS (
@@ -173,19 +219,26 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             DAY(o.ngay_tao) AS ngay,
             l.ID AS idLaptop,
             l.ten_san_pham AS tenSanPham,
-            (SELECT TOP 1 a.ImgURL 
-             FROM Anh a 
-             WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
+            MIN(img.ImgURL) AS hinhAnh,
             COUNT(*) AS soLuongBan,
+            COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo,
             ROW_NUMBER() OVER (PARTITION BY DAY(o.ngay_tao) ORDER BY COUNT(*) DESC) AS rn
         FROM OrderCT oct
         JOIN [Orders] o ON o.ID = oct.id_order
         JOIN Seri s ON s.ID = oct.id_seri
         JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
         JOIN Laptop l ON l.ID = lct.id_lap_top
+        OUTER APPLY (
+            SELECT TOP 1 a.ImgURL
+            FROM Anh a
+            WHERE a.id_laptop_chi_tiet = lct.ID
+            ORDER BY a.ID
+        ) img
         WHERE YEAR(o.ngay_tao) = :year
           AND MONTH(o.ngay_tao) = :month
-        GROUP BY DAY(o.ngay_tao), l.ID, l.ten_san_pham, lct.ID
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
+        GROUP BY DAY(o.ngay_tao), l.ID, l.ten_san_pham
     )
     SELECT 
         tkn.ngay,
@@ -193,7 +246,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         tln.idLaptop,
         tln.tenSanPham,
         tln.hinhAnh,
-        tln.soLuongBan
+        tln.soLuongBan,
+        tln.tongTienThuHo
     FROM ThongKeNgay tkn
     LEFT JOIN TopLaptopNgay tln ON tkn.ngay = tln.ngay AND tln.rn <= 10
     ORDER BY tkn.ngay, tln.rn
@@ -210,18 +264,29 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                 COALESCE(SUM(o.tong_tien_thu_ho), 0) AS doanhSo
             FROM [Orders] o
             WHERE CAST(o.ngay_tao AS date) = :ngay
+              AND o.trang_thai_thanh_toan = 1
+              AND o.trang_thai = 6
         ),
         TopLaptop AS (
             SELECT TOP 10
                 l.ID AS idLaptop,
                 l.ten_san_pham AS tenSanPham,
+                MIN(img.ImgURL) AS hinhAnh,
                 COUNT(*) AS soLuongBan
             FROM OrderCT oct
             JOIN [Orders] o ON o.ID = oct.id_order
             JOIN Seri s ON s.ID = oct.id_seri
             JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
             JOIN Laptop l ON l.ID = lct.id_lap_top
+            OUTER APPLY (
+                SELECT TOP 1 a.ImgURL
+                FROM Anh a
+                WHERE a.id_laptop_chi_tiet = lct.ID
+                ORDER BY a.ID
+            ) img
             WHERE CAST(o.ngay_tao AS date) = :ngay
+              AND o.trang_thai_thanh_toan = 1
+              AND o.trang_thai = 6
             GROUP BY l.ID, l.ten_san_pham
             ORDER BY COUNT(*) DESC
         )
@@ -230,9 +295,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             tk.doanhSo,
             tl.idLaptop,
             tl.tenSanPham,
+            tl.hinhAnh,
             tl.soLuongBan
         FROM ThongKe tk
-        CROSS JOIN TopLaptop tl
+        LEFT JOIN TopLaptop tl ON 1=1
         ORDER BY tl.soLuongBan DESC
         """, nativeQuery = true)
     List<Object[]> thongKeMotNgay(@Param("ngay") LocalDate ngay);
@@ -242,7 +308,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         SELECT TOP 10
             l.ID AS idLaptop,
             l.ten_san_pham AS tenSanPham,
-            COUNT(*) AS soLuongBan
+            MIN(img.ImgURL) AS hinhAnh,
+            COUNT(*) AS soLuongBan,
+            COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo
         FROM OrderCT oct
         JOIN [Orders] o 
             ON o.ID = oct.id_order    
@@ -252,7 +320,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             ON lct.ID = s.id_lap_top_ct
         JOIN Laptop l 
             ON l.ID = lct.id_lap_top
+        OUTER APPLY (
+            SELECT TOP 1 a.ImgURL
+            FROM Anh a
+            WHERE a.id_laptop_chi_tiet = lct.ID
+            ORDER BY a.ID
+        ) img
         WHERE YEAR(o.ngay_tao) = :year
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
         GROUP BY 
             l.ID,
             l.ten_san_pham
@@ -321,36 +397,41 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // Top 10 laptop bán chạy nhất (không filter năm - để test, dùng id_lap_top_ct trực tiếp)
     @Query(value = """
-        SELECT TOP 10
-            l.ID AS idLaptop,
-            l.ten_san_pham AS tenSanPham,
-            COUNT(*) AS soLuongBan
-        FROM OrderCT oct
-        JOIN [Orders] o 
-            ON o.ID = oct.id_order    
-        JOIN Seri s 
-            ON s.ID = oct.id_seri      
-        JOIN LaptopChiTiet lct 
-            ON lct.ID = s.id_lap_top_ct
-        JOIN Laptop l 
-            ON l.ID = lct.id_lap_top
-        GROUP BY 
-            l.ID,
-            l.ten_san_pham
-        ORDER BY 
-            soLuongBan DESC
-        """, nativeQuery = true)
-    List<Object[]> topLaptopBanChayNhatTatCa();
+    SELECT TOP 10
+        l.ID AS idLaptop,
+        l.ten_san_pham AS tenSanPham,
+        COUNT(*) AS soLuongBan,
+        COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo
+    FROM OrderCT oct
+    JOIN Orders o ON o.ID = oct.id_order
+    JOIN Seri s ON s.ID = oct.id_seri
+    JOIN LaptopChiTiet lct ON lct.ID = s.id_lap_top_ct
+    JOIN Laptop l ON l.ID = lct.id_lap_top
+    WHERE o.ngay_tao >= DATEFROMPARTS(:nam, :thang, 1)
+      AND o.ngay_tao <  DATEADD(MONTH, 1, DATEFROMPARTS(:nam, :thang, 1))
+      AND o.trang_thai_thanh_toan = 1
+      AND o.trang_thai = 6
+    GROUP BY
+        l.ID,
+        l.ten_san_pham
+    ORDER BY
+        soLuongBan DESC
+""", nativeQuery = true)
+    List<Object[]> topLaptopBanChayTheoThangNam(
+            @Param("thang") int thang,
+            @Param("nam") int nam
+    );
+
+
 
     // Top 10 laptop bán chạy nhất theo tháng
     @Query(value = """
     SELECT TOP 10
         l.ID AS idLaptop,
         l.ten_san_pham AS tenSanPham,
-        (SELECT TOP 1 a.ImgURL 
-         FROM Anh a 
-         WHERE a.id_laptop_chi_tiet = lct.ID) AS hinhAnh,
-        COUNT(*) AS soLuongBan
+        MIN(img.ImgURL) AS hinhAnh,
+        COUNT(*) AS soLuongBan,
+        COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo
     FROM OrderCT oct
     JOIN [Orders] o 
         ON o.ID = oct.id_order    
@@ -360,12 +441,19 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         ON lct.ID = s.id_lap_top_ct
     JOIN Laptop l 
         ON l.ID = lct.id_lap_top
+    OUTER APPLY (
+        SELECT TOP 1 a.ImgURL
+        FROM Anh a
+        WHERE a.id_laptop_chi_tiet = lct.ID
+        ORDER BY a.ID
+    ) img
     WHERE YEAR(o.ngay_tao) = :year
       AND MONTH(o.ngay_tao) = :month
+      AND o.trang_thai_thanh_toan = 1
+      AND o.trang_thai = 6
     GROUP BY 
         l.ID,
-        l.ten_san_pham,
-        lct.ID
+        l.ten_san_pham
     ORDER BY 
         soLuongBan DESC
     """, nativeQuery = true)
@@ -376,7 +464,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         SELECT TOP 10
             l.ID AS idLaptop,
             l.ten_san_pham AS tenSanPham,
-            COUNT(*) AS soLuongBan
+            MIN(img.ImgURL) AS hinhAnh,
+            COUNT(*) AS soLuongBan,
+            COALESCE(SUM(oct.gia_ban), 0) AS tongTienThuHo
         FROM OrderCT oct
         JOIN [Orders] o 
             ON o.ID = oct.id_order    
@@ -386,7 +476,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             ON lct.ID = s.id_lap_top_ct
         JOIN Laptop l 
             ON l.ID = lct.id_lap_top
+        OUTER APPLY (
+            SELECT TOP 1 a.ImgURL
+            FROM Anh a
+            WHERE a.id_laptop_chi_tiet = lct.ID
+            ORDER BY a.ID
+        ) img
         WHERE CAST(o.ngay_tao AS date) = :ngay
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
         GROUP BY 
             l.ID,
             l.ten_san_pham
@@ -395,63 +493,126 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         """, nativeQuery = true)
     List<Object[]> topLaptopBanChayNhatTheoNgay(@Param("ngay") LocalDate ngay);
 
-    // Thống kê tổng quan (doanh thu, đơn hàng, khách hàng, tăng trưởng)
+    // Thống kê tổng quan (doanh thu, đơn hàng, tăng trưởng)
     @Query(value = """
-        DECLARE 
-            @today DATE = CAST(GETDATE() AS DATE),
-            @yesterday DATE = DATEADD(DAY, -1, CAST(GETDATE() AS DATE));
+    DECLARE 
+        @today DATE = CAST(GETDATE() AS DATE),
+        @yesterday DATE = DATEADD(DAY, -1, CAST(GETDATE() AS DATE));
 
-        ;WITH DoanhThuToday AS (
-            SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        ),
-        DoanhThuYesterday AS (
-            SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @yesterday
-        ),
-        DonHangToday AS (
-            SELECT COUNT(*) AS countOrder
-            FROM [dbo].[Orders] o 
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        ),
-        KhachToday AS (
-            SELECT COUNT(DISTINCT o.sdt_khach_hang) AS countCustomer
-            FROM [dbo].[Orders] o
-            WHERE CAST(o.ngay_tao AS DATE) = @today
-        )
+    ;WITH DoanhThuToday AS (
+        SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
+        FROM [dbo].[Orders] o
+        WHERE CAST(o.ngay_tao AS DATE) = @today
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
+    ),
+    DoanhThuYesterday AS (
+        SELECT COALESCE(SUM(o.tong_tien_thu_ho), 0) AS revenue
+        FROM [dbo].[Orders] o
+        WHERE CAST(o.ngay_tao AS DATE) = @yesterday
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
+    ),
+    DonHangToday AS (
+        SELECT COUNT(*) AS countOrder
+        FROM [dbo].[Orders] o 
+        WHERE CAST(o.ngay_tao AS DATE) = @today
+          AND o.trang_thai_thanh_toan = 1
+          AND o.trang_thai = 6
+    )
 
-        SELECT
-            COALESCE(dtT.revenue, 0) AS TongDoanhThu,
-            COALESCE(dhT.countOrder, 0) AS TongDonHang,
-            COALESCE(khT.countCustomer, 0) AS TongKhachHang,
-            CASE 
-                -- Nếu hôm qua = 0 và hôm nay > 0: tăng trưởng 100%
-                WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) > 0 THEN 100.0
-                -- Nếu cả hai đều = 0: tăng trưởng 0%
-                WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) = 0 THEN 0.0
-                -- Nếu hôm qua > 0: tính tăng trưởng (có thể âm nếu hôm nay < hôm qua)
-                WHEN COALESCE(dtY.revenue, 0) > 0 THEN 
-                    CAST(((CAST(COALESCE(dtT.revenue, 0) AS FLOAT) - CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) / CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) * 100 AS DECIMAL(18, 2))
-                ELSE 0.0
-            END AS TangTruong
-        FROM DoanhThuToday dtT
-        CROSS JOIN DoanhThuYesterday dtY
-        CROSS JOIN DonHangToday dhT
-        CROSS JOIN KhachToday khT
-        """, nativeQuery = true)
+    SELECT
+        COALESCE(dtT.revenue, 0) AS TongDoanhThu,
+        COALESCE(dhT.countOrder, 0) AS TongDonHang,
+        CASE 
+            -- Nếu hôm qua = 0 và hôm nay > 0: tăng trưởng 100%
+            WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) > 0 THEN 100.0
+            -- Nếu cả hai đều = 0: tăng trưởng 0%
+            WHEN COALESCE(dtY.revenue, 0) = 0 AND COALESCE(dtT.revenue, 0) = 0 THEN 0.0
+            -- Nếu hôm qua > 0: tính tăng trưởng (có thể âm nếu hôm nay < hôm qua)
+            WHEN COALESCE(dtY.revenue, 0) > 0 THEN 
+                CAST(((CAST(COALESCE(dtT.revenue, 0) AS FLOAT) - CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) / CAST(COALESCE(dtY.revenue, 0) AS FLOAT)) * 100 AS DECIMAL(18, 2))
+            ELSE 0.0
+        END AS TangTruong
+    FROM DoanhThuToday dtT
+    CROSS JOIN DoanhThuYesterday dtY
+    CROSS JOIN DonHangToday dhT
+    """, nativeQuery = true)
     List<Object[]> thongKeTongQuan();
 
     // Thống kê đơn hàng theo từng trạng thái
     @Query(value = """
         SELECT 
-            COALESCE(SUM(CASE WHEN o.trang_thai = 0 THEN 1 ELSE 0 END), 0) AS donHangChoXacNhan,
-            COALESCE(SUM(CASE WHEN o.trang_thai = 1 THEN 1 ELSE 0 END), 0) AS donHangDangXuLy,
+            -- ✅ Mapping đúng theo OrderStatus enum
+            COALESCE(SUM(CASE WHEN o.trang_thai = 1 THEN 1 ELSE 0 END), 0) AS donHangChoXacNhan,
+            COALESCE(SUM(CASE WHEN o.trang_thai IN (2, 3) THEN 1 ELSE 0 END), 0) AS donHangDangXuLy,
             COALESCE(SUM(CASE WHEN o.trang_thai = 4 THEN 1 ELSE 0 END), 0) AS donHangDangGiao,
-            COALESCE(SUM(CASE WHEN o.trang_thai = 2 THEN 1 ELSE 0 END), 0) AS donHangHoanThanh,
-            COALESCE(SUM(CASE WHEN o.trang_thai = 3 THEN 1 ELSE 0 END), 0) AS donHangDaHuy
+            COALESCE(SUM(CASE WHEN o.trang_thai = 6 THEN 1 ELSE 0 END), 0) AS donHangHoanThanh,
+            COALESCE(SUM(CASE WHEN o.trang_thai = 7 THEN 1 ELSE 0 END), 0) AS donHangDaHuy
         FROM [Orders] o
         """, nativeQuery = true)
     List<Object[]> thongKeDonHangTheoTrangThai();
+
+    @Query("""
+    SELECT o
+    FROM Order o
+    WHERE o.idNhanVien IS NULL
+      AND o.ngayTao < :cutoff
+      AND o.trangThai = :pendingConfirmStatus
+      AND LOWER(o.loaiDon) <> LOWER(:taiQuay)
+""")
+    List<Order> findExpiredCodPendingConfirmOrders(
+            @Param("cutoff") Instant cutoff,
+            @Param("taiQuay") String taiQuay,
+            @Param("pendingConfirmStatus") int pendingConfirmStatus
+    );
+
+    @Query("""
+        SELECT o
+        FROM Order o
+        WHERE o.idNhanVien IS NULL
+          AND o.ngayTao < :cutoff
+          AND o.trangThaiThanhToan = :paymentUnpaid
+          AND o.trangThai < :shippingStatus
+          AND o.trangThai <> :canceledStatus
+          AND o.trangThai <> :completedStatus
+          AND LOWER(o.loaiDon) <> LOWER(:taiQuay)
+    """)
+    List<Order> findExpiredUnpaidOnlineOrders(
+            @Param("cutoff") Instant cutoff,
+            @Param("paymentUnpaid") int paymentUnpaid,
+            @Param("shippingStatus") int shippingStatus,
+            @Param("canceledStatus") int canceledStatus,
+            @Param("completedStatus") int completedStatus,
+            @Param("taiQuay") String taiQuay
+    );
+
+    // Tổng khách đã mua (distinct id_tai_khoan) theo điều kiện PAID + COMPLETED
+    @Query(value = """
+    SELECT COUNT(DISTINCT o.id_tai_khoan)
+    FROM [Orders] o
+    WHERE o.id_tai_khoan IS NOT NULL
+      AND o.trang_thai_thanh_toan = 1
+      AND o.trang_thai = 6
+""", nativeQuery = true)
+    Long countDistinctCustomersPurchased();
+
+    // Mỗi khách đã mua bao nhiêu đơn + tổng chi tiêu
+    @Query(value = """
+    SELECT 
+        o.id_tai_khoan          AS idTaiKhoan,
+        MAX(o.ten_khach_hang)   AS tenKhachHang,
+        MAX(o.sdt_khach_hang)   AS sdtKhachHang,
+        COUNT(*)                AS soDonDaMua,
+        COALESCE(SUM(o.tong_tien_thu_ho), 0) AS tongChiTieu
+    FROM [Orders] o
+    WHERE o.id_tai_khoan IS NOT NULL
+      AND o.trang_thai_thanh_toan = 1
+      AND o.trang_thai = 6
+    GROUP BY o.id_tai_khoan
+    ORDER BY soDonDaMua DESC
+""", nativeQuery = true)
+    List<Object[]> thongKeSoDonTheoKhachHang();
+
+
 }

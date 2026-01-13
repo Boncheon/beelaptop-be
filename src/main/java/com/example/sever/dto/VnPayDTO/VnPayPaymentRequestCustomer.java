@@ -1,5 +1,6 @@
 package com.example.sever.dto.VnPayDTO;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VnPayPaymentRequestCustomer {
-    private UUID idOrder; // ID đơn hàng đã tạo
+    @JsonAlias({"orderId", "idOrder"})
+    private UUID idOrder;
+    // ID đơn hàng đã tạo
     private BigDecimal amount; // Số tiền thanh toán
     private String orderInfo; // Thông tin đơn hàng
     private String orderType; // Loại đơn hàng

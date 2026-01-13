@@ -19,7 +19,7 @@ import java.util.List;
 @RequestMapping("/api/order-management")
 @CrossOrigin("*")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
 public class OrderManagementController {
 
     private final OrderManagementService orderManagementService;

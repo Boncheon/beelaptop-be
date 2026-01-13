@@ -2,6 +2,7 @@ package com.example.sever.service.impl;
 
 import com.example.sever.dto.request.ThuongHieuAddRequestDTO;
 import com.example.sever.dto.request.ThuongHieuUpdateRequestDTO;
+import com.example.sever.dto.response.CpuDisplayReponse;
 import com.example.sever.dto.response.ThuongHieuDisplayReponse;
 import com.example.sever.entity.ThuongHieu;
 import com.example.sever.mapper.ThuongHieuMapper;
@@ -32,7 +33,17 @@ public class ThuongHieuServiceImpl implements ThuongHieuService {
 
         return new PageImpl<>(romDisplayReponses , pageable, ThuongHieuPage.getTotalElements());
     }
+    @Override
+    public Page<ThuongHieuDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<ThuongHieu> CpuPage = ThuongHieuRepository.findByTrangThai(1, pageable);
 
+        List<ThuongHieuDisplayReponse> responses = CpuPage.getContent()
+                .stream()
+                .map(thuongHieuMapper::getAlldisplayThuongHieu)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, CpuPage.getTotalElements());
+    }
     @Override
     public ThuongHieu addThuongHieu(ThuongHieuAddRequestDTO adddto) {
         ThuongHieu thuongHieu = thuongHieuMapper.toThuongHieu(adddto);

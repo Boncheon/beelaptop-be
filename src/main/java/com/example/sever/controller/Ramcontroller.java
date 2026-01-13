@@ -5,6 +5,7 @@ import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.StatusRequestDTO;
 import com.example.sever.dto.request.RamAddRequestDTO;
 import com.example.sever.dto.request.RamUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.RamDIsplayReponse;
 import com.example.sever.entity.Ram;
 import com.example.sever.service.RamService;
@@ -27,13 +28,13 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/ram")
 @AllArgsConstructor
 public class Ramcontroller {
     RamService ramService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<RamDIsplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                        @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -44,6 +45,7 @@ public class Ramcontroller {
     }
 
     @PostMapping("/them-ram")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Ram> addRam(@RequestBody RamAddRequestDTO ramAddRequestDTO) {
         Ram add = ramService.addRam(ramAddRequestDTO);
         return ApiResponse.<Ram>builder()
@@ -52,6 +54,7 @@ public class Ramcontroller {
                 .build();
     }
     @PostMapping("/sua-ram")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Ram> updateRam(@RequestBody RamUpdateRequestDTO ramUpdateRequestDTO) {
         Ram  updated = ramService.updateRam(ramUpdateRequestDTO);
         return ApiResponse.<Ram>builder()
@@ -60,6 +63,7 @@ public class Ramcontroller {
                 .build();
     }
     @PostMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Ram> Status(@RequestBody StatusRequestDTO statusRequestDTO) {
         Ram updatedStatus = ramService.updateStatus(statusRequestDTO);
         return ApiResponse.<Ram>builder()
@@ -69,6 +73,7 @@ public class Ramcontroller {
     }
 
     @GetMapping("/filter")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<RamDIsplayReponse>>> filterRam(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer trangThai,
@@ -84,11 +89,22 @@ public class Ramcontroller {
         );
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<RamDIsplayReponse> getRamById(@PathVariable("id") UUID id) {
         RamDIsplayReponse ram = ramService.getDetailedRam(id);
         return ApiResponse.<RamDIsplayReponse>builder()
                 .message("Lấy chi tiết CPU thành công")
                 .data(ram)
                 .build();
+    }
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<RamDIsplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<RamDIsplayReponse> cpuPage = ramService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

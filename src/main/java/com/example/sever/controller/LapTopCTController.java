@@ -18,9 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
-
+@CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/laptop-ct")
 @RequiredArgsConstructor
 public class LapTopCTController {
@@ -29,6 +28,7 @@ public class LapTopCTController {
 
     // =================== LIST ALL (PAGING) ===================
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<Page<LaptopChiTietResponseDTO>> getAll(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -43,6 +43,7 @@ public class LapTopCTController {
 
     // =================== LIST BY LAPTOP ===================
     @GetMapping("/by-laptop/{idLaptop}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<List<LaptopChiTietResponseDTO>> getByLaptop(@PathVariable UUID idLaptop) {
 
         return ApiResponse.<List<LaptopChiTietResponseDTO>>builder()
@@ -53,6 +54,7 @@ public class LapTopCTController {
 
     // =================== GET ONE ===================
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<LaptopChiTietResponseDTO> getDetail(@PathVariable UUID id) {
 
         return ApiResponse.<LaptopChiTietResponseDTO>builder()
@@ -64,6 +66,7 @@ public class LapTopCTController {
     // =================== ADD ===================
     // LƯU Ý: idLaptop nằm trong URL, không nằm trong body
     @PostMapping("/{idLaptop}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LaptopChiTietResponseDTO> add(
             @PathVariable UUID idLaptop,
             @RequestBody LapTopCTAddRequestDTO dto) {
@@ -74,6 +77,7 @@ public class LapTopCTController {
                 .build();
     }
     @PostMapping("/auto-gen")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<LaptopChiTietResponseDTO>> autoGen(
             @RequestBody LapTopCTAutoGenRequestDTO req
     ) {
@@ -81,6 +85,7 @@ public class LapTopCTController {
     }
     // =================== UPDATE ===================
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LaptopChiTietResponseDTO> update(
             @PathVariable UUID id,
             @RequestBody LapTopCTUpdateRequestDTO dto) {
@@ -93,6 +98,7 @@ public class LapTopCTController {
 
     // =================== UPDATE STATUS ===================
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<LaptopChiTietResponseDTO> updateStatus(
             @PathVariable UUID id,
             @RequestParam Integer status) {

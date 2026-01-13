@@ -12,9 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.sever.entity.TaiKhoan;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+
 
 import java.util.UUID;
 
@@ -41,6 +39,11 @@ public interface TaiKhoanRepository extends JpaRepository<TaiKhoan, UUID> {
 
     @Query("SELECT MAX(CAST(SUBSTRING(t.idTaiKhoan, 3) AS int)) FROM TaiKhoan t WHERE t.idTaiKhoan LIKE 'KH%'")
     Integer findMaxCustomerCode();
+
+
+    @Query("SELECT MAX(CAST(SUBSTRING(t.idTaiKhoan, 3) AS int)) FROM TaiKhoan t WHERE t.idTaiKhoan LIKE 'AD%'")
+    Integer findMaxAdminCode();
+
 
 
 }

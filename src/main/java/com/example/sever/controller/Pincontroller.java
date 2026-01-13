@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.PinAddRequestDTO;
 import com.example.sever.dto.request.PinUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.PinDisplayReponse;
 import com.example.sever.entity.Pin;
@@ -19,7 +20,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/pin")
 @AllArgsConstructor
 public class Pincontroller {
@@ -27,6 +27,7 @@ public class Pincontroller {
     PinService pinService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<PinDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                        @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -37,6 +38,7 @@ public class Pincontroller {
     }
 
     @PostMapping("/them-pin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Pin> addPin(@RequestBody PinAddRequestDTO pinAddRequestDTO) {
         Pin add = pinService.addPin(pinAddRequestDTO);
         return ApiResponse.<Pin>builder()
@@ -45,6 +47,7 @@ public class Pincontroller {
                 .build();
     }
     @PostMapping("/sua-pin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Pin> updatePin(@RequestBody PinUpdateRequestDTO pinUpdateRequestDTO) {
         Pin  updated = pinService.updatePin(pinUpdateRequestDTO);
         return ApiResponse.<Pin>builder()
@@ -54,11 +57,23 @@ public class Pincontroller {
     }
 
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<PinDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
         PinDisplayReponse p = pinService.getDetailedPin(id);
         return ApiResponse.<PinDisplayReponse>builder()
                 .message("Lấy chi tiết Pin thành công")
                 .data(p)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<PinDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<PinDisplayReponse> cpuPage = pinService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

@@ -3,6 +3,7 @@ package com.example.sever.controller;
 import com.example.sever.dto.ApiResponse;
 import com.example.sever.dto.request.KichThuocAddRequestDTO;
 import com.example.sever.dto.request.KichThuocUpdateRequestDTO;
+import com.example.sever.dto.response.DoHoaDisplayReponse;
 import com.example.sever.dto.response.HeDieuHanhDisplayReponse;
 import com.example.sever.dto.response.KichThuocDisplayReponse;
 import com.example.sever.entity.KichThuoc;
@@ -19,7 +20,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/kich-thuoc")
 @AllArgsConstructor
 public class KichThuoccontroller {
@@ -27,6 +27,7 @@ public class KichThuoccontroller {
     KichThuocService kichthuocService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<KichThuocDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                              @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -37,6 +38,7 @@ public class KichThuoccontroller {
     }
 
     @PostMapping("/them-kich-thuoc")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<KichThuoc> addKichThuoc(@RequestBody KichThuocAddRequestDTO kichthuocAddRequestDTO) {
         KichThuoc add = kichthuocService.addKichThuoc(kichthuocAddRequestDTO);
         return ApiResponse.<KichThuoc>builder()
@@ -45,6 +47,7 @@ public class KichThuoccontroller {
                 .build();
     }
     @PostMapping("/sua-kich-thuoc")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<KichThuoc> updateKichThuoc(@RequestBody KichThuocUpdateRequestDTO kichthuocUpdateRequestDTO) {
         KichThuoc  updated = kichthuocService.updateKichThuoc(kichthuocUpdateRequestDTO);
         return ApiResponse.<KichThuoc>builder()
@@ -53,12 +56,24 @@ public class KichThuoccontroller {
                 .build();
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<KichThuocDisplayReponse> getKichThuocById(@PathVariable("id") UUID id) {
         KichThuocDisplayReponse kt = kichthuocService.getDetailedKichThuoc(id);
         return ApiResponse.<KichThuocDisplayReponse>builder()
                 .message("Lấy chi tiết KT thành công")
                 .data(kt)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<KichThuocDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<KichThuocDisplayReponse> cpuPage = kichthuocService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 
 }

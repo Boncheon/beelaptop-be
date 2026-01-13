@@ -27,6 +27,9 @@ public class OrderCustomerRequest {
     private Boolean isVnPay;
     private List<OrderCTCustomerRequest> listOrderCT;
     private List<PaymentCustomerRequest> listHinhThucThanhToan;
+
+    private Boolean useInsurance;
+
 }
 
 

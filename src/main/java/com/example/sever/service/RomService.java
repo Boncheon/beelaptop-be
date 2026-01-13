@@ -17,4 +17,6 @@ public interface RomService {
     Rom updateStatus(StatusRequestDTO updatedto);
     Page<RomDisplayReponse> getRomByFilter(Integer trangThai, String keyword, Pageable pageable);
     RomDisplayReponse getDetailedRom(UUID id);
+
+    Page<RomDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

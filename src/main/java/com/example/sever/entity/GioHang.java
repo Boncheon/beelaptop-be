@@ -1,19 +1,13 @@
 package com.example.sever.entity;
 
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -26,7 +20,8 @@ import java.util.UUID;
 @Table(name = "GioHang", schema = "dbo")
 public class GioHang {
     @Id
-    @ColumnDefault("newid()")
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "ID", nullable = false)
     private UUID id;
 
@@ -35,7 +30,7 @@ public class GioHang {
     private String idGioHang;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tai_khoan")
+    @JoinColumn(name = "id_tai_khoan", nullable = false, unique = true)
     private TaiKhoan idTaiKhoan;
 
     @ColumnDefault("getdate()")
@@ -44,5 +39,12 @@ public class GioHang {
 
     @OneToMany(mappedBy = "idGioHang")
     private Set<GioHangChiTiet> gioHangChiTiets = new LinkedHashSet<>();
-
+    @PrePersist
+    public void prePersist() {
+        if (ngayTao == null) ngayTao = Instant.now();
+        if (idGioHang == null || idGioHang.isBlank()) {
+            idGioHang = "GH" + UUID.randomUUID().toString().replace("-", "")
+                    .substring(0, 10).toUpperCase();
+        }
+    }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
 @RequestMapping("/api/giam-gia-hoa-don")
 public class GiamGiaHoaDonController {
 

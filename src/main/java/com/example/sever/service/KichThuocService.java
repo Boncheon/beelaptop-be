@@ -17,4 +17,5 @@ public interface KichThuocService {
     KichThuocDisplayReponse getDetailedKichThuoc(UUID id);
 //    KichThuoc updateStatus(StatusRequestDTO updatedto);
 //    Page<KichThuocDisplayReponse> getKichThuocByFilter(Integer trangThai, String keyword, Pageable pageable);
+Page<KichThuocDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

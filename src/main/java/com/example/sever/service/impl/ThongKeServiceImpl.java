@@ -1,10 +1,6 @@
 package com.example.sever.service.impl;
 
-import com.example.sever.dto.response.ThongKeResponseDTO;
-import com.example.sever.dto.response.ThongKeTongQuanResponseDTO;
-import com.example.sever.dto.response.ThongKeTrangThaiResponseDTO;
-import com.example.sever.dto.response.ThongKeTruyCapResponseDTO;
-import com.example.sever.dto.response.TopLaptopBanChayResponseDTO;
+import com.example.sever.dto.response.*;
 import com.example.sever.repository.OrderRepository;
 import com.example.sever.service.ThongKeService;
 import com.example.sever.service.UserSessionTracker;
@@ -56,7 +52,7 @@ public class ThongKeServiceImpl implements ThongKeService {
     }
 
     // Helper method để convert từ row query thống kê (có thêm top laptop)
-    // Format: [label, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
+    // Format: [label, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan, tongTienThuHo]
     private TopLaptopBanChayResponseDTO convertToTopLaptopFromRow(Object[] row, int startIndex) {
         if (row == null || row.length <= startIndex || row[startIndex] == null) {
             return null;
@@ -82,12 +78,15 @@ public class ThongKeServiceImpl implements ThongKeService {
                         ? (String) row[startIndex + 2] : null)
                 .soLuongBan(row.length > startIndex + 3 && row[startIndex + 3] != null
                         ? ((Number) row[startIndex + 3]).longValue() : 0L)
+                .tongTienThuHo(row.length > startIndex + 4 && row[startIndex + 4] != null
+                        ? new BigDecimal(row[startIndex + 4].toString()) : BigDecimal.ZERO)
                 .build();
     }
 
     // Helper method để convert list Object[] thành List<TopLaptopBanChayResponseDTO>
     // Hỗ trợ 2 format:
     // - 4 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan]
+    // - 5 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan, tongTienThuHo]
     // - 6 cột: [ngay, doanhSo, idLaptop, tenSanPham, hinhAnh, soLuongBan]
     private List<TopLaptopBanChayResponseDTO> convertToListTopLaptop(List<Object[]> results) {
         if (results == null || results.isEmpty()) {
@@ -109,6 +108,12 @@ public class ThongKeServiceImpl implements ThongKeService {
                 tenSanPhamIndex = 3;
                 hinhAnhIndex = 4;
                 soLuongBanIndex = 5;
+            } else if (row.length >= 5) {
+                // Format 5 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan, tongTienThuHo]
+                idLaptopIndex = 0;
+                tenSanPhamIndex = 1;
+                hinhAnhIndex = 2;
+                soLuongBanIndex = 3;
             } else if (row.length >= 4) {
                 // Format 4 cột: [idLaptop, tenSanPham, hinhAnh, soLuongBan]
                 idLaptopIndex = 0;
@@ -156,12 +161,22 @@ public class ThongKeServiceImpl implements ThongKeService {
                 }
             }
 
-            list.add(TopLaptopBanChayResponseDTO.builder()
+            TopLaptopBanChayResponseDTO.TopLaptopBanChayResponseDTOBuilder builder = TopLaptopBanChayResponseDTO.builder()
                     .idLaptop(idLaptop)
                     .tenSanPham(tenSanPham)
                     .hinhAnh(hinhAnh)
-                    .soLuongBan(soLuongBan)
-                    .build());
+                    .soLuongBan(soLuongBan);
+
+            // Nếu query có thêm cột tổng tiền (format 5 cột)
+            if (row.length >= 5 && row[4] != null) {
+                try {
+                    builder.tongTienThuHo(new BigDecimal(row[4].toString()));
+                } catch (Exception ignored) {
+                    // ignore
+                }
+            }
+
+            list.add(builder.build());
         }
         return list;
     }
@@ -335,7 +350,6 @@ public class ThongKeServiceImpl implements ThongKeService {
             return ThongKeTongQuanResponseDTO.builder()
                     .tongDoanhThu(BigDecimal.ZERO)
                     .tongDonHang(0L)
-                    .tongKhachHang(0L)
                     .tangTruong(BigDecimal.ZERO)
                     .build();
         }
@@ -344,13 +358,11 @@ public class ThongKeServiceImpl implements ThongKeService {
 
         BigDecimal tongDoanhThu = row[0] != null ? (BigDecimal) row[0] : BigDecimal.ZERO;
         Long tongDonHang = row[1] != null ? ((Number) row[1]).longValue() : 0L;
-        Long tongKhachHang = row[2] != null ? ((Number) row[2]).longValue() : 0L;
-        BigDecimal tangTruong = row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO;
+        BigDecimal tangTruong = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
 
         return ThongKeTongQuanResponseDTO.builder()
                 .tongDoanhThu(tongDoanhThu)
                 .tongDonHang(tongDonHang)
-                .tongKhachHang(tongKhachHang)
                 .tangTruong(tangTruong)
                 .build();
     }
@@ -384,4 +396,38 @@ public class ThongKeServiceImpl implements ThongKeService {
     public ThongKeTruyCapResponseDTO thongKeTruyCap() {
         return sessionTracker.getStatistics();
     }
+
+    @Override
+    public ThongKeKhachHangTongResponseDTO thongKeTongKhachHang() {
+        Long total = orderRepository.countDistinctCustomersPurchased();
+        return ThongKeKhachHangTongResponseDTO.builder()
+                .tongKhachHangDaMua(total != null ? total : 0L)
+                .build();
+    }
+
+    @Override
+    public List<ThongKeKhachHangSoDonResponseDTO> thongKeKhachHangMuaBaoNhieuDon() {
+        List<Object[]> rows = orderRepository.thongKeSoDonTheoKhachHang();
+        if (rows == null || rows.isEmpty()) return new ArrayList<>();
+
+        List<ThongKeKhachHangSoDonResponseDTO> result = new ArrayList<>();
+        for (Object[] r : rows) {
+            // [idTaiKhoan, ten, sdt, soDon, tongChiTieu]
+            UUID id = (r[0] != null ? UUID.fromString(r[0].toString()) : null);
+            String ten = (r[1] != null ? r[1].toString() : "");
+            String sdt = (r[2] != null ? r[2].toString() : "");
+            Long soDon = (r[3] != null ? ((Number) r[3]).longValue() : 0L);
+            BigDecimal tong = (r[4] != null ? new BigDecimal(r[4].toString()) : BigDecimal.ZERO);
+
+            result.add(ThongKeKhachHangSoDonResponseDTO.builder()
+                    .idTaiKhoan(id)
+                    .tenKhachHang(ten)
+                    .sdtKhachHang(sdt)
+                    .soDonDaMua(soDon)
+                    .tongChiTieu(tong)
+                    .build());
+        }
+        return result;
+    }
+
 }

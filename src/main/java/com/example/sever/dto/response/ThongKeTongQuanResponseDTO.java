@@ -12,6 +12,5 @@ import java.math.BigDecimal;
 public class ThongKeTongQuanResponseDTO {
     private BigDecimal tongDoanhThu;
     private Long tongDonHang;
-    private Long tongKhachHang;
     private BigDecimal tangTruong; // phần trăm
 }

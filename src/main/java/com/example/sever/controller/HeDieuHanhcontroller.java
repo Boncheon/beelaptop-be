@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasRole('ADMIN')")
 @RequestMapping("/api/he-dieu-hanh")
 @AllArgsConstructor
 public class HeDieuHanhcontroller {
@@ -27,6 +26,7 @@ public class HeDieuHanhcontroller {
     HeDieuHanhService hedieuhanhService;
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<Page<HeDieuHanhDisplayReponse>> getAllramforDisplay(@RequestParam(defaultValue = "1") int page,
                                                                               @RequestParam(defaultValue = "20") int size) {
         int perPage = page - 1;
@@ -37,6 +37,7 @@ public class HeDieuHanhcontroller {
     }
 
     @PostMapping("/them-he-dieu-hanh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<HeDieuHanh> addHeDieuHanh(@RequestBody HeDieuHanhAddRequestDTO hedieuhanhAddRequestDTO) {
         HeDieuHanh add = hedieuhanhService.addHeDieuHanh(hedieuhanhAddRequestDTO);
         return ApiResponse.<HeDieuHanh>builder()
@@ -45,6 +46,7 @@ public class HeDieuHanhcontroller {
                 .build();
     }
     @PostMapping("/sua-he-dieu-hanh")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<HeDieuHanh> updateHeDieuHanh(@RequestBody HeDieuHanhUpdateRequestDTO hedieuhanhUpdateRequestDTO) {
         HeDieuHanh  updated = hedieuhanhService.updateHeDieuHanh(hedieuhanhUpdateRequestDTO);
         return ApiResponse.<HeDieuHanh>builder()
@@ -53,11 +55,23 @@ public class HeDieuHanhcontroller {
                 .build();
     }
     @GetMapping("/detail/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<HeDieuHanhDisplayReponse> getDoHoaById(@PathVariable("id") UUID id) {
         HeDieuHanhDisplayReponse hdh = hedieuhanhService.getDetailedHeDieuHanh(id);
         return ApiResponse.<HeDieuHanhDisplayReponse>builder()
                 .message("Lấy chi tiết HDH thành công")
                 .data(hdh)
                 .build();
+    }
+
+    @GetMapping("/trang-thai")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ResponseEntity<Page<HeDieuHanhDisplayReponse>> gettrangThaiforDisplay(@RequestParam(defaultValue = "1") int page,
+                                                                            @RequestParam(defaultValue = "20") int size) {
+        int perPage = page - 1;
+        if (perPage < 0) perPage = 0;
+        Pageable pageable = PageRequest.of(perPage, size);
+        Page<HeDieuHanhDisplayReponse> cpuPage = hedieuhanhService.getTrangThaiCpuforDisplay(pageable);
+        return ResponseEntity.ok(cpuPage);
     }
 }

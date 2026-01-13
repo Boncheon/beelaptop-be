@@ -2,11 +2,13 @@ package com.example.sever.dto.AccountDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @AllArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
 public class DiaChiUpdateRequest {
     private String quocGia;
     private String tinhThanh;

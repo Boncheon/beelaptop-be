@@ -14,4 +14,5 @@ public interface HeDieuHanhService {
     HeDieuHanh addHeDieuHanh(HeDieuHanhAddRequestDTO adddto);
     HeDieuHanh updateHeDieuHanh(HeDieuHanhUpdateRequestDTO updatedto);
     HeDieuHanhDisplayReponse getDetailedHeDieuHanh(UUID id);
+    Page<HeDieuHanhDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

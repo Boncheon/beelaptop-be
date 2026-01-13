@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequestMapping("/api/pos/orders")
 @CrossOrigin("*")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
 public class PosOrderController {
 
     private final PosOrderService posOrderService;

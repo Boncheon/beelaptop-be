@@ -17,7 +17,6 @@ import java.util.List;
 @RequestMapping("/api/hinh-thuc-thanh-toan")
 @CrossOrigin("*")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class HinhThucThanhToanController {
 
     private final HinhThucThanhToanService hinhThucThanhToanService;
@@ -25,7 +24,6 @@ public class HinhThucThanhToanController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<HinhThucThanhToanDTO>>> getAll() {
         List<HinhThucThanhToanDTO> data = hinhThucThanhToanService.getAll();
-
         return ResponseEntity.ok(
                 ApiResponse.<List<HinhThucThanhToanDTO>>builder()
                         .code(200)
@@ -35,3 +33,4 @@ public class HinhThucThanhToanController {
         );
     }
 }
+

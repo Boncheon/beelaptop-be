@@ -31,6 +31,45 @@ public class AdminUserController {
     UserService userService;
     TaiKhoanService taiKhoanService; // ← ĐÃ CÓ SẴN TRONG SERVICE IMPL
 
+    @PostMapping("/users/create-admin")
+    @PreAuthorize("hasRole('ADMIN')") // hoặc owner-only, xem phần B
+    public ApiResponse<UserDetailResponse> createAdmin(@Valid @ModelAttribute UserCreationRequest request) {
+        log.info("Tạo tài khoản admin với email: {}", request.getEmail());
+        UserDetailResponse response = userService.createAdmin(request);
+        return ApiResponse.<UserDetailResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .message("Tạo tài khoản admin thành công. Mật khẩu đã được gửi qua email.")
+                .data(response)
+                .build();
+    }
+    @PutMapping("/users/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
+    public ApiResponse<UserDetailResponse> updateUserByAdmin(
+            @PathVariable String id,
+            @Valid @ModelAttribute UserCreationRequest request
+    ) {
+        log.info("ADMIN cập nhật tài khoản với ID: {}", id);
+        UserDetailResponse response = userService.updateUserByAdmin(id, request);
+        return ApiResponse.<UserDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cập nhật tài khoản thành công.")
+                .data(response)
+                .build();
+    }
+
+
+    @PutMapping("/users/update-admin/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<UserDetailResponse> updateAdmin(@PathVariable String id, @Valid @ModelAttribute UserCreationRequest request) {
+        log.info("Cập nhật tài khoản admin với ID: {}", id);
+        UserDetailResponse response = userService.updateAdmin(id, request);
+        return ApiResponse.<UserDetailResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cập nhật tài khoản admin thành công.")
+                .data(response)
+                .build();
+    }
+
     // ===== QUẢN LÝ TÀI KHOẢN (GIỮ NGUYÊN NHƯ CŨ) =====
     @PostMapping("/users/create-employee")
     @PreAuthorize("hasRole('ADMIN')")
@@ -45,7 +84,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/users/create-customer")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<UserDetailResponse> createCustomer(@Valid @ModelAttribute UserCreationRequest request) {
         log.info("Tạo tài khoản khách hàng với email: {}", request.getEmail());
         UserDetailResponse response = userService.createCustomer(request);
@@ -57,7 +96,7 @@ public class AdminUserController {
     }
 
     @PutMapping("/users/update-employee/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<UserDetailResponse> updateEmployee(@PathVariable String id, @Valid @ModelAttribute UserCreationRequest request) {
         log.info("Cập nhật tài khoản nhân viên với ID: {}", id);
         UserDetailResponse response = userService.updateEmployee(id, request);
@@ -69,7 +108,7 @@ public class AdminUserController {
     }
 
     @PutMapping("/users/update-customer/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<UserDetailResponse> updateCustomer(@PathVariable String id, @Valid @ModelAttribute UserCreationRequest request) {
         log.info("Cập nhật tài khoản khách hàng với ID: {}", id);
         UserDetailResponse response = userService.updateCustomer(id, request);
@@ -81,7 +120,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/users/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<UserDetailResponse> getUserDetail(@PathVariable String id) {
         log.info("Lấy thông tin chi tiết tài khoản với ID: {}", id);
         UserDetailResponse response = userService.getUserDetail(id);
@@ -93,7 +132,7 @@ public class AdminUserController {
     }
 
     @GetMapping("/users/by-role/{roleId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<List<UserDetailResponse>> getUsersByRole(@PathVariable String roleId) {
         log.info("Lấy danh sách tài khoản với vai trò: {}", roleId);
         List<UserDetailResponse> response = userService.getUsersByRole(roleId);
@@ -105,7 +144,7 @@ public class AdminUserController {
     }
 
     @PatchMapping("/users/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<UserDetailResponse> toggleUserStatus(@PathVariable String id) {
         log.info("Chuyển trạng thái tài khoản với ID: {}", id);
         UserDetailResponse response = userService.toggleUserStatus(id);
@@ -122,7 +161,7 @@ public class AdminUserController {
      * Lấy danh sách địa chỉ của một khách hàng
      */
     @GetMapping("/address/customer/{taiKhoanId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<List<DiaChiProjection>> getAddressesByCustomer(@PathVariable UUID taiKhoanId) {
         log.info("Lấy danh sách địa chỉ của khách hàng ID: {}", taiKhoanId);
         List<DiaChiProjection> addresses = taiKhoanService.findAllAdress(taiKhoanId);
@@ -137,7 +176,7 @@ public class AdminUserController {
      * Tạo địa chỉ mới cho khách hàng
      */
     @PostMapping("/address/create")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<DiaChiResponse> createAddress(@Valid @RequestBody DiaChiCreateRequest request) {
         log.info("Tạo địa chỉ mới cho tài khoản ID: {}", request.getIdTaiKhoan());
         DiaChiResponse response = taiKhoanService.createAddressCustomer(request);
@@ -152,7 +191,7 @@ public class AdminUserController {
      * Cập nhật địa chỉ
      */
     @PutMapping("/address/update/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<DiaChiResponse> updateAddress(
             @PathVariable UUID id,
             @Valid @RequestBody DiaChiUpdateRequest request) {
@@ -169,7 +208,7 @@ public class AdminUserController {
      * Đặt địa chỉ làm mặc định
      */
     @PatchMapping("/address/default/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<DiaChiResponse> setDefaultAddress(@PathVariable UUID id) {
         log.info("Đặt địa chỉ mặc định ID: {}", id);
         DiaChiResponse response = taiKhoanService.setAddressDefaultCustomer(id);
@@ -184,7 +223,7 @@ public class AdminUserController {
      * Xóa địa chỉ
      */
     @DeleteMapping("/address/delete/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ApiResponse<Void> deleteAddress(@PathVariable UUID id) {
         log.info("Xóa địa chỉ ID: {}", id);
         taiKhoanService.deleteAddressCustomer(id);

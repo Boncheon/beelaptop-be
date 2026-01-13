@@ -17,4 +17,6 @@ public interface CpuService {
     Cpu updateCpu(CpuUpdateRequestDTO updatedto);
     Cpu updateStatus(StatusRequestDTO updatedto);
     Page<CpuDisplayReponse> getCpuByFilter(Integer trangThai, String keyword, Pageable pageable);
+
+    Page<CpuDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

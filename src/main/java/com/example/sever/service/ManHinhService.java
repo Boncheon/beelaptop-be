@@ -15,4 +15,6 @@ public interface ManHinhService {
     ManHinh addManHinh(ManHinhAddRequestDTO adddto);
     ManHinh updateManHinh(ManHinhUpdateRequestDTO updatedto);
     ManHinhDisplayReponse getDetailedManHinh(UUID id);
+
+    Page<ManHinhDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable);
 }

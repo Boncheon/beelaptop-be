@@ -11,4 +11,8 @@ import java.util.UUID;
 public interface HinhThucThanhToanRepository extends JpaRepository<HinhThucThanhToan, UUID> {
 
     Optional<HinhThucThanhToan> findFirstByTenHinhThucContainingIgnoreCase(String tenHinhThuc);
+
+    Optional<HinhThucThanhToan> findByTenHinhThucIgnoreCase(String tenHinhThuc);
+
+
 }

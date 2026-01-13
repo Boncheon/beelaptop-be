@@ -34,7 +34,17 @@ public class PinServiceImpl implements PinService {
 
         return new PageImpl<>(romDisplayReponses , pageable, PinPage.getTotalElements());
     }
+    @Override
+    public Page<PinDisplayReponse> getTrangThaiCpuforDisplay(Pageable pageable) {
+        Page<Pin> pinPage = pinRepository.findByTrangThai(1, pageable);
 
+        List<PinDisplayReponse> responses = pinPage.getContent()
+                .stream()
+                .map(pinMapper::getAlldisplayPin)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responses, pageable, pinPage.getTotalElements());
+    }
     @Override
     public Pin addPin(PinAddRequestDTO adddto) {
         Pin pin = pinMapper.toPin(adddto);
