@@ -80,14 +80,17 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
         phieuGiamGia.setNgayBatDau(phieuGiamGiaDto.getNgayBatDau());
         phieuGiamGia.setNgayKetThuc(phieuGiamGiaDto.getNgayKetThuc());
         phieuGiamGia.setGiaTriMin(phieuGiamGiaDto.getGiaTriMin());
-//        phieuGiamGia.setGiaTriMax(phieuGiamGiaDto.getGiaTriMax());
+        phieuGiamGia.setGiaTriMax(phieuGiamGiaDto.getGiaTriMax());
         phieuGiamGia.setMoTa(phieuGiamGiaDto.getMoTa());
 
         if (phieuGiamGiaDto.getTrangThai() != null) {
             phieuGiamGia.setTrangThai(phieuGiamGiaDto.getTrangThai());
         }
 
-
+        if (phieuGiamGia.getKieuGiamGia() == KieuGiamGia.GIAM_PHAN_TRAM
+                && phieuGiamGiaDto.getGiaTriMax() != null) {
+            phieuGiamGia.setGiaTriMax(phieuGiamGiaDto.getGiaTriMax());
+        }
 
         PhieuGiamGia update =phieuGiamGiaRepo.save(phieuGiamGia);
 
@@ -152,10 +155,9 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
     @Override
     public BigDecimal calculateDiscount(PhieuGiamGia coupon, BigDecimal total) {
         if (coupon == null || total == null) return BigDecimal.ZERO;
+        if (coupon.getGiaTriGiam() == null) return BigDecimal.ZERO;
 
-        // Kiểm tra điều kiện áp dụng theo đơn tối thiểu
-        if (coupon.getGiaTriMin() != null &&
-                total.compareTo(coupon.getGiaTriMin()) < 0) {
+        if (coupon.getGiaTriMin() != null && total.compareTo(coupon.getGiaTriMin()) < 0) {
             return BigDecimal.ZERO;
         }
 
@@ -163,19 +165,18 @@ public class PhieuGiamGiaServiceipml implements PhieuGiamGiaService {
 
         if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_PHAN_TRAM) {
             discount = total.multiply(coupon.getGiaTriGiam())
-                    .divide(BigDecimal.valueOf(100));
+                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
 
-//            if (coupon.getGiaTriMax() != null &&
-//                    discount.compareTo(coupon.getGiaTriMax()) > 0) {
-//                discount = coupon.getGiaTriMax();
-//            }
-
+            if (coupon.getGiaTriMax() != null && discount.compareTo(coupon.getGiaTriMax()) > 0) {
+                discount = coupon.getGiaTriMax();
+            }
         } else if (coupon.getKieuGiamGia() == KieuGiamGia.GIAM_CO_DINH) {
             discount = coupon.getGiaTriGiam();
         }
 
-        return discount.min(total); // Không vượt quá tổng đơn
+        return discount.min(total);
     }
+
 
 
 

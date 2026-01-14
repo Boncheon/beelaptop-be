@@ -19,8 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -53,17 +53,29 @@ public class AnhServiceipml implements AnhService {
         String extension = getFileExtension(originalName);
         File fileUpload = convert(file, idAnh, extension);
 
+        String imageUrl;
         try {
-            // Upload lên Cloudinary với public_id = idAnh
-            cloudinary.uploader().upload(
+            // ✅ Upload lên Cloudinary (overwrite + invalidate để tránh cache)
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
                     fileUpload,
-                    ObjectUtils.asMap("public_id", idAnh, "resource_type", "image")
+                    ObjectUtils.asMap(
+                            "public_id", idAnh,
+                            "resource_type", "image",
+                            "overwrite", true,
+                            "invalidate", true
+                    )
             );
+
+            // ✅ LUÔN lấy secure_url => https + có version => đồng nhất add/update
+            imageUrl = (String) uploadResult.get("secure_url");
+            if (imageUrl == null || imageUrl.isBlank()) {
+                // fallback (hiếm khi cần)
+                imageUrl = cloudinary.url().secure(true).generate(idAnh + "." + extension);
+            }
         } finally {
             cleanDisk(fileUpload);
         }
-
-        String imageUrl = cloudinary.url().generate(idAnh + "." + extension);
 
         // Tạo entity & gắn LaptopChiTiet từ mapper
         Anh anh = anhMapper.toEntity(request);
@@ -99,17 +111,31 @@ public class AnhServiceipml implements AnhService {
         String extension = getFileExtension(fileName);
         File fileUpload = convert(file, newIdAnh, extension);
 
+        String imageUrl;
         try {
-            cloudinary.uploader().upload(
+            // ✅ Upload overwrite để thay đúng ảnh, invalidate để clear cache CDN
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(
                     fileUpload,
-                    ObjectUtils.asMap("public_id", newIdAnh, "resource_type", "image")
+                    ObjectUtils.asMap(
+                            "public_id", newIdAnh,
+                            "resource_type", "image",
+                            "overwrite", true,
+                            "invalidate", true
+                    )
             );
+
+            // ✅ LUÔN secure_url => ảnh update hiển thị đúng ngay
+            imageUrl = (String) uploadResult.get("secure_url");
+            if (imageUrl == null || imageUrl.isBlank()) {
+                imageUrl = cloudinary.url().secure(true).generate(newIdAnh + "." + extension);
+            }
         } finally {
             cleanDisk(fileUpload);
         }
 
         anh.setIdAnh(newIdAnh);
-        anh.setImgURL(cloudinary.url().generate(newIdAnh + "." + extension));
+        anh.setImgURL(imageUrl);
 
         anhRepository.save(anh);
         return anhMapper.toResponse(anh);
@@ -123,12 +149,6 @@ public class AnhServiceipml implements AnhService {
                 .map(anhMapper::toResponse)
                 .toList();
     }
-
-    // ================== DELETE ==================
-//    @Override
-//    public void delete(UUID id) {
-//        anhRepository.deleteById(id);
-//    }
 
     // ================== HELPERS ==================
 

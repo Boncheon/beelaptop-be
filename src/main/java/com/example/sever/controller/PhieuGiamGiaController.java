@@ -59,15 +59,16 @@ public class PhieuGiamGiaController {
 
 
 
-    @PostMapping("{id}")
+    @PutMapping("{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PhieuGiamGiaDto> update(@PathVariable("id") String voucherId,@RequestBody PhieuGiamGiaDto phieuGiamGiaDto){
+    public ResponseEntity<PhieuGiamGiaDto> update(
+            @PathVariable("id") String voucherId,
+            @RequestBody PhieuGiamGiaDto dto) {
 
-
-        PhieuGiamGiaDto updatedto = phieuGiamGiaService.updateVoucher(voucherId,phieuGiamGiaDto);
-        return ResponseEntity.ok(updatedto);
-
+        PhieuGiamGiaDto updated = phieuGiamGiaService.updateVoucher(voucherId, dto);
+        return ResponseEntity.ok(updated);
     }
+
 
 
     @DeleteMapping("{id}")

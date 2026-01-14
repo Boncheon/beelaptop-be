@@ -18,7 +18,7 @@ public class PhieuGiamGiaMapper {
                 phieuGiamGia.getNgayBatDau(),
                 phieuGiamGia.getNgayKetThuc(),
                 phieuGiamGia.getGiaTriMin(),
-//                phieuGiamGia.getGiaTriMax(),
+                phieuGiamGia.getGiaTriMax(),
                 phieuGiamGia.getMoTa(),
                 phieuGiamGia.getTrangThai()
 
@@ -40,7 +40,7 @@ public class PhieuGiamGiaMapper {
                 phieuGiamGiadto.getNgayBatDau(),
                 phieuGiamGiadto.getNgayKetThuc(),
                 phieuGiamGiadto.getGiaTriMin(),
-//                phieuGiamGiadto.getGiaTriMax(),
+                phieuGiamGiadto.getGiaTriMax(),
                 phieuGiamGiadto.getMoTa(),
                 phieuGiamGiadto.getTrangThai()
 

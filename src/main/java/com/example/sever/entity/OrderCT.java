@@ -19,8 +19,8 @@ public class OrderCT {
     private UUID id;
 
     @Size(max = 20)
-    @Column(name = "id_order_ct", length = 20)
-    private String idOrderCt;   // đang bị NULL, gây lỗi UNIQUE
+    @Column(name = "id_order_ct", length = 20, unique = true, nullable = false)
+    private String idOrderCt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_order")
@@ -41,7 +41,7 @@ public class OrderCT {
         }
         if (idOrderCt == null || idOrderCt.isBlank()) {
             // Bạn có thể đổi format nếu thích
-            this.idOrderCt = "ODCT" + System.currentTimeMillis();
+            this.idOrderCt = "ODCT" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         }
     }
 }

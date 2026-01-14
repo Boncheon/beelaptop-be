@@ -63,6 +63,7 @@ public interface SeriRepository extends JpaRepository<Seri, UUID> {
         """, nativeQuery = true)
     Optional<Integer> findTrangThaiSeriByLaptopChiTietId(@Param("laptopChiTietId") UUID laptopChiTietId);
 
+    Optional<Seri> findFirstByIdSeri(String idSeri);
 
     ///------------------
     boolean existsByIdSeri(String idSeri);

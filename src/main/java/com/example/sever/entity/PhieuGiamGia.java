@@ -59,8 +59,8 @@ public class PhieuGiamGia {
     @Column(name = "gia_tri_min", precision = 18, scale = 2)
     private BigDecimal giaTriMin;
 
-//    @Column(name = "gia_tri_max", precision = 18, scale = 2)
-//    private BigDecimal giaTriMax;
+    @Column(name = "gia_tri_max", precision = 18, scale = 2)
+    private BigDecimal giaTriMax;
 
     @Size(max = 500)
     @Nationalized
@@ -73,7 +73,9 @@ public class PhieuGiamGia {
     @OneToMany(mappedBy = "idPhieuGiamGia")
     private Set<GiamGiaHoaDon> giamGiaHoaDons = new LinkedHashSet<>();
 
-    public PhieuGiamGia(String idPhieugiamgia, String ten, Integer soLuong, String kieuGiamGia, BigDecimal giaTriGiam, LocalDate ngayBatDau, LocalDate ngayKetThuc, BigDecimal giaTriMin, String moTa, Integer trangThai) {
+    public PhieuGiamGia(String idPhieugiamgia, String ten, Integer soLuong, String kieuGiamGia,
+                        BigDecimal giaTriGiam, LocalDate ngayBatDau, LocalDate ngayKetThuc,
+                        BigDecimal giaTriMin, BigDecimal giaTriMax, String moTa, Integer trangThai) {
         this.idPhieugiamgia = idPhieugiamgia;
         this.ten = ten;
         this.soLuong = soLuong;
@@ -82,10 +84,11 @@ public class PhieuGiamGia {
         this.ngayBatDau = ngayBatDau;
         this.ngayKetThuc = ngayKetThuc;
         this.giaTriMin = giaTriMin;
-//        this.giaTriMax = giaTriMax;
+        this.giaTriMax = giaTriMax;
         this.moTa = moTa;
         this.trangThai = trangThai;
     }
+
 
 
 

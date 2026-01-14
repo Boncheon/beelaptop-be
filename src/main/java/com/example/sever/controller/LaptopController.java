@@ -31,7 +31,7 @@ public class LaptopController {
     @PreAuthorize("hasAnyRole('ADMIN','NHAN_VIEN')")
     public ResponseEntity<ApiResponse<Page<LapTopDisplayReponse>>> getAllLaptopForDisplay(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "25") int size) {
 
         int currentPage = Math.max(page - 1, 0);
         Pageable pageable = PageRequest.of(currentPage, size);

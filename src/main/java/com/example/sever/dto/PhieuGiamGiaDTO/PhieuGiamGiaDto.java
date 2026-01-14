@@ -44,7 +44,7 @@ public class PhieuGiamGiaDto {
     private BigDecimal giaTriMin;
 
 
-//    private BigDecimal giaTriMax;
+    private BigDecimal giaTriMax;
 
 
     private String moTa;

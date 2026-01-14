@@ -152,7 +152,10 @@ public class PosOrderServiceImpl implements PosOrderService {
             // Kiểm tra xem seri đã có trong đơn chưa
             boolean alreadyInOrder = orderCTRepository.existsByIdOrder_IdAndIdSeri_Id(orderId, seriId);
             if (alreadyInOrder) {
-                throw new IllegalArgumentException("Seri '" + seri.getIdSeri() + "' đã có trong đơn hàng");
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "SERI_ALREADY_IN_CART: Seri '" + seri.getIdSeri() + "' đã có trong giỏ"
+                );
             }
 
             // validate giá
@@ -163,7 +166,10 @@ public class PosOrderServiceImpl implements PosOrderService {
             // 🔥 giữ hàng an toàn: ACTIVE -> PENDING (atomic)
             int updated = seriRepository.updateTrangThaiSeriIfCurrent(seriId, SERI_ACTIVE, SERI_PENDING);
             if (updated != 1) {
-                throw new IllegalStateException("Seri " + seri.getIdSeri() + " không còn ở trạng thái hoạt động (đã được giữ/bán)");
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "SERI_NOT_AVAILABLE: Sản phẩm không có sẵn (seri '" + seri.getIdSeri() + "')"
+                );
             }
             // giữ đồng bộ trong persistence context (tránh stale)
             seri.setTrangThai(SERI_PENDING);
@@ -953,9 +959,18 @@ public class PosOrderServiceImpl implements PosOrderService {
             String trimmed = code.trim().toUpperCase();
             if (trimmed.isEmpty()) continue;
 
-            Seri seri = seriRepository.findByIdSeriAndTrangThai(trimmed, SERI_ACTIVE)
-                    .orElseThrow(() -> new RuntimeException("Seri '" + trimmed + "' không tồn tại hoặc đã bán"));
+            Seri seri = seriRepository.findFirstByIdSeri(trimmed)
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "SERI_NOT_FOUND: Không tìm thấy seri '" + trimmed + "'"
+                    ));
 
+            if (!Objects.equals(seri.getTrangThai(), SERI_ACTIVE)) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "SERI_NOT_AVAILABLE: Sản phẩm không có sẵn (seri '" + trimmed + "')"
+                );
+            }
             boolean alreadyInOrder = orderCTRepository.existsByIdOrder_IdAndIdSeri_Id(orderId, seri.getId());
             if (alreadyInOrder) {
                 throw new RuntimeException("Seri '" + trimmed + "' đã có trong đơn hàng");
