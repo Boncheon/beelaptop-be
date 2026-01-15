@@ -922,7 +922,7 @@ public class OrderCustomerServiceImpl implements OrderCustomerService {
         if (order.getTrangThai() >= OrderStatus.SHIPPING.code()) {
             throw new IllegalArgumentException("Không thể hủy đơn hàng đang vận chuyển hoặc đã hoàn thành");
         }
-
+// ====
 
         // 1) Update trạng thái đơn
         order.setTrangThai(OrderStatus.CANCELED.code());

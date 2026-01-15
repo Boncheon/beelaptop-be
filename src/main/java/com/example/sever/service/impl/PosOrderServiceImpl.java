@@ -760,31 +760,65 @@ public class PosOrderServiceImpl implements PosOrderService {
     @Transactional
     public PosOrderDetailDTO cancel(UUID orderId) {
         Order order = getOrderOrThrow(orderId);
-        requireDraftOrPendingConfirm(order);
 
-// ✅ nếu đã có thanh toán thì không cho huỷ (tránh lệch đối soát)
+        int st = (order.getTrangThai() == null) ? ORDER_STATUS_DRAFT : order.getTrangThai();
+
+        // kết thúc rồi thì thôi
+        if (st == ORDER_STATUS_CANCELLED || st == ORDER_STATUS_COMPLETED) {
+            throw new IllegalStateException("Đơn hàng đã hoàn thành/huỷ, không thể huỷ tiếp");
+        }
+
+        // SHIPPING trở lên thì không cho huỷ
+        if (st >= ORDER_STATUS_SHIPPING) {
+            throw new IllegalStateException("Đơn đang giao/đã giao, không thể huỷ");
+        }
+
+        boolean delivery = isDelivery(order);
+
         BigDecimal paid = nvl(hinhThucThanhToanChiTietRepository.sumSoTienByOrder(orderId));
-        if (paid.compareTo(BigDecimal.ZERO) > 0 || Objects.equals(order.getTrangThaiThanhToan(), PAYMENT_STATUS_PAID)) {
+        boolean isPaid = paid.compareTo(BigDecimal.ZERO) > 0 || Objects.equals(order.getTrangThaiThanhToan(), PAYMENT_STATUS_PAID);
+
+        // ✅ Không phải DELIVERY thì vẫn giữ rule cũ: đã thu tiền là không huỷ
+        if (!delivery && isPaid) {
             throw new IllegalStateException("Đơn đã có thanh toán, không thể huỷ. Vui lòng hoàn tiền/ghi nhận refund trước.");
         }
 
+        // ✅ DELIVERY: cho huỷ dù đã thanh toán -> chỉ ghi chú cần hoàn tiền
+        String refundNote = null;
+        if (delivery && isPaid) {
+            refundNote = "CẦN HOÀN TIỀN: đã thu " + paid + " (kiểm tra chi tiết thanh toán).";
+            // bạn có thể append vào order.ghiChu nếu muốn lưu trên đơn:
+            String cur = (order.getGhiChu() == null ? "" : order.getGhiChu().trim());
+            order.setGhiChu(cur.isEmpty() ? refundNote : (cur + "\n" + refundNote));
+        }
+
+        // ✅ trả seri: PENDING -> ACTIVE, nếu không được thì SOLD -> ACTIVE
         List<OrderCT> items = orderCTRepository.findByIdOrder_Id(orderId);
         for (OrderCT ct : items) {
-            if (ct.getIdSeri() != null && ct.getIdSeri().getId() != null) {
-                UUID seriId = ct.getIdSeri().getId();
-                // trả hàng: PENDING -> ACTIVE (idempotent)
-                seriRepository.updateTrangThaiSeriIfCurrent(seriId, SERI_PENDING, SERI_ACTIVE);
+            if (ct.getIdSeri() == null || ct.getIdSeri().getId() == null) continue;
+            UUID seriId = ct.getIdSeri().getId();
+
+            int u1 = seriRepository.updateTrangThaiSeriIfCurrent(seriId, SERI_PENDING, SERI_ACTIVE);
+            if (u1 == 0) {
+                seriRepository.updateTrangThaiSeriIfCurrent(seriId, SERI_SOLD, SERI_ACTIVE);
             }
         }
-        order.setTrangThaiThanhToan(PAYMENT_STATUS_UNPAID);
 
-        // ✅ theo enum mới: CANCELED(7) dùng chung
+        // ✅ Nếu đã thu tiền thì giữ PAID để khỏi lệch đối soát
+        if (!isPaid) {
+            order.setTrangThaiThanhToan(PAYMENT_STATUS_UNPAID);
+        } else {
+            order.setTrangThaiThanhToan(PAYMENT_STATUS_PAID);
+        }
+
         order.setTrangThai(ORDER_STATUS_CANCELLED);
         orderRepository.save(order);
 
         writeLog(order, ORDER_STATUS_CANCELLED,
-                (isDelivery(order) ? "Hủy đơn giao hàng: " : "Hủy đơn tại quầy: ")
-                        + order.getMaDonHang());
+                (delivery ? "Hủy đơn giao hàng: " : "Hủy đơn tại quầy: ")
+                        + order.getMaDonHang()
+                        + (refundNote != null ? (" | " + refundNote) : "")
+        );
 
         return getDetail(orderId);
     }

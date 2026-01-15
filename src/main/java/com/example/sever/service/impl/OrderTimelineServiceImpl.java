@@ -68,30 +68,40 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
 
         if (newStatus == OrderStatus.CANCELED.code()) {
 
-            // ✅ 1) Rule chung: SHIPPING trở lên thì KHÔNG AI hủy được (admin/staff cũng không)
+            // 1) SHIPPING trở lên thì không ai hủy
             if (oldStatus >= OrderStatus.SHIPPING.code()) {
                 throw new IllegalStateException("Đơn đang giao/đã giao, không thể hủy");
             }
 
-            // ✅ 2) Rule quyền: chỉ ADMIN/STAFF mới được hủy khi đơn đã CONFIRMED trở lên
-            // (nếu API này chỉ gọi từ admin panel thì đoạn này vẫn nên giữ để tránh lộ endpoint)
+            // 2) chỉ ADMIN/STAFF mới được hủy khi đơn đã CONFIRMED trở lên (optional)
             if (!isAdminOrStaff() && oldStatus >= OrderStatus.CONFIRMED.code()) {
                 throw new IllegalStateException("Đơn đã xác nhận, bạn không có quyền hủy.");
             }
 
-            // ✅ 3) Rule thanh toán: đã PAID hoặc có phát sinh tiền thì không cho hủy
+            // 3) nếu đã thu tiền -> cho hủy nhưng ghi chú cần hoàn
             int pay = nvl(order.getTrangThaiThanhToan(), PaymentStatus.UNPAID.code());
             BigDecimal paidAmount = hinhThucThanhToanChiTietRepository.sumSoTienByOrder(orderId);
             paidAmount = (paidAmount != null ? paidAmount : BigDecimal.ZERO);
 
-            if (pay == PaymentStatus.PAID.code() || paidAmount.compareTo(BigDecimal.ZERO) > 0) {
-                throw new IllegalStateException("Đơn đã thanh toán, không thể hủy (cần luồng refund/return).");
+            boolean isPaidOrHasMoney =
+                    (pay == PaymentStatus.PAID.code()) || (paidAmount.compareTo(BigDecimal.ZERO) > 0);
+
+            String note = request.getNote();
+
+            if (isPaidOrHasMoney) {
+                if (!isAdminOrStaff()) {
+                    throw new IllegalStateException("Đơn đã thanh toán, bạn không có quyền hủy.");
+                }
+                String refundMsg = "CẦN HOÀN TIỀN: đã thu " + paidAmount + " (kiểm tra chi tiết thanh toán).";
+                note = (note == null || note.isBlank()) ? refundMsg : (note.trim() + " | " + refundMsg);
             }
 
-            rollbackWhenCancel(order, request.getNote()); // trả seri + hoàn voucher
+            rollbackWhenCancel(order, note);
+
             List<OrderActionLog> logs = logRepo.findByIdOrder_IdOrderByNgayTaoAsc(orderId);
             return buildTimeline(order, logs);
         }
+
 
 
 
@@ -383,18 +393,34 @@ public class OrderTimelineServiceImpl implements OrderTimelineService {
         order.setTrangThai(OrderStatus.CANCELED.code());
         orderRepo.save(order);
 
-        // 2) trả seri: PENDING -> ACTIVE (idempotent)
+        BigDecimal paidAmount = hinhThucThanhToanChiTietRepository.sumSoTienByOrder(order.getId());
+        paidAmount = (paidAmount != null ? paidAmount : BigDecimal.ZERO);
+        int pay = nvl(order.getTrangThaiThanhToan(), PaymentStatus.UNPAID.code());
+
+        if (pay == PaymentStatus.PAID.code() || paidAmount.compareTo(BigDecimal.ZERO) > 0) {
+            order.setTrangThaiThanhToan(PaymentStatus.PAID.code());
+            orderRepo.save(order);
+        }
+
+        // 2) trả seri: PENDING -> ACTIVE, nếu không được thì thử SOLD -> ACTIVE
         List<OrderCT> items = orderCTRepo.findByIdOrder_Id(order.getId());
         for (OrderCT ct : items) {
             if (ct.getIdSeri() == null || ct.getIdSeri().getId() == null) continue;
             UUID seriId = ct.getIdSeri().getId();
 
-            // ✅ chỉ trả khi đang PENDING
-            seriRepo.updateTrangThaiSeriIfCurrent(
+            int u1 = seriRepo.updateTrangThaiSeriIfCurrent(
                     seriId,
                     SeriStatus.PENDING.code(),
                     SeriStatus.ACTIVE.code()
             );
+
+            if (u1 == 0) {
+                seriRepo.updateTrangThaiSeriIfCurrent(
+                        seriId,
+                        SeriStatus.SOLD.code(),
+                        SeriStatus.ACTIVE.code()
+                );
+            }
         }
 
         // 3) hoàn voucher (đơn ONLINE/GIAO_HANG bạn đã trừ ngay lúc tạo)
